@@ -15,6 +15,13 @@ vers le registre Horizon sont désactivés pour ce produit dérivé.
 
 ## Rusted Launcher — Windows
 
+**Connexion Microsoft actuellement indisponible dans les ZIP 0.2.1** : la
+configuration éditeur fournie est vide. Les sources 0.2.2 retirent toute saisie d’ID
+du parcours joueur et empêchent un nouvel assemblage normal sans cette configuration.
+L’application Rusted doit encore être enregistrée/autorisée une seule fois côté
+mainteneur : [suivi](docs/MICROSOFT-SETUP.md). Aucun nouveau ZIP jouable n’est annoncé
+avant cette étape.
+
 **[Archives Windows validées — Rusted Launcher 0.2.1](https://github.com/bloupyi/Rusted/actions/runs/40907164336/artifacts/12914112107)**
 (téléchargement Actions avec connexion GitHub). L'artefact contient le ZIP complet
 `Rusted-Launcher-Windows-0.2.1.zip`, les packs Prism/Modrinth, les sources et leurs
@@ -43,8 +50,8 @@ automatique à la création ou à l'import de l'instance ; Jouer attend sa fin s
 nécessaire. Les vérifications Windows sont suivies dans
 [GitHub Actions](https://github.com/bloupyi/Rusted/actions/runs/40907164336).
 
-La connexion utilise un identifiant d'application Microsoft propre au projet,
-**à configurer** : [guide Microsoft](docs/MICROSOFT-SETUP.md). Les préparations se font
+La connexion utilise l’application Microsoft propre au projet, à configurer par
+le mainteneur avant distribution : [guide Microsoft](docs/MICROSOFT-SETUP.md). Les préparations se font
 sans compte. Cette première version n'atteint pas encore toute la parité de Prism ;
 lire [les fonctions et limites](docs/RUSTED-LAUNCHER.md). Le jeu/renderer reste dérivé
 de Horizon, tandis que l'interface et le contrôleur de ce lanceur sont originaux.

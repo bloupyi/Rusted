@@ -2,21 +2,37 @@
 """Assemble the complete original Windows launcher and verified Rusted runtime."""
 import argparse
 import hashlib
-import html
 import json
+import os
 from pathlib import Path, PurePosixPath
 import subprocess
 import zipfile
+import uuid
 
 from build_launcher_entry import build as build_entry
 from package_horizon_native import pe_amd64
 from rusted import ROOT, source_hash
 
-VERSION = "0.2.1"
+VERSION = "0.2.2"
 
 
 def digest(body):
     return hashlib.sha256(body).hexdigest()
+
+
+def publisher_auth_config(allow_unconfigured=False):
+    config = json.loads((ROOT / "launcher/default-config.json").read_text())
+    client = os.environ.get("RUSTED_MICROSOFT_CLIENT_ID", config.get("microsoft_client_id", "")).strip()
+    if client:
+        try:
+            parsed = uuid.UUID(client)
+            if str(parsed) != client.lower() or parsed.int == 0:
+                raise ValueError("Noncanonical or empty client id")
+        except ValueError as exc:
+            raise ValueError("Invalid publisher Microsoft application ID; provide the Rusted application's public client GUID.") from exc
+    elif not allow_unconfigured:
+        raise ValueError("Microsoft login is not configured. The publisher must register/authorize Rusted and set RUSTED_MICROSOFT_CLIENT_ID before packaging a playable distribution. Use --allow-unconfigured-auth only for a clearly marked development preview.")
+    return {"schema": 1, "microsoft_client_id": client}
 
 
 def write_zip(path, files):
@@ -30,6 +46,7 @@ def write_zip(path, files):
 
 
 def package(args):
+    auth_config = publisher_auth_config(args.allow_unconfigured_auth)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(args.runtime) as archive:
         files = {}
@@ -59,14 +76,9 @@ def package(args):
     files["launcher-entry.json"] = (args.output_dir / "launcher-entry.json").read_bytes()
     payload = {"rusted/" + name: body for name, body in files.items()}
     payload["Rusted Launcher.exe"] = launcher
-    payload["launcher-config.json"] = (ROOT / "launcher/default-config.json").read_bytes()
+    payload["launcher-config.json"] = (json.dumps(auth_config, indent=2) + "\n").encode()
     payload["LICENSE"] = (ROOT / "LICENSE").read_bytes()
     payload["LISEZ-MOI.md"] = (ROOT / "docs/RUSTED-LAUNCHER.md").read_bytes()
-    payload["MICROSOFT-SETUP.md"] = (ROOT / "docs/MICROSOFT-SETUP.md").read_bytes()
-    payload["MICROSOFT-SETUP.html"] = ("<!doctype html><html lang='fr'><meta charset='utf-8'><title>Microsoft — Rusted Launcher</title>"
-        "<style>body{background:#201c18;color:#ece2ce;font:17px/1.65 system-ui;max-width:900px;margin:48px auto;padding:20px}"
-        "h1{color:#df986a}pre{white-space:pre-wrap;font:inherit}</style><h1>Rusted Launcher — connexion Microsoft</h1><pre>" +
-        html.escape(payload["MICROSOFT-SETUP.md"].decode()) + "</pre></html>").encode()
     # Include licences of the launcher's extra crates, in addition to the runtime notices.
     metadata = json.loads(subprocess.check_output(["cargo", "metadata", "--locked", "--offline", "--format-version", "1"], cwd=ROOT))
     for dependency in metadata["packages"]:
@@ -80,9 +92,12 @@ def package(args):
         "native_engine_version": runtime_receipt["version"], "launcher_original_implementation": True,
         "native_engine_origin": "Horizon MIT fork; see rusted/PROVENANCE.md",
         "includes_minecraft_files": False, "includes_accounts": False, "includes_java_runtime": False,
-        "microsoft_client_id": "user-configured; none bundled", "windows_hardware_verified": False,
+        "microsoft_login_configured": bool(auth_config["microsoft_client_id"]),
+        "distribution_kind": "release-candidate" if auth_config["microsoft_client_id"] else "development-preview",
+        "windows_hardware_verified": False,
         "source_sha256": launcher_sources, "files": {name: digest(body) for name, body in payload.items()}}, indent=2) + "\n").encode()
-    target = args.output_dir / f"Rusted-Launcher-Windows-{VERSION}.zip"
+    suffix = "" if auth_config["microsoft_client_id"] else "-preview"
+    target = args.output_dir / f"Rusted-Launcher-Windows-{VERSION}{suffix}.zip"
     write_zip(target, {"Rusted Launcher/" + name: body for name, body in payload.items()})
     if args.source:
         subprocess.run(["python3" if __import__('os').name != 'nt' else "python", str(ROOT / "scripts/check_public_tree.py")], cwd=ROOT, check=True)
@@ -99,4 +114,5 @@ if __name__ == "__main__":
     parser.add_argument("--launcher", type=Path, default=ROOT / "target/release/rusted-launcher.exe")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "build")
     parser.add_argument("--source", action="store_true")
+    parser.add_argument("--allow-unconfigured-auth", action="store_true", help="Developer preview only: disables Microsoft login and adds -preview to the ZIP name")
     package(parser.parse_args())

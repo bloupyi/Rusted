@@ -1,55 +1,60 @@
-# Configurer Microsoft pour Rusted Launcher
+# Connexion Microsoft : configuration de l’éditeur
 
-Rusted Launcher ne contient pas encore d'identifiant d'application Microsoft.
-Il faut enregistrer une application propre au projet avant de connecter un compte.
-La préparation des fichiers et la gestion des instances fonctionnent sans connexion.
+Les joueurs ne doivent saisir aucun identifiant d’application. Dans une distribution
+configurée, ils cliquent **Se connecter avec Microsoft** : le navigateur ouvre
+Microsoft, le code de connexion est copié, puis le lanceur reçoit sa propre session.
+Le mot de passe reste sur le site Microsoft. Un compte possédant Minecraft Java
+et un profil Xbox/Minecraft est nécessaire.
 
-1. Ouvrir https://entra.microsoft.com et accéder à Microsoft Entra ID > Inscriptions
-   d'applications > Nouvelle inscription. L'accès à un annuaire Entra permettant
-   l'enregistrement peut être nécessaire selon le compte utilisé.
-2. Choisir un nom, par exemple « Rusted Launcher », et un type de comptes acceptant
-   les **comptes Microsoft personnels** : comptes personnels uniquement, ou comptes
-   d'organisation et personnels. Les comptes Minecraft personnels utilisent cette
-   possibilité. L'application emploie l'autorité OAuth `consumers`.
-3. Dans Authentification, activer **Autoriser les flux de clients publics**. Rusted
-   utilise le flux par code d'appareil ; aucun secret client et aucune URI de retour
-   ne sont nécessaires pour ce flux. Ne pas ajouter de secret dans le lanceur.
-4. Dans Vue d'ensemble, copier **ID d'application (client)**, le GUID public.
-   Ce n'est ni l'ID d'objet, ni l'ID du locataire, ni un secret.
-5. Dans Rusted Launcher > Comptes, coller ce GUID dans le champ prévu, puis cliquer
-   « Se connecter à Microsoft ». L'identifiant est enregistré dans les réglages.
-6. Ouvrir Microsoft avec le bouton affiché, entrer le code d'appareil et autoriser
-   la connexion. Le mot de passe reste chez Microsoft. Le compte doit avoir accès
-   à Minecraft Java et disposer d'un profil Xbox/Minecraft.
+## Enregistrement unique de Rusted
 
-Le flux demande `XboxLive.signin offline_access`, puis échange le jeton auprès de
-Xbox Live, XSTS et Minecraft Services. La création d'une application Entra seule
-ne garantit pas l'accès à ces services : Microsoft/Minecraft peut exiger une
-approbation supplémentaire de l'application ou imposer ses conditions d'accès.
-Si Xbox/Minecraft refuse l'échange après la connexion Microsoft, vérifier ces droits
-et le profil Xbox. Réutiliser l'identifiant d'un autre lanceur n'est pas une solution.
+Microsoft OAuth exige un identifiant public pour reconnaître le logiciel qui demande
+la connexion. Les autres lanceurs fournissent le leur dans leur distribution.
+Ouvrir simplement une page de connexion Microsoft sans application enregistrée ne
+permet pas de recevoir un jeton Minecraft. Cet enregistrement relève du mainteneur,
+pas de chaque joueur. Aucun secret client ne doit être créé ou distribué pour ce flux.
 
-Pour distribuer Rusted publiquement avec une identité stable, le mainteneur doit
-administrer cette application, ses autorisations et ses informations de consentement.
-L'identifiant client est public ; les jetons de connexion sont secrets. Cette
-configuration n'enregistre aucune application distante automatiquement.
+1. Avec le compte qui administrera Rusted, ouvrir https://entra.microsoft.com puis
+   **Inscriptions d’applications > Nouvelle inscription**. L’accès à un annuaire
+   permettant les inscriptions est nécessaire.
+2. Nommer l’application **Rusted Launcher** et accepter les **comptes Microsoft
+   personnels**. Dans Authentification, autoriser les flux de **clients publics**.
+   Le flux de code d’appareil utilise l’autorité `consumers` et ne nécessite pas
+   d’URI de retour ni de secret client.
+3. Vérifier les conditions/approbations Minecraft/Xbox requises pour cette application.
+   Une inscription Entra seule ne garantit pas l’accès aux API Minecraft Services.
+4. Fournir une fois le GUID public **ID d’application (client)** à la publication,
+   dans la variable GitHub Actions `RUSTED_MICROSOFT_CLIENT_ID` du dépôt, ou dans
+   `launcher/default-config.json` pour un assemblage local. Ce n’est ni un ID de
+   locataire, ni un ID d’objet, ni un secret. Ne pas utiliser l’identité d’un autre lanceur.
+5. Assembler, valider le ZIP Windows puis vérifier une vraie connexion avec un compte
+   autorisé avant d’annoncer l’authentification comme validée.
+
+## Assemblage et vérifications
+
+Le pipeline Windows de distribution attend la variable publique
+`RUSTED_MICROSOFT_CLIENT_ID`. Les tests unitaires et de communication continuent
+sans elle. `scripts/package_launcher.py` injecte l’identité dans
+`launcher-config.json`, à côté de l’exécutable. Ce fichier appartient à la distribution :
+il n’est plus éditable dans la page Comptes et ne fait plus partie des préférences
+joueur. Il est lu à chaque ouverture, même avec un ancien profil utilisateur.
+
+L’assemblage normal échoue si l’identité est vide ou mal formée. La seule exception
+est `--allow-unconfigured-auth`, réservée au développement : elle crée un ZIP nommé
+`-preview.zip`, avec `microsoft_login_configured: false` et
+`distribution_kind: development-preview` dans son manifeste. Le bouton Microsoft
+est alors désactivé avec une explication, sans demander d’ID au joueur. La validation
+du format d’un GUID ne prouve pas son enregistrement ni l’autorisation Xbox/Minecraft.
+
+Les ZIP 0.2.1 précédents ont été validés pour leur scan Defender et leur premier
+démarrage, mais leur configuration Microsoft était vide. Ils ne valident donc
+aucune connexion. Aucun accès Azure administrateur n’est disponible dans
+l’environnement de développement pour créer l’application à la place du propriétaire.
+
+Les sessions et les jetons de renouvellement sont chiffrés avec Windows DPAPI.
+« Déconnecter de Rusted » retire la session locale ; les autorisations distantes
+se gèrent dans le compte Microsoft. Ne pas partager le dossier accounts.
 
 Documentation officielle :
 https://learn.microsoft.com/entra/identity-platform/quickstart-register-app
 https://learn.microsoft.com/entra/identity-platform/v2-oauth2-device-code
-
-Les sessions sont chiffrées localement par Windows DPAPI. « Déconnecter de Rusted »
-retire la session locale ; la gestion des autorisations distantes se fait dans le
-compte Microsoft. Ne pas partager le dossier accounts ou une sauvegarde du profil
-Windows avec ses secrets.
-
-## Fournir une connexion simple aux utilisateurs
-
-Après enregistrement/autorisation de l'application, le mainteneur peut renseigner
-`microsoft_client_id` dans `launcher-config.json`, à côté de Rusted Launcher.exe,
-avant de distribuer le dossier complet. Les nouvelles installations liront cet
-identifiant public automatiquement : les joueurs cliquent alors simplement sur
-« Se connecter avec Microsoft » ; le navigateur s'ouvre et le code est copié.
-Le champ avancé de l'application reste une autre manière de renseigner cet ID.
-Ne jamais placer de secret client dans ce fichier. La version de démonstration
-contient un champ vide, car aucune application n'a encore été enregistrée.

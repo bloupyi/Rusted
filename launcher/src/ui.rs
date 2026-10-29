@@ -19,7 +19,10 @@ use windows_sys::Win32::{
     Foundation::*,
     Graphics::{Dwm::*, Gdi::*},
     System::{Com::*, LibraryLoader::GetModuleHandleW, Memory::*},
-    UI::{Controls::Dialogs::*, Controls::*, HiDpi::*, Shell::*, WindowsAndMessaging::*},
+    UI::{
+        Controls::Dialogs::*, Controls::*, HiDpi::*, Input::KeyboardAndMouse::EnableWindow,
+        Shell::*, WindowsAndMessaging::*,
+    },
 };
 fn wide(s: &str) -> Vec<u16> {
     s.encode_utf16().chain(Some(0)).collect()
@@ -71,7 +74,7 @@ struct App {
     rendered_status: String,
     rendered_progress: (u64, u64),
     auth_job: Option<Arc<AtomicBool>>,
-    account_config_open: bool,
+    microsoft_client_id: String,
     account_notice: String,
     mod_tab: u32,
     mod_query: String,
@@ -195,23 +198,12 @@ pub fn run() -> Result<()> {
         .try_lock_exclusive()
         .map_err(|_| "Rusted Launcher est deja ouvert pour ce dossier de donnees.")?;
     let mut settings = store.settings()?;
-    if settings.microsoft_client_id.is_empty() {
-        if let Some(root) = std::env::current_exe()
-            .ok()
-            .and_then(|p| p.parent().map(PathBuf::from))
-        {
-            let config = root.join("launcher-config.json");
-            if config.metadata().is_ok_and(|m| m.len() <= 65536) {
-                if let Ok(value) = rusted_launcher::model::read_json::<serde_json::Value>(&config) {
-                    settings.microsoft_client_id = value["microsoft_client_id"]
-                        .as_str()
-                        .unwrap_or("")
-                        .trim()
-                        .to_owned();
-                }
-            }
-        }
-    }
+    let executable = std::env::current_exe().map_err(|_| "Emplacement du lanceur inaccessible.")?;
+    let microsoft_client_id = auth::configured_client_id(
+        executable
+            .parent()
+            .ok_or("Dossier du lanceur inaccessible.")?,
+    )?;
     if settings.download_threads <= 4 {
         settings.download_threads = 24;
     }
@@ -319,7 +311,8 @@ pub fn run() -> Result<()> {
             tx,
             job: None,
             running: false,
-            status: "Choisis une instance, puis prepare les fichiers avant de jouer.".into(),
+            status: "Les instances se preparent automatiquement. Choisis ton instance pour jouer."
+                .into(),
             progress: (0, 0),
             logs: VecDeque::new(),
             hits: vec![],
@@ -337,8 +330,12 @@ pub fn run() -> Result<()> {
             rendered_status: String::new(),
             rendered_progress: (0, 0),
             auth_job: None,
-            account_config_open: false,
-            account_notice: "Connecte ton compte avec le navigateur Microsoft".into(),
+            account_notice: if microsoft_client_id.is_empty() {
+                auth::UNAVAILABLE.into()
+            } else {
+                "Connecte ton compte avec le navigateur Microsoft".into()
+            },
+            microsoft_client_id,
             mod_tab: 0,
             mod_query: "Sodium".into(),
             mod_searching: false,
@@ -992,6 +989,8 @@ unsafe fn build(app: &mut App) {
                 501,
                 if app.auth_job.is_some() {
                     "Connexion Microsoft en cours..."
+                } else if app.microsoft_client_id.is_empty() {
+                    "Connexion Microsoft indisponible"
                 } else {
                     "Se connecter avec Microsoft"
                 },
@@ -1000,55 +999,32 @@ unsafe fn build(app: &mut App) {
                 440,
                 48,
             );
+            EnableWindow(
+                GetDlgItem(app.window, 501),
+                (!app.microsoft_client_id.is_empty() && app.auth_job.is_none()) as _,
+            );
             control(
                 app,
                 0,
                 "STATIC",
                 &app.account_notice.clone(),
                 0,
-                [680, 310, 450, 44],
+                [680, 310, 450, 70],
                 false,
             );
             if let Some((_, code)) = &app.device.clone() {
-                label(app, &format!("TON CODE : {code}"), 680, 356, 450);
-                button(app, 507, "Rouvrir Microsoft", 680, 402, 210, 40);
-                button(app, 508, "Copier le code", 906, 402, 214, 40);
-                button(app, 509, "Annuler la connexion", 680, 456, 440, 36);
+                label(app, &format!("TON CODE : {code}"), 680, 396, 450);
+                button(app, 507, "Rouvrir Microsoft", 680, 442, 210, 40);
+                button(app, 508, "Copier le code", 906, 442, 214, 40);
+                button(app, 509, "Annuler la connexion", 680, 496, 440, 36);
             } else {
                 label(
                     app,
                     "Les sessions sont chiffrees par Windows.",
                     680,
-                    356,
+                    400,
                     450,
                 );
-                button(
-                    app,
-                    506,
-                    "Configuration Microsoft du projet",
-                    680,
-                    410,
-                    440,
-                    36,
-                );
-                if app.account_config_open {
-                    edit(
-                        app,
-                        504,
-                        &app.settings.microsoft_client_id.clone(),
-                        680,
-                        465,
-                        440,
-                    );
-                    label(
-                        app,
-                        "ID public de l'application Rusted (pas de secret)",
-                        680,
-                        504,
-                        440,
-                    );
-                    button(app, 505, "Guide de configuration", 680, 548, 440, 36);
-                }
             }
         }
         5 => {
@@ -1329,12 +1305,15 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
                 let i = app.selected_or_error()?;
                 let account = app.settings.selected_account.clone();
                 if account.is_empty() {
-                    app.pending_play = Some(i.id);
+                    app.pending_play = (!app.microsoft_client_id.is_empty()).then_some(i.id);
                     app.page = 4;
-                    app.account_notice =
-                        "Connecte un compte Microsoft pour lancer ton instance.".into();
+                    app.account_notice = if app.microsoft_client_id.is_empty() {
+                        auth::UNAVAILABLE.into()
+                    } else {
+                        "Connecte un compte Microsoft pour lancer ton instance.".into()
+                    };
                     build(app);
-                    if !app.settings.microsoft_client_id.is_empty() && app.auth_job.is_none() {
+                    if !app.microsoft_client_id.is_empty() && app.auth_job.is_none() {
                         action(app, 501, 0);
                     }
                     return Ok(());
@@ -1552,15 +1531,8 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
                 SetWindowTextW(GetDlgItem(app.window, 400), wide("").as_ptr());
             }
             501 => {
-                if !GetDlgItem(app.window, 504).is_null() {
-                    app.settings.microsoft_client_id = text(app, 504).trim().into();
-                    app.store.save_settings(&app.settings)?;
-                }
-                if app.settings.microsoft_client_id.trim().is_empty() {
-                    app.account_config_open = true;
-                    app.account_notice =
-                        "Le mainteneur doit configurer l'ID Microsoft de Rusted une seule fois."
-                            .into();
+                if app.microsoft_client_id.is_empty() {
+                    app.account_notice = auth::UNAVAILABLE.into();
                     build(app);
                     return Ok(());
                 }
@@ -1573,7 +1545,7 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
                     events: app.tx.clone(),
                     cancel,
                 };
-                let client = app.settings.microsoft_client_id.clone();
+                let client = app.microsoft_client_id.clone();
                 let store = app.store.clone();
                 app.account_notice = "Ouverture de Microsoft dans ton navigateur...".into();
                 std::thread::spawn(move || {
@@ -1583,10 +1555,6 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
                     };
                     task.send(event);
                 });
-                build(app);
-            }
-            506 => {
-                app.account_config_open = !app.account_config_open;
                 build(app);
             }
             509 => {
@@ -1617,16 +1585,6 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
                 }
                 app.refresh();
                 build(app);
-            }
-            505 => {
-                let guide = std::env::current_exe()
-                    .ok()
-                    .and_then(|p| p.parent().map(|p| p.join("MICROSOFT-SETUP.html")));
-                if let Some(p) = guide.filter(|p| p.is_file()) {
-                    open(&p.to_string_lossy());
-                } else {
-                    open("https://learn.microsoft.com/entra/identity-platform/quickstart-register-app");
-                }
             }
             507 => {
                 if let Some((uri, _)) = &app.device {
@@ -2221,11 +2179,14 @@ unsafe fn draw_button(app: &App, d: &DRAWITEMSTRUCT) {
         || (id == 320 && app.mod_tab == 0)
         || (id == 321 && app.mod_tab == 1);
     let primary = id == 1 || id == 213 || id == 351 || id == 501;
+    let disabled = d.itemState & ODS_DISABLED != 0;
     let pressed = d.itemState & ODS_SELECTED != 0;
     let r = d.rcItem;
     let w = r.right - r.left;
     let h = r.bottom - r.top;
-    let base = if primary || active {
+    let base = if disabled {
+        rgb(53, 55, 55)
+    } else if primary || active {
         rgb(165, 91, 59)
     } else {
         rgb(54, 61, 64)
@@ -2237,7 +2198,9 @@ unsafe fn draw_button(app: &App, d: &DRAWITEMSTRUCT) {
         0,
         w,
         2,
-        if primary || active {
+        if disabled {
+            rgb(73, 75, 75)
+        } else if primary || active {
             rgb(221, 153, 105)
         } else {
             rgb(87, 95, 96)
@@ -2256,7 +2219,11 @@ unsafe fn draw_button(app: &App, d: &DRAWITEMSTRUCT) {
         if pressed { 2 } else { 0 },
         w - 20,
         h - 3,
-        rgb(248, 236, 214),
+        if disabled {
+            rgb(155, 155, 150)
+        } else {
+            rgb(248, 236, 214)
+        },
         DT_CENTER | DT_VCENTER | DT_SINGLELINE,
     );
 }
@@ -2356,7 +2323,7 @@ unsafe fn paint(app: &App) {
     line_text(
         dc,
         app.small,
-        "Rusted Launcher 0.2.1",
+        "Rusted Launcher 0.2.2",
         27,
         r.bottom - 90,
         205,

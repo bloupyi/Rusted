@@ -1,6 +1,12 @@
-# Rusted Launcher 0.2.1 — Windows x64
+# Rusted Launcher 0.2.2 — sources en préparation, Windows x64
 
-Extraire **tout** `Rusted-Launcher-Windows-0.2.1.zip`, puis ouvrir
+L’authentification ne demande plus d’ID dans l’interface. Le mainteneur fournit
+l’identité Microsoft de Rusted avec la distribution. Tant qu’elle manque, seul
+un aperçu de développement nommé `-preview.zip` peut être assemblé ; il ne permet
+pas de connecter un compte. Les ZIP 0.2.1 historiques avaient une configuration vide.
+Voir [le suivi côté mainteneur](MICROSOFT-SETUP.md).
+
+Avec une distribution configurée, extraire **tout** le ZIP Windows du lanceur, puis ouvrir
 **Rusted Launcher.exe**. Garder le sous-dossier `rusted` à côté de l'exécutable.
 Il contient le moteur Rusted 0.3.5 et ses outils. Aucun terminal, Prism ni
 Configurer-Rusted.exe n'est nécessaire pour utiliser ce lanceur.
@@ -36,12 +42,10 @@ Les sélecteurs et listes utilisent le thème cuivre, les mods ont des onglets
 Iris et Distant Horizons. Les changements de page sont dessinés en une fois et
 les textes immobiles ne sont plus réécrits à chaque passage du timer.
 
-La connexion Microsoft ouvre automatiquement le navigateur et copie le code
-à saisir. Elle fonctionne indépendamment d'une préparation en cours. L'identifiant
-public d'application Rusted doit toujours être configuré une seule fois : sans
-application enregistrée/autorisée, aucun lanceur ne peut obtenir une session
-Minecraft valide avec sa propre identité. Le bouton affiche la configuration
-si cet identifiant manque ; il ne simule pas une connexion réussie.
+Dans une distribution configurée, la connexion Microsoft ouvre automatiquement le
+navigateur et copie le code à saisir. Elle fonctionne indépendamment d'une préparation
+en cours. Aucun identifiant technique n'est demandé au joueur. Dans un aperçu sans
+connexion disponible, le bouton est désactivé avec une explication.
 
 Le PNG du R est désormais le fichier original fourni par le propriétaire,
 copié octet pour octet, avec ses bords noirs et son alpha d'origine. Seules les
@@ -55,9 +59,9 @@ versions techniques ICO et RGBA 64×64 sont redimensionnées pour les API du sys
    sons et langues, ainsi que Java 25. Les empreintes des téléchargements sont
    vérifiées. Pour le moteur natif, les ressources sont également exportées avant
    d'ouvrir le jeu. La première préparation peut prendre plusieurs minutes.
-3. Dans **Comptes**, renseigner l'identifiant public de ton application Microsoft.
-   Le bouton d'aide ouvre le guide fourni ; voir `MICROSOFT-SETUP.md`. Cet identifiant
-   n'est pas encore enregistré pour cette distribution.
+3. Dans **Comptes**, cliquer **Se connecter avec Microsoft** et terminer la connexion
+   dans le navigateur Microsoft. Le code est copié automatiquement ; le saisir si
+   Microsoft le demande. Sélectionner le compte qui possède Minecraft Java.
 4. Le bouton **Jouer** est l'action principale de l'accueil ; sur les autres pages,
    il reste dans la barre de l'instance sélectionnée. Pendant une préparation,
    cliquer Jouer programme le lancement dès que les fichiers et le compte sont prêts.

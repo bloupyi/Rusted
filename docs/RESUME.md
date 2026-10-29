@@ -1,3 +1,29 @@
+# Priorité — connexion Microsoft et sources 0.2.2
+
+L’utilisateur veut une connexion Microsoft classique sans saisir d’ID. Le champ
+avancé et le guide technique ont été retirés du parcours joueur. Le client public
+est maintenant une configuration de distribution, lue à chaque démarrage et non
+sauvegardée dans les réglages joueur. Les anciennes préférences sont acceptées mais
+leur ancien microsoft_client_id est ignoré. Une identité absente désactive le bouton
+et ne programme pas un lancement impossible en attente.
+
+La version source est 0.2.2 ; aucun nouveau ZIP jouable n’est produit sans application
+Microsoft enregistrée/configurée. Le packager refuse par défaut une configuration
+vide/mal formée ; --allow-unconfigured-auth ne produit qu’un -preview.zip. La CI de
+distribution attend vars.RUSTED_MICROSOFT_CLIENT_ID, puis conserve les contrôles
+Defender. Les tests de compilation et de communication restent indépendants.
+L’environnement n’a aucune identité Azure pour créer l’application ; les droits
+GitHub fournis ne permettent pas de lire/gérer les variables Actions (HTTP 403).
+Une inscription unique côté éditeur reste requise, sans secret client. Ne pas
+réutiliser l’identité d’un autre lanceur ou annoncer la connexion comme fonctionnelle.
+Le ZIP 0.2.1 historique reste inchangé pour conserver ses preuves Defender.
+
+Tests 0.2.2 : 38 tests Rust Linux et 3 tests Python du garde de distribution passent ;
+Clippy Linux/Windows cross passe. Deux parcours UI sous Wine confirment l’absence
+des contrôles d’ID et l’activation du bouton uniquement avec configuration fournie.
+Rapport : results/rusted-launcher-0.2.2-auth.json. Pas de compte réel testé et pas
+de nouvelle validation Defender pour 0.2.2 ; l’archive 0.2.1 demeure inchangée.
+
 # Travail actuel — 0.2.1 et tests Windows
 
 Le propriétaire autorise la publication des sources et les tests sur GitHub,

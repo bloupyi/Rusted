@@ -1,0 +1,23 @@
+{
+  "missing_publisher_identity": {
+    "passed": true,
+    "no_player_configuration_controls": true,
+    "button_enabled": false,
+    "real_authentication_tested": false
+  },
+  "configured_publisher_identity": {
+    "passed": true,
+    "no_player_configuration_controls": true,
+    "button_enabled": true,
+    "real_authentication_tested": false
+  },
+  "version": "0.2.2",
+  "ui_environment": "Wine on Linux",
+  "linux_workspace_tests": 38,
+  "python_distribution_gate_tests": 3,
+  "windows_cross_clippy": "passed",
+  "real_authentication_tested": false,
+  "windows_defender_tested_for_this_version": false,
+  "distribution_status": "blocked: Rusted Microsoft application registration/configuration required",
+  "previous_windows_validation": "0.2.1 only; does not validate 0.2.2"
+}

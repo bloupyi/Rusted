@@ -1,3 +1,18 @@
+# Connexion Microsoft — sources 0.2.2
+
+La connexion des ZIP 0.2.1 est bloquée par la configuration éditeur vide. Les tests
+Defender précédents ne couvraient pas de compte réel. Les sources 0.2.2 suppriment
+le champ d’ID et le guide technique dans le parcours joueur : la distribution doit
+fournir l’application Microsoft de Rusted. L’assemblage normal refuse une identité
+vide/mal formée ; seul un aperçu de développement explicitement nommé preview est
+possible sans elle. Le pipeline de distribution Windows attend la variable publique
+RUSTED_MICROSOFT_CLIENT_ID ; les autres tests continuent indépendamment.
+
+Il reste à enregistrer/autoriser l’application avec le compte éditeur et à vérifier
+une vraie connexion. Aucun accès Azure permettant cet enregistrement n’est disponible
+ici. Voir [la configuration du mainteneur](MICROSOFT-SETUP.md). Aucun nouveau ZIP
+jouable n’est annoncé avant cette configuration.
+
 # Blocage Windows signalé — Rusted Launcher 0.2.0
 
 Defender détecte `Behavior:Win32/DefenseEvasion.A!ml` sur `Rusted Launcher.exe`.

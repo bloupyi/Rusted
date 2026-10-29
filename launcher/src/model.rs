@@ -7,7 +7,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-pub const VERSION: &str = "0.2.1";
+pub const VERSION: &str = "0.2.2";
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Debug, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum Engine {
@@ -96,7 +96,6 @@ impl Instance {
 #[derive(Clone, Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct Settings {
-    pub microsoft_client_id: String,
     pub selected: String,
     pub selected_account: String,
     pub hide_while_playing: bool,

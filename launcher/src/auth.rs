@@ -10,8 +10,49 @@ use serde_json::{json, Value};
 use std::{
     fs,
     io::Read,
+    path::Path,
     time::{Duration, Instant},
 };
+pub const UNAVAILABLE: &str = "La connexion Microsoft n'est pas disponible dans cette version. Une mise a jour du lanceur est necessaire ; aucun reglage n'est demande au joueur.";
+
+fn valid_client_id(id: &str) -> bool {
+    id.len() == 36
+        && id.bytes().enumerate().all(|(index, byte)| {
+            if matches!(index, 8 | 13 | 18 | 23) {
+                byte == b'-'
+            } else {
+                byte.is_ascii_hexdigit()
+            }
+        })
+        && id
+            .bytes()
+            .any(|byte| byte.is_ascii_hexdigit() && byte != b'0')
+}
+
+/// Publisher configuration beside the executable; never a player preference.
+pub fn configured_client_id(executable_dir: &Path) -> Result<String> {
+    let path = executable_dir.join("launcher-config.json");
+    let metadata = match fs::metadata(&path) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(String::new()),
+        Err(_) => return Err("Configuration du lanceur inaccessible.".into()),
+    };
+    if metadata.len() > 65536 {
+        return Err("Configuration du lanceur invalide.".into());
+    }
+    let config: Value = crate::model::read_json(&path)?;
+    if config["schema"].as_u64() != Some(1) {
+        return Err("Version de configuration du lanceur invalide.".into());
+    }
+    let client = config["microsoft_client_id"]
+        .as_str()
+        .ok_or("Configuration Microsoft du lanceur invalide.")?
+        .trim();
+    if !client.is_empty() && !valid_client_id(client) {
+        return Err("Configuration Microsoft du lanceur invalide. Retelercharger une version complete de Rusted.".into());
+    }
+    Ok(client.to_owned())
+}
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Account {
     pub id: String,
@@ -120,13 +161,10 @@ fn exchange(ms: &str, refresh: String, client_id: String, task: &Task) -> Result
     })
 }
 pub fn sign_in(store: &Store, client_id: &str, task: &Task) -> Result<Account> {
-    if client_id.len() != 36
-        || !client_id
-            .bytes()
-            .all(|c| c.is_ascii_hexdigit() || c == b'-')
-    {
-        return Err("Renseigner l'identifiant d'application Microsoft propre a Rusted dans les parametres. Aucun identifiant d'un autre lanceur n'est reutilise.".into());
+    if !valid_client_id(client_id) {
+        return Err(UNAVAILABLE.into());
     }
+    task.check()?;
     task.status("Demande de connexion Microsoft");
     let d=body(download::agent().post("https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode").send_form(&[("client_id",client_id),("scope","XboxLive.signin offline_access")]).map_err(|_|"Demande Microsoft refusee. L'application doit autoriser les clients publics et les comptes personnels.")?)?;
     let device = value(&d, "device_code")?;
@@ -343,7 +381,7 @@ mod tests {
         assert!(sign_in(&store, "", &task)
             .err()
             .unwrap()
-            .contains("application Microsoft"));
+            .contains(UNAVAILABLE));
         assert!(list(&store).unwrap().is_empty());
     }
     #[cfg(windows)]

@@ -17,6 +17,53 @@ fn task() -> Task {
         cancel: Arc::new(AtomicBool::new(false)),
     }
 }
+
+#[test]
+fn microsoft_identity_is_publisher_configuration_not_player_settings() {
+    let directory = tempfile::tempdir().unwrap();
+    let config = directory.path().join("launcher-config.json");
+    assert!(
+        rusted_launcher::auth::configured_client_id(directory.path())
+            .unwrap()
+            .is_empty()
+    );
+    for client in ["", "11111111-2222-4333-8444-555555555555"] {
+        model::atomic_json(
+            &config,
+            &serde_json::json!({"schema":1,"microsoft_client_id":client}),
+        )
+        .unwrap();
+        assert_eq!(
+            rusted_launcher::auth::configured_client_id(directory.path()).unwrap(),
+            client
+        );
+    }
+    for client in [
+        "00000000-0000-0000-0000-000000000000",
+        "------------------------------------",
+        "123",
+        "111111112222-4333-8444-555555555555",
+        "a-client-secret",
+    ] {
+        model::atomic_json(
+            &config,
+            &serde_json::json!({"schema":1,"microsoft_client_id":client}),
+        )
+        .unwrap();
+        assert!(rusted_launcher::auth::configured_client_id(directory.path()).is_err());
+    }
+    let settings: model::Settings = serde_json::from_value(
+        serde_json::json!({"microsoft_client_id":"legacy-player-override","selected":"fixture"}),
+    )
+    .unwrap();
+    assert_eq!(settings.selected, "fixture");
+    assert!(serde_json::to_value(settings)
+        .unwrap()
+        .get("microsoft_client_id")
+        .is_none());
+    fs::write(&config, vec![b' '; 65537]).unwrap();
+    assert!(rusted_launcher::auth::configured_client_id(directory.path()).is_err());
+}
 #[test]
 fn instance_copy_trash_and_settings_preserve_source_worlds() {
     let d = tempfile::tempdir().unwrap();
