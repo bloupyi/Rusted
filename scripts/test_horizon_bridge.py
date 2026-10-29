@@ -50,8 +50,12 @@ class BridgeProcessTest(unittest.TestCase):
         bridge = getattr(self, "bridge", BRIDGE)
         command = ([WINE, native_path(bridge)] if WINE else [str(bridge)])
         options = [] if auto_config else ["--config", native_path(self.path)]
-        result = subprocess.run([*command, *options, "--", *args], input=text, text=True,
+        # Text-mode pipes rewrite LF to CRLF on Windows, which would invalidate the
+        # fixture's byte-for-byte stdin contract before the wrapper even receives it.
+        result = subprocess.run([*command, *options, "--", *args], input=text.encode("utf-8"),
                                 capture_output=True, env=env, cwd=self.game, timeout=20)
+        result.stdout = result.stdout.decode("utf-8")
+        result.stderr = result.stderr.decode("utf-8")
         self.assertNotIn(TOKEN, result.stdout + result.stderr)
         self.assertEqual(list(self.root.glob("rusted-session-*")), [])
         return result
@@ -202,6 +206,14 @@ class BridgeProcessTest(unittest.TestCase):
         self.config["mode"] = "java"
         self.config["resources"] = "missing resources are unused in Java mode"
         result = self.invoke([native_path(PEER), "-Xmx2G", "argument with spaces"], "JAVA_STDIN_UNCHANGED\n")
+        self.assertEqual(result.returncode, 37, result.stderr)
+        self.assertIn("TEST_PEER_JAVA_OK", result.stdout)
+
+    def test_java_mode_keeps_crlf_and_unicode_stdin_exact(self):
+        self.config["mode"] = "java"
+        script = "JAVA_STDIN_UNCHANGED\r\nCuivre é\r\n"
+        self.env_extra = {"RUSTED_TEST_EXPECT_STDIN": script}
+        result = self.invoke([native_path(PEER), "-Xmx2G", "argument with spaces"], script)
         self.assertEqual(result.returncode, 37, result.stderr)
         self.assertIn("TEST_PEER_JAVA_OK", result.stdout)
 

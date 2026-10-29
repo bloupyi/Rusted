@@ -1,5 +1,13 @@
 name: Rusted
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    paths-ignore: ['docs/**', 'README.md', 'THIRD_PARTY.md']
+  pull_request:
+    paths-ignore: ['docs/**', 'README.md', 'THIRD_PARTY.md']
+  workflow_dispatch:
+concurrency:
+  group: rusted-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   bridge:
     strategy:

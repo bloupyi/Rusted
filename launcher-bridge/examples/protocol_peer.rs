@@ -52,7 +52,9 @@ fn main() {
     } else {
         let mut text = String::new();
         std::io::Read::read_to_string(&mut std::io::stdin(), &mut text).unwrap();
-        assert_eq!(text, "JAVA_STDIN_UNCHANGED\n");
+        let expected = env::var("RUSTED_TEST_EXPECT_STDIN")
+            .unwrap_or_else(|_| "JAVA_STDIN_UNCHANGED\n".into());
+        assert_eq!(text, expected);
         assert_eq!(
             env::args().skip(1).collect::<Vec<_>>(),
             ["-Xmx2G", "argument with spaces"]
