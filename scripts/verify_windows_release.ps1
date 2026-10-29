@@ -29,13 +29,14 @@ $reportFile = [IO.Path]::GetFullPath($ReportPath)
 
 function Read-ProtectionState {
     $state = Get-MpComputerStatus
-    if (-not $state.AMServiceEnabled -or -not $state.AntivirusEnabled -or -not $state.RealTimeProtectionEnabled) {
+    if (-not $state.AMServiceEnabled -or -not $state.AntivirusEnabled -or -not $state.RealTimeProtectionEnabled -or -not $state.BehaviorMonitorEnabled) {
         throw 'Microsoft Defender and real-time protection must already be active. No protection settings will be changed.'
     }
     return [ordered]@{
         service_enabled = [bool]$state.AMServiceEnabled
         antivirus_enabled = [bool]$state.AntivirusEnabled
         realtime_enabled = [bool]$state.RealTimeProtectionEnabled
+        behavior_enabled = [bool]$state.BehaviorMonitorEnabled
         engine_version = [string]$state.AMEngineVersion
         signature_version = [string]$state.AntivirusSignatureVersion
         signature_updated = $state.AntivirusSignatureLastUpdated.ToString('o')
