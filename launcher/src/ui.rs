@@ -1320,6 +1320,7 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
         match id {
             1 => {
                 if app.running {
+                    app.pending_play = None;
                     if let Some(c) = &app.job {
                         c.store(true, Ordering::Relaxed)
                     }
@@ -1777,6 +1778,7 @@ unsafe fn tick(app: &mut App) {
                 }
             }
             Event::GameStarted => {
+                app.pending_play = None;
                 app.running = true;
                 if app.settings.hide_while_playing {
                     ShowWindow(app.window, SW_MINIMIZE);
