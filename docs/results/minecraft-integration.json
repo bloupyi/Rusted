@@ -1,0 +1,90 @@
+{
+  "observed_at": "2026-10-28T14:31:32.828435+01:00",
+  "minecraft": "1.20.4",
+  "fabric_loader": "0.15.11",
+  "os": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+  "visible_cpus": 5,
+  "jvm": "OpenJDK 21.0.12.1",
+  "server_sha1": "8dd1a28015f51b1803213892b50b7b4fc76e594d",
+  "client_sha1": "fd19469fed4a4b4c15b2d5133985f0e3e7816a8a",
+  "asset_objects_verified": 3788,
+  "tested_mod_sha256": "a528afeb28102735b3b03d6c131290faba12ea96bcce2c8cbf422c185a9ef9fb",
+  "current_mod_sha256": "205266a34330b03c1240f44fe9f7946e85fbe07ae45649c0db3d436dcf925fa3",
+  "current_mod_payloads_identical_to_tested": true,
+  "gameplay_smoke": {
+    "mode": "official demo",
+    "demo_restrictions_retained": true,
+    "original_menus": true,
+    "options_video_controls_inventory": true,
+    "movement": true,
+    "break_block": true,
+    "pick_up_item": true,
+    "place_block": true,
+    "save_and_process_restart_reload": true,
+    "saved_reloaded_position": [
+      -45.5,
+      64.0,
+      55.95519899083406
+    ],
+    "renderer": "Mesa llvmpipe software OpenGL",
+    "resolution": [
+      1280,
+      720
+    ],
+    "render_distance": 4,
+    "simulation_distance": 5,
+    "audio_backend_second_launch": "OpenAL No Output, engine initialized; audible sound NOT tested",
+    "authenticated_multiplayer": false,
+    "windows_runtime_tested": false,
+    "full_gameplay_regression": false,
+    "disabled_backend_title_screen": true,
+    "all_test_clients_exited_cleanly": true
+  },
+  "screenshots": [
+    {
+      "path": "build/client-runs/1793192996522892510/startup.png",
+      "sha256": "12bee3e64367a347e582275ad0b175063d0b57725c4c476d398b4494582e2c08"
+    },
+    {
+      "path": "build/client-runs/1793192996522892510/options.png",
+      "sha256": "531a79609d33bd0a7f3a8bfb8e3b8d5c57990205d0575b274c077dc5d4a34313"
+    },
+    {
+      "path": "build/client-runs/1793192996522892510/video-settings.png",
+      "sha256": "26337d15531488f29c2a38cb9632b0d351b27e35133cf90c30de601d6e3a663a"
+    },
+    {
+      "path": "build/client-runs/1793192996522892510/inventory.png",
+      "sha256": "098f1b9b3bc4f0bb6b4c6a40053940ce002b65dcb13e745551434f6322246f5d"
+    },
+    {
+      "path": "build/client-runs/1793192996522892510/block-broken.png",
+      "sha256": "0a76257d3dcc2dd37ff98099fae22ff9588c0bcd814e3f720a6098b4ef8c4547"
+    },
+    {
+      "path": "build/client-runs/1793192996522892510/persisted-hole.png",
+      "sha256": "2d576155bc5459837e7a3c834213af597ea4f34784b40d72128641b2eeb0d860"
+    },
+    {
+      "path": "build/client-runs/1793192996522892510/dirt-collected.png",
+      "sha256": "9e83e62f57bc0e3e151dffa31b2ecb54af28005127e3e952604b3410e3db9a28"
+    },
+    {
+      "path": "build/client-runs/1793192996522892510/block-placed.png",
+      "sha256": "355601637bafd14b09d73f1153076f2a25fec5e8ac60ecd8e4e96c569076aefc"
+    }
+  ],
+  "shared_client_server_classes": {
+    "PacketDeflater": {
+      "official": "uf",
+      "sha256": "5639b96de53b694b6fb261b79ee3576ce58c65469cee8fc9ad844a82e5b797ce",
+      "byte_identical": true
+    },
+    "PacketInflater": {
+      "official": "ue",
+      "sha256": "f1593bf7a1f0bf89e71ef7d115a25215c84a96d21dc0a0112a08dd522826ff5e",
+      "byte_identical": true
+    }
+  }
+}

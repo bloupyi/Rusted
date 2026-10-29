@@ -1,0 +1,475 @@
+{
+  "schema": 1,
+  "project": "Rusted",
+  "version": "0.3.0",
+  "recorded_at": "2026-10-28T17:44:55.378204+00:00",
+  "upstream": {
+    "repository": "https://github.com/horizon-rust/horizon",
+    "revision": "8993772de0bf4b0f92c9f76be64f7a1e6b21cf37",
+    "license_preserved": true,
+    "most_engine_code_still_upstream": true
+  },
+  "source_sha256": "47764f10ea2b3634307a5961b7a4f48548fc53b47ceb871e196249116b584d8f",
+  "source_changes": {
+    "modified": [
+      "Cargo.lock",
+      "Cargo.toml",
+      "crates/horizon-client/Cargo.toml",
+      "crates/horizon-client/build.rs",
+      "crates/horizon-client/src/bin/horizon-ctl/commands.rs",
+      "crates/horizon-client/src/discord_presence.rs",
+      "crates/horizon-client/src/game.rs",
+      "crates/horizon-client/src/game/control.rs",
+      "crates/horizon-client/src/game/moved_extras.rs",
+      "crates/horizon-client/src/heartbeat.rs",
+      "crates/horizon-client/src/lib.rs",
+      "crates/horizon-client/src/logging.rs",
+      "crates/horizon-client/src/main.rs",
+      "crates/horizon-client/src/options_ui.rs",
+      "crates/horizon-client/src/title.rs",
+      "crates/horizon-client/src/title_edition.rs"
+    ],
+    "added": [
+      "RUSTED.md",
+      "crates/horizon-client/rusted_icon.rs",
+      "crates/horizon-client/src/rusted.rs",
+      "crates/rusted-platform/Cargo.toml",
+      "crates/rusted-platform/src/lib.rs"
+    ],
+    "removed": []
+  },
+  "builds": {
+    "windows_amd64": {
+      "schema": 1,
+      "project": "Rusted",
+      "version": "0.3.0",
+      "source_sha256": "47764f10ea2b3634307a5961b7a4f48548fc53b47ceb871e196249116b584d8f",
+      "upstream_revision": "8993772de0bf4b0f92c9f76be64f7a1e6b21cf37",
+      "changes": {
+        "modified": [
+          "Cargo.lock",
+          "Cargo.toml",
+          "crates/horizon-client/Cargo.toml",
+          "crates/horizon-client/build.rs",
+          "crates/horizon-client/src/bin/horizon-ctl/commands.rs",
+          "crates/horizon-client/src/discord_presence.rs",
+          "crates/horizon-client/src/game.rs",
+          "crates/horizon-client/src/game/control.rs",
+          "crates/horizon-client/src/game/moved_extras.rs",
+          "crates/horizon-client/src/heartbeat.rs",
+          "crates/horizon-client/src/lib.rs",
+          "crates/horizon-client/src/logging.rs",
+          "crates/horizon-client/src/main.rs",
+          "crates/horizon-client/src/options_ui.rs",
+          "crates/horizon-client/src/title.rs",
+          "crates/horizon-client/src/title_edition.rs"
+        ],
+        "added": [
+          "RUSTED.md",
+          "crates/horizon-client/rusted_icon.rs",
+          "crates/horizon-client/src/rusted.rs",
+          "crates/rusted-platform/Cargo.toml",
+          "crates/rusted-platform/src/lib.rs"
+        ],
+        "removed": []
+      },
+      "binaries": {
+        "rusted.exe": "238c18f577283e0703c526ba02e694113df1a74e2bc0977dae4dc56916d01d4f",
+        "horizon-prepare.exe": "59ede93a1523bb723c03ec849af60a701c3e7ed57525e9cff5cce5676488c374"
+      }
+    },
+    "linux": {
+      "schema": 1,
+      "project": "Rusted",
+      "version": "0.3.0",
+      "source_sha256": "47764f10ea2b3634307a5961b7a4f48548fc53b47ceb871e196249116b584d8f",
+      "upstream_revision": "8993772de0bf4b0f92c9f76be64f7a1e6b21cf37",
+      "changes": {
+        "modified": [
+          "Cargo.lock",
+          "Cargo.toml",
+          "crates/horizon-client/Cargo.toml",
+          "crates/horizon-client/build.rs",
+          "crates/horizon-client/src/bin/horizon-ctl/commands.rs",
+          "crates/horizon-client/src/discord_presence.rs",
+          "crates/horizon-client/src/game.rs",
+          "crates/horizon-client/src/game/control.rs",
+          "crates/horizon-client/src/game/moved_extras.rs",
+          "crates/horizon-client/src/heartbeat.rs",
+          "crates/horizon-client/src/lib.rs",
+          "crates/horizon-client/src/logging.rs",
+          "crates/horizon-client/src/main.rs",
+          "crates/horizon-client/src/options_ui.rs",
+          "crates/horizon-client/src/title.rs",
+          "crates/horizon-client/src/title_edition.rs"
+        ],
+        "added": [
+          "RUSTED.md",
+          "crates/horizon-client/rusted_icon.rs",
+          "crates/horizon-client/src/rusted.rs",
+          "crates/rusted-platform/Cargo.toml",
+          "crates/rusted-platform/src/lib.rs"
+        ],
+        "removed": []
+      },
+      "binaries": {
+        "rusted": "5a13d4c6e5cc441ab502d41c2e6c1e46568ec9c5804406ce240c80f05913a9fe",
+        "horizon-prepare": "bc2516aae70b04faaa146d3499177f096ac9f1c2385a04f8856ebb040687ec7c"
+      }
+    }
+  },
+  "checks": {
+    "workspace_tests_passed": 13,
+    "platform_metadata_tests_passed": 2,
+    "native_ui_unit_tests_passed": 4,
+    "bridge_clippy_strict": "passed",
+    "platform_clippy_strict": "passed",
+    "engine_clippy_strict": "two_style_diagnostics_in_build_rs_chunks_exact_to_as_chunks",
+    "engine_clippy_with_chunks_exact_style_lint_allowed": "passed; all other warnings denied",
+    "rustfmt": "passed",
+    "python_syntax": "passed",
+    "public_source_audit": "passed",
+    "bridge_process_tests_linux": 8,
+    "bridge_process_tests_windows_under_wine": 8,
+    "archives_crc_sha256_and_no_game_files": "passed"
+  },
+  "native_linux_scenario": {
+    "kind": "native-developer-local-scenario",
+    "home": "/workspace/Rusted/build/horizon/visual-xsls2vdj/game",
+    "resources": "/workspace/Rusted/build/horizon/source/.local/horizon-client/26.3",
+    "account_authentication_tested": false,
+    "screenshots": {
+      "title": {
+        "path": "/workspace/Rusted/build/horizon/visual-xsls2vdj/title.png",
+        "sha256": "06e0208fa274dbd261ae5d5bff4685303a4ef921a1947cddd159e9adcde249b4"
+      },
+      "main": {
+        "path": "/workspace/Rusted/build/horizon/visual-xsls2vdj/options-main.png",
+        "sha256": "61122394c3b9cb8b66ff39c3cafdf60aab3b58601a6c0ae0b25bc43fa57fe023"
+      },
+      "video": {
+        "path": "/workspace/Rusted/build/horizon/visual-xsls2vdj/options-video.png",
+        "sha256": "1aec42721c73d50a49fb2cc7dc0fad71a4d41618e03e56328a99f80eca3fa963"
+      },
+      "sound": {
+        "path": "/workspace/Rusted/build/horizon/visual-xsls2vdj/options-sound.png",
+        "sha256": "4799a42b090f41b3102aaf7f82b989da8ecc2906ac31981e6753eaddc9873f18"
+      },
+      "controls": {
+        "path": "/workspace/Rusted/build/horizon/visual-xsls2vdj/options-controls.png",
+        "sha256": "5a3408b8207cd303dbba2a2354d6c87a238e48d565182228d88a9fe6fe5059d2"
+      },
+      "mods": {
+        "path": "/workspace/Rusted/build/horizon/visual-xsls2vdj/options-mods.png",
+        "sha256": "e15c0be256da9e7e7e36d1fbc7cdf6bd3cd91078e46275f57728f4b68143ebef"
+      },
+      "java-mods": {
+        "path": "/workspace/Rusted/build/horizon/visual-xsls2vdj/options-java-mods.png",
+        "sha256": "a12ffdeb0f160cf83971fb5653fd902560371346fcb4630769b878146bdc5d96"
+      },
+      "credits": {
+        "path": "/workspace/Rusted/build/horizon/visual-xsls2vdj/options-credits.png",
+        "sha256": "3b0a6f9b9bfc85b26038ab6c249119d924659ed5984c53bd97e2441e6f90dcff"
+      },
+      "world": {
+        "path": "/workspace/Rusted/build/horizon/visual-xsls2vdj/world.png",
+        "sha256": "61f839405edeacbf0aa3fe0237e3eb92cab5e335ef9773a1af8381706de0459b"
+      },
+      "saved_world": {
+        "path": "/workspace/Rusted/build/horizon/visual-xsls2vdj/world-saved.png",
+        "sha256": "be30947118537766318327b30970d70044a429ff964f77c6f8c74758c536cf36"
+      },
+      "reloaded_world": {
+        "path": "/workspace/Rusted/build/horizon/visual-xsls2vdj/restart/world-reloaded.png",
+        "sha256": "b639af73ea61760514d7c50eba722710a69c5e224cf982743d6767e6a0443653"
+      }
+    },
+    "steps": [
+      "world_loaded_with_integrated_server",
+      "command_and_world_save",
+      "clean_process_exit",
+      "world_and_block_persisted_after_process_restart"
+    ],
+    "title_state": {
+      "busy": null,
+      "dialog": {
+        "open": null,
+        "screen": null
+      },
+      "dimension": "minecraft:overworld",
+      "gamemode": "survival",
+      "held": null,
+      "looking_at": null,
+      "menu": {
+        "mode": "main",
+        "worlds": []
+      },
+      "mining": null,
+      "paused": false,
+      "player": null,
+      "pointer_grabbed": false,
+      "screen": "title",
+      "selected": 1,
+      "sleeping": null,
+      "swings": 0,
+      "ticks": 0,
+      "time": {
+        "day": 0,
+        "day_time": 1000,
+        "time_of_day": 1000
+      },
+      "using": null,
+      "weather": {
+        "raining": false,
+        "thundering": false
+      },
+      "world": null
+    },
+    "initial_world": {
+      "busy": null,
+      "dialog": {
+        "open": null,
+        "screen": null
+      },
+      "dimension": "minecraft:overworld",
+      "gamemode": "creative",
+      "held": null,
+      "looking_at": {
+        "block": null,
+        "entity": null,
+        "kind": "none"
+      },
+      "menu": null,
+      "mining": null,
+      "paused": false,
+      "player": {
+        "absorption": 0.0,
+        "air": 300,
+        "block_pos": [
+          169,
+          70,
+          161
+        ],
+        "death_time": null,
+        "effects": [],
+        "eye": [
+          169.5,
+          71.62000000476837,
+          161.5
+        ],
+        "fall_flying": false,
+        "flying": false,
+        "food": 20,
+        "fov_modifier": 0.7499999403953552,
+        "health": 20.0,
+        "hurt_time": 0,
+        "on_ground": false,
+        "pitch": 0.0,
+        "position": [
+          169.5,
+          70.0,
+          161.5
+        ],
+        "saturation": 5.0,
+        "shield_cooldown": 0,
+        "sneaking": false,
+        "sprinting": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "xp": {
+          "level": 0,
+          "progress": 0.0,
+          "total": 0
+        },
+        "yaw": 0.0
+      },
+      "pointer_grabbed": false,
+      "screen": "playing",
+      "selected": 1,
+      "sleeping": null,
+      "swings": 0,
+      "ticks": 24,
+      "time": {
+        "day": 0,
+        "day_time": 2,
+        "time_of_day": 2
+      },
+      "using": null,
+      "weather": {
+        "raining": false,
+        "thundering": false
+      },
+      "world": "RustedNativeTest"
+    },
+    "written_marker": {
+      "block": "minecraft:gold_block",
+      "loaded": true,
+      "pos": [
+        171,
+        70,
+        163
+      ],
+      "state": "minecraft:gold_block"
+    },
+    "marker": [
+      171,
+      70,
+      163
+    ],
+    "reloaded_world": {
+      "busy": null,
+      "dialog": {
+        "open": null,
+        "screen": null
+      },
+      "dimension": "minecraft:overworld",
+      "gamemode": "creative",
+      "held": null,
+      "looking_at": {
+        "block": null,
+        "entity": null,
+        "kind": "none"
+      },
+      "menu": null,
+      "mining": null,
+      "paused": false,
+      "player": {
+        "absorption": 0.0,
+        "air": 300,
+        "block_pos": [
+          169,
+          70,
+          161
+        ],
+        "death_time": null,
+        "effects": [],
+        "eye": [
+          169.5,
+          71.62000000476837,
+          161.5
+        ],
+        "fall_flying": false,
+        "flying": false,
+        "food": 20,
+        "fov_modifier": 0.49951171875,
+        "health": 20.0,
+        "hurt_time": 0,
+        "on_ground": false,
+        "pitch": 0.0,
+        "position": [
+          169.5,
+          70.0,
+          161.5
+        ],
+        "saturation": 5.0,
+        "shield_cooldown": 0,
+        "sneaking": false,
+        "sprinting": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "xp": {
+          "level": 0,
+          "progress": 0.0,
+          "total": 0
+        },
+        "yaw": 0.0
+      },
+      "pointer_grabbed": false,
+      "screen": "playing",
+      "selected": 1,
+      "sleeping": null,
+      "swings": 0,
+      "ticks": 10,
+      "time": {
+        "day": 0,
+        "day_time": 43,
+        "time_of_day": 43
+      },
+      "using": null,
+      "weather": {
+        "raining": false,
+        "thundering": false
+      },
+      "world": "RustedNativeTest"
+    },
+    "reloaded_marker": {
+      "block": "minecraft:gold_block",
+      "loaded": true,
+      "pos": [
+        171,
+        70,
+        163
+      ],
+      "state": "minecraft:gold_block"
+    },
+    "passed": true
+  },
+  "native_windows_under_wine": {
+    "kind": "windows-native-game-under-wine",
+    "native_windows_hardware": false,
+    "account_authentication_tested": false,
+    "binary": "/workspace/Rusted/build/horizon/target/x86_64-pc-windows-gnu/release/rusted.exe",
+    "scratch": "/workspace/Rusted/build/horizon/rusted-wine-world-y4cog_qk",
+    "exit_code": 0,
+    "world": {
+      "chunks": 49,
+      "elapsed_seconds": 18.4577834,
+      "error": null,
+      "frames": 11,
+      "generated": 49,
+      "meshed_sections": 626,
+      "player": [
+        168.5,
+        75.0,
+        162.5
+      ]
+    },
+    "passed": true
+  },
+  "bootstrap_reference_test": {
+    "passed": true,
+    "source": "historical native 0.2 bootstrap with same preparation logic, real locally prepared 26.3 files, official verified server, launcher classpath proxy",
+    "real_preparer": true,
+    "game_child": "authored protocol peer",
+    "real_account": false
+  },
+  "metadata_ui_fixtures": {
+    "source": "original metadata-only fixtures, not actual Sodium/Iris/Distant Horizons code",
+    "screenshot": "docs/screenshots/rusted-java-mods.png",
+    "all_native_compatibility_flags": false
+  },
+  "launchers": {
+    "prism_desktop_with_real_account": false,
+    "modrinth_desktop_with_real_account": false,
+    "modrinth_catalog_published": false,
+    "wrapper_manual_configuration_required": true
+  },
+  "remaining": {
+    "windows_hardware": false,
+    "authenticated_native_multiplayer": false,
+    "full_upstream_parity_suite_rerun": false,
+    "java_fabric_forge_neoforge_quilt_execution": false,
+    "sodium_iris_distant_horizons_native_execution": false,
+    "simultaneous_java_loaders": false
+  },
+  "artifacts": {
+    "Rusted-Native-Prism-0.3.0.zip": {
+      "bytes": 31852535,
+      "sha256": "fdb2efb709e30a71e313249a97cc3e9721bb85f11c64ba30a1bd18df17bf832c"
+    },
+    "Rusted-Native-Windows-0.3.0.zip": {
+      "bytes": 31824061,
+      "sha256": "f1b45001883acb2be29037d20c7187e9cfef0bea167058bcb09ef102ddf3bdcc"
+    },
+    "Rusted-Native-Modrinth-0.3.0.mrpack": {
+      "bytes": 31849350,
+      "sha256": "86afccfee8f094fd3a69443cd68132a2aac7b33b32470d245001b5665595e910"
+    }
+  }
+}

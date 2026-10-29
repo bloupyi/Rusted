@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "observed_at_utc": "2026-10-28T16:24:12.520385+00:00",
+  "host": {
+    "system": "Linux",
+    "machine": "x86_64"
+  },
+  "upstream": {
+    "schema": 1,
+    "repository": "https://github.com/horizon-rust/horizon.git",
+    "revision": "8993772de0bf4b0f92c9f76be64f7a1e6b21cf37",
+    "license": "MIT",
+    "license_sha256": "b4b374ae9d0f2d8f7be35c6783e41327431da3b5662605da9ba31493630621df",
+    "cargo_lock_sha256": "e54687fdff8aaf0293a4de9d8543447e99a2dda8260aea19f16a9e5edcb099f8",
+    "minecraft_version": "26.3",
+    "java_prepare_major": 25,
+    "rust_toolchain": "1.99.1"
+  },
+  "checks": {
+    "workspace_rust_tests_passed": 8,
+    "launcher_protocol_rust_tests_passed": 5,
+    "launcher_process_tests_passed": 8,
+    "original_metadata_cli_test_scenarios_passed": 2,
+    "upstream_tool_tests_passed": 110,
+    "upstream_tool_tests_ignored": 1,
+    "clippy_launcher_all_targets_passed": true,
+    "format_check_passed": true,
+    "windows_bridge_cross_compile": true,
+    "windows_bridge_pe_machine": "AMD64",
+    "windows_bridge_imports": "Windows system DLLs only",
+    "windows_bridge_execution": false,
+    "desktop_prism_launch": false,
+    "desktop_modrinth_launch": false,
+    "native_real_account_multiplayer": false,
+    "java_sodium_iris_dh_game_test": false,
+    "native_sodium_iris_dh_jar_execution": false,
+    "native_full_game_build": "passed_linux_release_default_features_plus_mods",
+    "native_full_game_resources_prepared": false,
+    "full_game_parity_tests": false,
+    "cloud_setup_script": true,
+    "native_binary_help_passed": true,
+    "native_missing_resources_rejected": true,
+    "native_game_play_test": false
+  },
+  "archive": {
+    "kind": "launcher-adapter-development-kit",
+    "mode_default": "java",
+    "includes_native_game": false,
+    "sha256_and_zip_crc_verified": true
+  },
+  "sha256": {
+    "Cargo.lock": "85dba9b265f7d53959248021f930c327b9f8cf8822d0e292c8938de1f92ba6fa",
+    "horizon/upstream.lock.json": "8cf8418769ede88637da5d1ba179b1496113baf9223d5737fff4ec41e5586865",
+    "horizon/launcher-contracts.json": "a055ea6d6c71d73a2c199e63d6fdf4cb8164133a49cfe396eceaa6e30e255cc8",
+    "launcher-bridge/src/lib.rs": "799139708cfafb0ad11c733d7927f2e17102ab58f564247b65ead4c628df0ca3",
+    "launcher-bridge/src/main.rs": "0a324fe6de270f103f3c5c9e8034f7469e311cfe9d03055e4c39555a797df1be",
+    "build/Rusted-Horizon-Bridge-Windows-0.1.0.zip": "82ecfdb02ce964e8322183e9178fa15655f89da0a9abff44e26efecb552f0522",
+    "target/x86_64-pc-windows-gnu/release/rusted-launch.exe": "acef79769dae18c6c331898d6a90d8552c5b4e7b1a9962a3d7afb802ced54e46",
+    "build/horizon/target/release/horizon-client": "f58ab2e6667a1c74fc5a5ce9a96b26b900202750929048eceea7ba997c8427ea",
+    "target/release/rusted-launch": "787ba0a9b1a6750d94839bdd1dc1a9c65c0155669402b323d3421a26f32f984e"
+  },
+  "notes": [
+    "All launcher session tests use an original test-only marker, not a real credential or authentication server.",
+    "The mode Java forwards the original launcher command; it does not implement compatibility between Java mod versions.",
+    "Vanilla 26.3 files and JDK25 are required for source resource preparation; existing 1.20.4 files are not used.",
+    "No upstream source modifications, remote publication or PR."
+  ],
+  "native_smoke_logs": "build/horizon/native-smoke-t2fn3j9o"
+}

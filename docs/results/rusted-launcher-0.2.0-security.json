@@ -1,0 +1,274 @@
+{
+  "archive": "Rusted-Launcher-Windows-0.2.0.zip",
+  "archive_sha256": "76cc862a2ed52ef68df3394fa28c9e214e3325eef76f97fd12fdb4e92a4d1e43",
+  "reported_detection": "Behavior:Win32/DefenseEvasion.A!ml",
+  "defender_scan_performed": false,
+  "conclusion": "Detection unresolved; archive integrity and PE structure checks do not establish a false positive.",
+  "executables": [
+    {
+      "file": "Rusted Launcher/Rusted Launcher.exe",
+      "sha256": "24e56d59f1c79c1769bc96a84bcd195fe912b8d85c186b30f3017b872e0b3a37",
+      "bytes": 4481399,
+      "authenticode_certificate_present": false,
+      "sections": [
+        {
+          "name": ".text",
+          "writable": false,
+          "executable": true
+        },
+        {
+          "name": ".data",
+          "writable": true,
+          "executable": false
+        },
+        {
+          "name": ".rdata",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".pdata",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".xdata",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".bss",
+          "writable": true,
+          "executable": false
+        },
+        {
+          "name": ".idata",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".tls",
+          "writable": true,
+          "executable": false
+        },
+        {
+          "name": ".rsrc",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".reloc",
+          "writable": false,
+          "executable": false
+        }
+      ],
+      "writable_executable_sections": []
+    },
+    {
+      "file": "Rusted Launcher/rusted/runtime/rusted-prepare.exe",
+      "sha256": "59ede93a1523bb723c03ec849af60a701c3e7ed57525e9cff5cce5676488c374",
+      "bytes": 1946491,
+      "authenticode_certificate_present": false,
+      "sections": [
+        {
+          "name": ".text",
+          "writable": false,
+          "executable": true
+        },
+        {
+          "name": ".data",
+          "writable": true,
+          "executable": false
+        },
+        {
+          "name": ".rdata",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".pdata",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".xdata",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".bss",
+          "writable": true,
+          "executable": false
+        },
+        {
+          "name": ".idata",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".tls",
+          "writable": true,
+          "executable": false
+        },
+        {
+          "name": ".reloc",
+          "writable": false,
+          "executable": false
+        }
+      ],
+      "writable_executable_sections": []
+    },
+    {
+      "file": "Rusted Launcher/rusted/runtime/rusted.exe",
+      "sha256": "358198a32d55358c9d95a888182f376ad6396900bc35c5756f8c90928a5d4c22",
+      "bytes": 69185765,
+      "authenticode_certificate_present": false,
+      "sections": [
+        {
+          "name": ".text",
+          "writable": false,
+          "executable": true
+        },
+        {
+          "name": ".data",
+          "writable": true,
+          "executable": false
+        },
+        {
+          "name": ".rdata",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".pdata",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".xdata",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".bss",
+          "writable": true,
+          "executable": false
+        },
+        {
+          "name": ".edata",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".idata",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".tls",
+          "writable": true,
+          "executable": false
+        },
+        {
+          "name": ".rsrc",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".reloc",
+          "writable": false,
+          "executable": false
+        }
+      ],
+      "writable_executable_sections": []
+    },
+    {
+      "file": "Rusted Launcher/rusted/rusted-launch.exe",
+      "sha256": "0d574f4a0e24c5918d83bd12eecad6a5e03d5673f92130e228085dc1f3d7fc3b",
+      "bytes": 3611677,
+      "authenticode_certificate_present": false,
+      "sections": [
+        {
+          "name": ".text",
+          "writable": false,
+          "executable": true
+        },
+        {
+          "name": ".data",
+          "writable": true,
+          "executable": false
+        },
+        {
+          "name": ".rdata",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".pdata",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".xdata",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".bss",
+          "writable": true,
+          "executable": false
+        },
+        {
+          "name": ".idata",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".tls",
+          "writable": true,
+          "executable": false
+        },
+        {
+          "name": ".rsrc",
+          "writable": false,
+          "executable": false
+        },
+        {
+          "name": ".reloc",
+          "writable": false,
+          "executable": false
+        }
+      ],
+      "writable_executable_sections": []
+    }
+  ],
+  "manifest_hashes_valid": true,
+  "recorded_at": "2026-10-29T14:58:30.666486+00:00",
+  "reported_affected_file": "Rusted Launcher.exe",
+  "reported_affected_file_bytes_obtained": false,
+  "wine_tests_are_not_defender_validation": true,
+  "native_windows_workflow_executed": false,
+  "source_review": {
+    "scope": [
+      "launcher/src",
+      "launcher-bridge startup/preparation",
+      "native preparer Java launch"
+    ],
+    "defender_configuration_changes_found": false,
+    "powershell_execution_policy_bypass_found": false,
+    "limitation": "Targeted source inspection only; does not certify all dependencies or establish a false positive."
+  },
+  "validation_script_checks": {
+    "powershell_ast_parse": "passed (official Microsoft PowerShell 7.6.9 on Linux)",
+    "msvc_host_condition": "passed with synthetic compiler output",
+    "non_windows_rejected": "passed; Defender and startup remain not_run",
+    "actual_defender_scan": "not_run"
+  },
+  "github_repository": {
+    "name": "bloupyi/Rusted",
+    "public": true,
+    "empty": true,
+    "workflow_registered": false,
+    "source_publication_performed": false
+  }
+}

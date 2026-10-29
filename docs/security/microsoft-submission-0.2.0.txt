@@ -1,0 +1,27 @@
+Submission preparation only — not submitted.
+
+Product: Rusted Launcher 0.2.0, Windows x64
+Reported Microsoft Defender detection: Behavior:Win32/DefenseEvasion.A!ml
+Reported affected file: Rusted Launcher.exe
+Sample SHA-256: 24e56d59f1c79c1769bc96a84bcd195fe912b8d85c186b30f3017b872e0b3a37
+Distributed ZIP SHA-256: 76cc862a2ed52ef68df3394fa28c9e214e3325eef76f97fd12fdb4e92a4d1e43
+
+Please investigate this detection. We have not established that it is a false positive.
+The exact Windows event trace and Defender signature version have not yet been collected.
+
+The application is an unsigned original Rust/Win32 Minecraft launcher, cross-compiled
+with the x86_64-pc-windows-gnu toolchain. It downloads hash-verified Minecraft resources
+and a Java runtime from their providers. On first startup it begins preparation of a
+native client in a user data folder. Preparation and game processes are launched as
+owned child processes; Windows Job Objects stop those children when the launcher closes.
+Console windows are suppressed for child programs, with their output shown in the GUI.
+Optional Microsoft device authentication uses a project-specific public client id;
+account tokens are protected with current-user DPAPI. This release contains no client id.
+
+The startup source review found no commands to alter Defender settings, add exclusions,
+disable a service or bypass PowerShell execution policy. This limited review is not
+a certification of the complete binary or dependency chain. We are retaining the
+blocked artifact for investigation and adding native Windows/Defender validation.
+
+Please attach the exact sample and relevant Windows protection-history details only
+through Microsoft's official submission process, with the project owner's authorization.

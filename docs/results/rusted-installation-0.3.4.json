@@ -1,0 +1,154 @@
+{
+  "schema": 1,
+  "project": "Rusted",
+  "version": "0.3.4",
+  "recorded_at": "2026-10-29T09:02:30.107545+00:00",
+  "source_sha256": "94f961445124cbf250a99b876df1a935153f3664f1a66eee4ac038a7a35fa7c3",
+  "changes": [
+    "User-supplied copper R icon adaptation embedded in native game, wrapper, configurator and installer",
+    "Rust-only Windows GUI installer creates a fresh preconfigured Prism instance; no CMD or manual Wrapper",
+    "GUI configurator updates existing instances and enables auto mode with backups",
+    "Auto mode retains original JVM arguments/stdin/exit for installed Fabric/Quilt/Forge/NeoForge; native vanilla stays isolated"
+  ],
+  "validation": {
+    "rust_workspace": "22 tests passed (3 legacy, 12 bridge library, 7 launcher protocol)",
+    "clippy_linux_all_targets": "passed -D warnings",
+    "clippy_windows_all_targets": "passed -D warnings",
+    "bridge_processes_linux": "16 methods; 14 passed, 2 Windows-only skipped",
+    "bridge_processes_windows_wine": "16 passed",
+    "actual_Prism_Qt_parser": "passed for setup and full installer, spaces/apostrophe/#; existing data untouched",
+    "native_identity": {
+      "kind": "actual-native-title-and-X11-window-icon",
+      "version": "0.3.4",
+      "passed": true,
+      "binary_sha256": "e964f79b029385ae92cf72e8246c418fd10a3b0eee72229117da0c41a333cb29",
+      "window_title": "0x200002 \"Rusted 0.3.4 - Minecraft 26.3\": (\"horizon\" \"horizon\")  960x540+0+0  +0+0",
+      "icon_matches_embedded_rgba": true,
+      "icon_dimensions": [
+        64,
+        64
+      ],
+      "screenshot": {
+        "path": "/workspace/Rusted/build/horizon/rusted-identity-034-7119mlqf/title.png",
+        "sha256": "9f4b7ed1c1021b9717c046406dcfba9678d088c266692b98ecfe0b466ecd1a9e"
+      },
+      "account": false,
+      "state": {
+        "busy": null,
+        "dialog": {
+          "open": null,
+          "screen": null
+        },
+        "dimension": "minecraft:overworld",
+        "gamemode": "survival",
+        "held": null,
+        "looking_at": null,
+        "menu": {
+          "mode": "main",
+          "worlds": []
+        },
+        "mining": null,
+        "paused": false,
+        "player": null,
+        "pointer_grabbed": false,
+        "screen": "title",
+        "selected": 1,
+        "sleeping": null,
+        "swings": 0,
+        "ticks": 0,
+        "time": {
+          "day": 0,
+          "day_time": 1000,
+          "time_of_day": 1000
+        },
+        "using": null,
+        "weather": {
+          "raining": false,
+          "thundering": false
+        },
+        "world": null
+      }
+    },
+    "windows_configurator_gui": {
+      "passed": true,
+      "windows_hardware": false,
+      "kind": "actual-Windows-configurator-GUI-under-Wine",
+      "mode": "auto",
+      "account": false,
+      "scratch": "/workspace/Rusted/build/horizon/rusted-gui-034-f6pfg8ak",
+      "screenshot": "/workspace/Rusted/build/horizon/rusted-gui-034-f6pfg8ak/configured.png",
+      "preferences_and_backups_verified": true
+    },
+    "GUI_executable_PE_subsystem": 2,
+    "native_engine_clippy": "passed release horizon-client/mods -D warnings",
+    "final_archive_checks": "all CRCs, cumulative overlay from 0.3.0 and immutable hashes passed; guides equal source"
+  },
+  "real_mods_initialization": {
+    "Minecraft": "26.3",
+    "Fabric_loader": "0.20.1",
+    "mods": [
+      {
+        "project_id": "uCdwusMi",
+        "version_id": "TGgEbP9A",
+        "version": "3.3.4-26.3",
+        "file": "DistantHorizons-3.3.4-26.3-fabric-neoforge.jar",
+        "sha512": "0b90b1b08d99974bfc3c8e86b2ceb252e2f91715ed66b925004c28335fb44e1bddbbb6b8043e4d4d53c87ed247789cd1788b1ba4e3f4394efe154e0c59cff236",
+        "url": "https://cdn.modrinth.com/data/uCdwusMi/versions/TGgEbP9A/DistantHorizons-3.3.4-26.3-fabric-neoforge.jar"
+      },
+      {
+        "project_id": "YL57xq9U",
+        "version_id": "vTN4NRGW",
+        "version": "1.11.7+26.3-fabric",
+        "file": "iris-fabric-1.11.7+mc26.3.jar",
+        "sha512": "d8d3312f77fc52a48e4a6cd836fda33669bdebcb4de0b8c0d30adc808b287330a533e0baef355cc1ce6336a26851d9775369a802a4666b7b7a6266af20088f42",
+        "url": "https://cdn.modrinth.com/data/YL57xq9U/versions/vTN4NRGW/iris-fabric-1.11.7%2Bmc26.3.jar"
+      },
+      {
+        "project_id": "AANobbMI",
+        "version_id": "bAZQdGpg",
+        "version": "mc26.3-0.9.2-fabric",
+        "file": "sodium-fabric-0.9.2+mc26.3.jar",
+        "sha512": "f3f260f204b8ce5e8777c2c73f537956755ec61f3817b0b78b5e5568e8aa40f14891f146475075109747665c7c88a45ca0ca9a8df3c68d79c58ecdaa8d8c4b93",
+        "url": "https://cdn.modrinth.com/data/AANobbMI/versions/bAZQdGpg/sodium-fabric-0.9.2%2Bmc26.3.jar"
+      }
+    ],
+    "observed": "Fabric reported 55 loaded mods including all three requested mods and their bundled dependencies; game initialization proceeded to renderer setup",
+    "rendered_menu_verified": false,
+    "world_gameplay_verified": false,
+    "native_engine_active": false,
+    "platform": "Linux software GPU in bubblewrap",
+    "result": "blocked by graphics: OpenGL GLX visual unavailable; Vulkan fallback with Iris aborted on unavailable OpenGL context",
+    "account": "synthetic local fixture, no authenticated multiplayer",
+    "network": "disabled by isolated network namespace",
+    "data_access": "clean environment, read-only reference game/loader/mod/JRE files; only a fresh output directory writable"
+  },
+  "limitations": [
+    "No JAR execution in the native Rust engine",
+    "No simultaneous Fabric/Forge/Quilt/NeoForge stack",
+    "Native shader packs remain disabled upstream; not fixed by this change",
+    "No real Windows desktop/GPU or authenticated multiplayer validation",
+    "Modrinth App still requires its Wrapper setting; graphical automatic installer is Prism-specific"
+  ],
+  "artifacts": {
+    "Rusted-Native-Prism-0.3.4.zip": {
+      "size": 34165791,
+      "sha256": "17e92ae52c6dc0a2e695d3df83cdcf20d3bbfe97ac40160f6adbb1ee734183e0"
+    },
+    "Rusted-Native-Modrinth-0.3.4.mrpack": {
+      "size": 33549993,
+      "sha256": "089f91ea593097aa0f1d05a81f581bfab2d8f452c2a8f2a95226de1d71dbd6dc"
+    },
+    "Rusted-Native-Windows-0.3.4.zip": {
+      "size": 33524592,
+      "sha256": "86487e9f0abcfaa282ec22d6d8f9cc060f3b583f0127cfcce9718baf36d1aa46"
+    },
+    "Rusted-Correctif-Windows-0.3.4.zip": {
+      "size": 29514316,
+      "sha256": "22983fa706c1c08f482c2236056310b425f02249db917ecf02eaeedf42657cbd"
+    },
+    "Installer-Rusted-Windows-0.3.4.exe": {
+      "size": 34480608,
+      "sha256": "98235f85cd0866736fb3c68530cda6dd449ef21a362ce83b7da6648d8a9e8495"
+    }
+  }
+}

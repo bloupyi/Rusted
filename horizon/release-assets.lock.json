@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "exporters": {
+    "release": "v0.2.93",
+    "release_source_revision": "b6c936f82b08798057161bdfa577e3aac53fb91e",
+    "url": "https://github.com/horizon-rust/horizon/releases/download/v0.2.93/horizon-windows-x64.zip",
+    "sha256": "5a51908167d7d51599157eb667a6b021de6a46a9601590c2d1293c77d3dca4a4",
+    "source_key": "a949e4da7b9bf827c1431e7258de8c56f03d32e2e804fec2492c62dcb621dbc1",
+    "classes": 72,
+    "note": "Only original exporter classes are reused; their source key exactly matches our pinned Horizon revision. No Minecraft classes or assets are included."
+  }
+}

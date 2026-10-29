@@ -1,0 +1,7 @@
+/target/
+/.rusted/
+*.tmp
+*.log
+/build/
+__pycache__/
+/logs/

@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "mode": "native",
+  "horizon_revision": "8993772de0bf4b0f92c9f76be64f7a1e6b21cf37",
+  "minecraft_version": "26.3",
+  "executable": "native/horizon-client.exe",
+  "resources": "resources",
+  "data_directory": "native-data"
+}

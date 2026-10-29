@@ -1,0 +1,1 @@
+{"passed":true,"minecraft":"1.20.4","fabric_loader":"0.15.11","mode":"enabled","real_game_codec_cases":301,"native_calls":189,"expected_native_calls":189,"threshold_update":true,"tcp_ordered_packets":24,"full_gameplay_tested":false,"authenticated_multiplayer_tested":false}

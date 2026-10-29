@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "prism": {
+    "revision": "1312f78fe6c73bd3aaa6b7ae568212cacac6a45e",
+    "sources": [
+      "https://github.com/PrismLauncher/PrismLauncher/blob/1312f78fe6c73bd3aaa6b7ae568212cacac6a45e/launcher/minecraft/launch/LauncherPartLaunch.cpp",
+      "https://github.com/PrismLauncher/PrismLauncher/blob/1312f78fe6c73bd3aaa6b7ae568212cacac6a45e/launcher/minecraft/MinecraftInstance.cpp",
+      "https://github.com/PrismLauncher/PrismLauncher/blob/16e541f4483241455ffb674bfe975e20158001a2/launcher/Commandline.cpp",
+      "https://github.com/PrismLauncher/PrismLauncher/blob/11.1.1/launcher/launch/LaunchTask.cpp"
+    ],
+    "contract": "Prism vanilla uses launcher standard (modern accepted as historical alias); stdin param VALUE then launch/abort; 26.3 omits --userType.",
+    "windows_splitter": {
+      "versions_verified": [
+        "10.0.5",
+        "11.1.1"
+      ],
+      "source_sha256": "d4e1792a66c62ce728371f6a991f285290b9a6304ba894efe2843bfc3f9b875f",
+      "behavior": "Native backslashes are consumed inside quotes after variable expansion; helper generates a literal forward-slash command."
+    }
+  },
+  "modrinth_app": {
+    "revision": "b3d8b7f4a48d6752a13434ef09ed39c8bd17f3f3",
+    "sources": [
+      "https://github.com/modrinth/code/blob/b3d8b7f4a48d6752a13434ef09ed39c8bd17f3f3/packages/app-lib/src/launcher/mod.rs",
+      "https://github.com/modrinth/code/blob/b3d8b7f4a48d6752a13434ef09ed39c8bd17f3f3/apps/app-frontend/src/features/instances/settings-modal/hooks-settings.vue"
+    ],
+    "contract": "Instance hooks.wrapper is prepended to Java executable and its arguments."
+  },
+  "desktop_verified": false
+}

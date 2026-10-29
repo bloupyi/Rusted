@@ -1,0 +1,20 @@
+{
+  "observed_at": "2026-10-28T13:45:05.692032+01:00",
+  "rustc": "rustc 1.90.0 (1159e78c4 2025-09-14)",
+  "cpu_model": "AMD EPYC 7763 64-Core Processor",
+  "visible_cpus": 5,
+  "visible_memory_gib": 33,
+  "profile": "release, thin LTO",
+  "windows_runtime_tested": false,
+  "minecraft_runtime_tested": false,
+  "native_artifacts": {
+    "linux": {
+      "sha256": "9c15c3231a4ea0464de6b1eb5fcc2a5e2896ac162c7fe259bfd01a5cd07ad828",
+      "bytes": 518528
+    },
+    "windows": {
+      "sha256": "4646dd4fe09a82b9664bb48e98bbc4d9ce1a425b213352dd662493cfad233203",
+      "bytes": 1621784
+    }
+  }
+}

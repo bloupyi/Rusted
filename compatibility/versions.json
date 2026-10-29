@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "project": "Incremental native Rust backend inside the ORIGINAL Minecraft JVM",
+  "versions": [
+    {
+      "id": "1.20.4",
+      "state": "partially_implemented",
+      "game_launch_verified": true,
+      "hook": "Outgoing zlib compression through a Fabric mixin; opt in with -Drusted.enabled=true",
+      "mapping_namespace": "Fabric intermediary",
+      "mapping_source": "FabricMC/yarn@f7f320f7305c92be62c1cf96679b03c29bb3b87d",
+      "rust_replacements": [
+        "Outgoing zlib encoder: real Minecraft handler/mixin verified, 301 cases per mode and loopback TCP"
+      ],
+      "java_retained": [
+        "menus",
+        "rendering",
+        "gameplay",
+        "world generation",
+        "world serialization",
+        "network protocol and authentication",
+        "incoming decompression",
+        "commands",
+        "datapacks",
+        "resource packs",
+        "mod loader"
+      ],
+      "gameplay_compatibility": "Original Java game retained. Demo movement, menus, inventory, break/pickup/place and save/reload after process restart checked; full regression not established",
+      "multiplayer_compatibility": "Original codec interoperability and ordered TCP payloads verified. Authenticated Minecraft multiplayer NOT tested",
+      "mods": "Fabric loads the Java adapter; arbitrary mods and other loaders untested",
+      "jvm_required": true,
+      "windows": "DLL cross-compiled and packaged, but NOT executed under Windows",
+      "tests": "docs/VALIDATION.md; docs/results/minecraft-network/*.json",
+      "game_launch_scope": "Original Linux client, official demo mode; no authenticated multiplayer",
+      "network_test_cases_per_mode": 301,
+      "native_calls_enabled_mode": 189,
+      "tcp_packets_per_mode": 24
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "project": "Rusted",
+  "package_version": "0.3.1",
+  "bridge_version": "0.3.1",
+  "native_engine_version": "0.3.0",
+  "recorded_at": "2026-10-28T20:18:03.559447+00:00",
+  "native_engine_source_sha256": "47764f10ea2b3634307a5961b7a4f48548fc53b47ceb871e196249116b584d8f",
+  "native_engine_changed": false,
+  "diagnosis": [
+    "Prism expands INST_MC_DIR to native backslashes before splitting a quoted command; quotes cause its splitter to consume the separators.",
+    "Vanilla Prism sends launcher standard; the old bridge incorrectly required modern.",
+    "Official Minecraft 26.3 game arguments omit --userType; the old bridge incorrectly required it."
+  ],
+  "fixes": [
+    "Accept standard (and historical modern alias), retain rejection of legacy.",
+    "Allow omitted userType only for pinned 26.3 while retaining credential, UUID and explicit-type checks.",
+    "Read rusted-runtime.json beside the executable when wrapper uses -- without --config.",
+    "Native Windows helper generates a literal forward-slash command and copies it as Unicode; Configurer-Rusted.cmd invokes it.",
+    "Data-preserving overlay updates only bridge/helper/guide/integrity/package metadata."
+  ],
+  "validation": {
+    "workspace_rust_tests": 15,
+    "process_tests_linux": 10,
+    "process_tests_windows_under_wine": 10,
+    "clippy_workspace_all_targets": "passed -D warnings",
+    "rustfmt": "passed",
+    "python_syntax": "passed",
+    "public_source_audit": "passed",
+    "actual_prism_splitter": {
+      "version": "10.0.5",
+      "revision": "16e541f4483241455ffb674bfe975e20158001a2",
+      "source_sha256": "d4e1792a66c62ce728371f6a991f285290b9a6304ba894efe2843bfc3f9b875f",
+      "same_source_verified_in": "11.1.1",
+      "qt_runtime": "Qt5 Core",
+      "old_failure_reproduced": true,
+      "corrected_paths_and_spaces_apostrophes_verified": true,
+      "scenarios": 6
+    },
+    "native_clipboard_helper_under_wine": {
+      "copy_exit_code": 0,
+      "read_back_matches_printed_command": true,
+      "private_virtual_display": true
+    },
+    "patch_overlay_verified_against": "Rusted-Native-Windows-0.3.0.zip",
+    "patch_mutable_paths_or_config_included": false,
+    "full_archives_crc_and_no_game_files": "passed"
+  },
+  "limitations": [
+    "Wine is not native Windows hardware.",
+    "No real-account desktop Prism/Modrinth launch or authenticated multiplayer completed here.",
+    "Native game build remains 0.3.0; historical rendering/save-reload checks in rusted-native-0.3.0.json.",
+    "The variable shortcut works only for paths without spaces/apostrophes; Configurer-Rusted.cmd produces the robust literal command."
+  ],
+  "artifacts": {
+    "Rusted-Native-Windows-0.3.1.zip": {
+      "bytes": 31829834,
+      "sha256": "7f67c6e97ed3bde6eb67e5d99671f8dbe5bd85a90e7a47d6e43a71f13d111a55"
+    },
+    "Rusted-Native-Prism-0.3.1.zip": {
+      "bytes": 31859130,
+      "sha256": "8894847fb2e7bfd1d1b0a01521d965ff2a63569f5cb6c9a331118e5cff279fe2"
+    },
+    "Rusted-Native-Modrinth-0.3.1.mrpack": {
+      "bytes": 31855143,
+      "sha256": "8c720b39b17f2db93c0491ba69f697121712278e8412886206637ca52ca7f766"
+    },
+    "Rusted-Correctif-Windows-0.3.1.zip": {
+      "bytes": 1612584,
+      "sha256": "134ca1f82d0c98e67d5993d1bec9caf7162b82ef2b576f8a0854d66d77105474"
+    }
+  }
+}

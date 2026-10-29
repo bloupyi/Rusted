@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "project": "Rusted",
+  "package_version": "0.3.3",
+  "bridge_version": "0.3.3",
+  "native_engine_version": "0.3.2",
+  "native_engine_source_sha256": "c4e18b32cd594c46e12ae638140ac73957d6ddf2e0722696a276476144de5f81",
+  "recorded_at": "2026-10-28T21:16:06.546701+00:00",
+  "changes": [
+    "Configurer-Rusted.cmd uses --setup to detect and configure its containing Prism instance.",
+    "Wait for official Prism process names to exit before atomic settings replacement; never terminate Prism.",
+    "Preserve other settings and original backup; no launcher account store is read.",
+    "Accept valid updated/reserialized asset indexes; validate safe paths and every object size/SHA-1 instead of a frozen whole-JSON hash allowlist."
+  ],
+  "validation": {
+    "workspace_rust_tests_passed": 18,
+    "strict_workspace_clippy": "passed -D warnings",
+    "rustfmt": "passed",
+    "process_tests_windows_under_wine": 12,
+    "process_tests_linux_passed": 10,
+    "windows_only_process_tests_skipped_on_linux": 2,
+    "automatic_configuration_real_qt_reader_and_prism_splitter": true,
+    "legacy_prism_ini_reader": {
+      "passed": true,
+      "legacy_reader_original_prism_source": true,
+      "path_spaces_apostrophe_hash": true,
+      "config_backup_preserved": true
+    },
+    "process_guard_waited_for_owned_fake_prism_before_writing": true,
+    "exact_backup_and_idempotent_reconfiguration": true,
+    "actual_reference_asset_import": {
+      "exit_code": 0,
+      "real_reference_assets": true,
+      "index_reformatted": true,
+      "account_or_game_started": false
+    },
+    "asset_import_log_tail": [
+      "Rusted : index des assets mis a jour ou reformate ; verification individuelle de chaque fichier.",
+      "Rusted : client 26.3, 114 bibliotheques et 5147 assets identifies depuis le lanceur (aucune sauvegarde importee).",
+      "Import verified: /workspace/Rusted/build/horizon/assets-index-033-cy9mxmqk/preparation/.local/launcher-input"
+    ],
+    "asset_fixture": {
+      "reformatted_real_26_3_index": true,
+      "libraries": 114,
+      "unique_objects": 5147,
+      "original_launcher_files_modified": false,
+      "game_java_or_account_started": false
+    },
+    "malformed_index_traversal_and_tampered_content_rejection": "passed",
+    "public_source_audit": "passed"
+  },
+  "limits": [
+    "No desktop launch using a real Microsoft account completed here.",
+    "Wine is not native Windows hardware.",
+    "Automatic settings editing targets the containing Prism instance on Windows; Modrinth still uses the copy-wrapper fallback.",
+    "Native game/graphics/mod compatibility unchanged from engine 0.3.2."
+  ],
+  "artifacts": {
+    "Rusted-Native-Windows-0.3.3.zip": {
+      "bytes": 32478708,
+      "sha256": "512c003451ed0e414f633916ee3f871be6b4ed35e5fc4ad64cea43b02f698005"
+    },
+    "Rusted-Correctif-Windows-0.3.3.zip": {
+      "bytes": 28465800,
+      "sha256": "1193ab41f386b44d14457eff397d40a55da2968252a0cbaaefc06afa0964b926"
+    },
+    "Rusted-Native-Prism-0.3.3.zip": {
+      "bytes": 32508341,
+      "sha256": "cd7ff7d654b2dd5d0315f60868a35dc5f2349f1a5558c239463dd863b85ec65e"
+    },
+    "Rusted-Native-Modrinth-0.3.3.mrpack": {
+      "bytes": 32504056,
+      "sha256": "0371578a823c518c655f70b3909cf755db93c663b260618aa35b4627fd62df23"
+    }
+  }
+}

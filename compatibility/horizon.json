@@ -1,0 +1,116 @@
+{
+  "schema": 1,
+  "upstream_revision": "8993772de0bf4b0f92c9f76be64f7a1e6b21cf37",
+  "minecraft_version": "26.3",
+  "launchers": {
+    "prism": {
+      "adapter": "Fabric preLaunch -> private pipe -> native Rust",
+      "protocol_process_tests_linux": true,
+      "desktop_verified": false,
+      "protocol_process_tests_windows_wine": true,
+      "wire_launcher": "standard",
+      "configuration_helper": null,
+      "automatic_instance_configuration": false,
+      "requires_closed_launcher_for_configuration": true,
+      "graphical_fresh_instance_installer": true,
+      "cmd_required": false,
+      "wrapper_required": false,
+      "import_bootstrap": "Fabric PreLaunchEntrypoint -> private pipe -> Rusted native"
+    },
+    "modrinth_app": {
+      "adapter": "same bootstrap; no command wrapper",
+      "protocol_process_tests_linux": true,
+      "desktop_verified": false,
+      "protocol_process_tests_windows_wine": true,
+      "wrapper_required": false,
+      "import_bootstrap": "same original Fabric bootstrap"
+    }
+  },
+  "windows": {
+    "bridge_cross_compilation": "verified_pe_amd64",
+    "execution_verified": "bridge_only_under_wine_not_windows_hardware",
+    "native_game_under_wine": true
+  },
+  "native_authenticated_multiplayer_verified": false,
+  "native_linux_release_build": "passed_with_wasm_mods_audio_and_controllers",
+  "native_binary_help_verified": true,
+  "native_game_play_verified_here": {
+    "linux_menus_world_save_reload": true,
+    "windows_world_under_wine": true,
+    "windows_hardware": false
+  },
+  "native_game_parity_verified_here": false,
+  "requested_mods": [
+    {
+      "id": "sodium",
+      "java_mode": "launcher_passthrough",
+      "java_mod_tested_here": false,
+      "native_jar_execution": false,
+      "native_work": "renderer_benchmarks_and_optimizations_planned"
+    },
+    {
+      "id": "iris",
+      "java_mode": "launcher_passthrough",
+      "java_mod_tested_here": false,
+      "native_jar_execution": false,
+      "native_work": "shader_pack_contract_and_comparison_tests_planned"
+    },
+    {
+      "id": "distanthorizons",
+      "java_mode": "launcher_passthrough",
+      "java_mod_tested_here": false,
+      "native_jar_execution": false,
+      "native_work": "assess_upstream_far_view_then_lod_shader_interoperability"
+    }
+  ],
+  "java_loader_execution_in_native_backend": {
+    "fabric": false,
+    "forge": false,
+    "neoforge": false,
+    "quilt": false
+  },
+  "simultaneous_java_loaders": false,
+  "project": "Rusted",
+  "version": "0.3.5",
+  "source": "engine/",
+  "java_metadata_diagnostics": {
+    "fabric": true,
+    "quilt": true,
+    "forge": true,
+    "neoforge": true,
+    "executes_mod_code": false
+  },
+  "native_source_sha256": "54dfeabefd14f1ae89aa954700f07dbe936e22684518f00a95d1e27f675a8a1e",
+  "package_version": "0.3.5",
+  "bridge_version": "0.3.5",
+  "assets_index_validation": "structure + safe paths + per-object size and SHA-1; no frozen whole-index allowlist",
+  "automatic_jvm_passthrough_for_installed_java_loaders": true,
+  "native_shader_packs_available": true,
+  "real_fabric_mods_initialization": {
+    "minecraft": "26.3",
+    "loader": "0.20.1",
+    "versions": {
+      "uCdwusMi": "3.3.4-26.3",
+      "YL57xq9U": "1.11.7+26.3-fabric",
+      "AANobbMI": "mc26.3-0.9.2-fabric"
+    },
+    "all_three_loaded": true,
+    "rendered_menu_verified": false,
+    "world_gameplay_verified": false,
+    "platform": "isolated Linux software GPU",
+    "graphics_failure": "GLX visual unavailable, Iris OpenGL context absent on Vulkan fallback"
+  },
+  "bundled_original_shader": "Rusted Soft Light 0.1.0 (WGSL, optional, off by default)",
+  "native_renderer_independent_rewrite": false,
+  "auto_mode_additional_jars": "continue original Fabric JVM; native inactive",
+  "native_original_source_components": [
+    "launcher bootstrap and protocol",
+    "launcher bridge and process supervision",
+    "mod metadata diagnostics",
+    "Rusted Soft Light WGSL post effect"
+  ],
+  "original_native_shader_world_render_verified": true,
+  "renderer_logs_project_name": "Rusted",
+  "native_game_log_targets_included": true,
+  "real_Fabric_import_to_native_menu_tested": true
+}

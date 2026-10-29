@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "rusted_backend",
+  "version": "0.1.0",
+  "name": "Rusted native backend",
+  "description": "Experimental incremental Rust backend inside the existing Minecraft JVM. Network encoding only; not a replacement game.",
+  "environment": "*",
+  "license": "MIT",
+  "mixins": ["rusted.mixins.json"],
+  "depends": {"fabricloader": ">=0.15.11", "minecraft": "=1.20.4", "java": ">=17"}
+}

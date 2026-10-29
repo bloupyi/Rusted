@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/horizon-rust/horizon.git",
+  "revision": "8993772de0bf4b0f92c9f76be64f7a1e6b21cf37",
+  "license": "MIT",
+  "license_sha256": "b4b374ae9d0f2d8f7be35c6783e41327431da3b5662605da9ba31493630621df",
+  "cargo_lock_sha256": "e54687fdff8aaf0293a4de9d8543447e99a2dda8260aea19f16a9e5edcb099f8",
+  "minecraft_version": "26.3",
+  "java_prepare_major": 25,
+  "rust_toolchain": "1.99.1"
+}

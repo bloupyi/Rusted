@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "project": "Rusted Launcher",
+  "version": "0.1.0",
+  "native_engine_version": "0.3.5",
+  "recorded_at": "2026-10-29T11:38:15.984050+00:00",
+  "implementation": {
+    "launcher": "Original Rust/Win32 UI and controller in launcher/, not Horizon GPUI launcher",
+    "engine": "Existing attributed Horizon MIT fork, unchanged this release",
+    "java_entry": "Original standard-library-only private-argument handover; no Minecraft or Fabric classes bundled",
+    "microsoft": "Own public client id configurable in Accounts; not yet registered by user; device flow, Xbox/XSTS/Minecraft exchange and DPAPI storage implemented"
+  },
+  "binary_sha256": {
+    "rusted-launcher.exe": "393020c342b277ced83163ff3a781bbfeab2fe154dd8e49fe8062f4605adc1f2",
+    "launcher-entry.jar": "74d52606876ef0595f9c6cbbbcb58f0b739175418bda4e60b34d342c459cdfda"
+  },
+  "validation": {
+    "workspace_linux": "32 tests passed; workspace clippy all-targets -D warnings and fmt passed",
+    "windows_build": "x86_64-pc-windows-gnu release GUI subsystem; only Windows system DLL imports; launcher clippy all-targets -D warnings passed",
+    "windows_tests_wine": "8 tests passed, including DPAPI roundtrip and source-world preservation, plus original subprocess-tree cancellation/redaction regression",
+    "windows_ui_wine": {
+      "passed": true,
+      "pages": [
+        "Home",
+        "Instances",
+        "Mods",
+        "Console",
+        "Accounts",
+        "Settings",
+        "Import / Export"
+      ],
+      "create_instance": true,
+      "save_memory_settings": true,
+      "screenshot": "docs/screenshots/rusted-launcher-0.1.0.png",
+      "limitation": "An initial final rerun timed out when Wine process tests ran concurrently; sequential retry passed. No real Windows desktop test."
+    },
+    "java_entry": "Own fake main fixture passed: Unicode args, private frame removed before main, synthetic secret absent from argv/logs",
+    "minecraft_preload": {
+      "passed": true,
+      "minecraft": "26.3",
+      "platform_rules": "Windows x64",
+      "classpath_entries": 75,
+      "assets": 5147,
+      "asset_bytes": 484829952,
+      "game_spawned": false,
+      "account_used": false
+    },
+    "managed_java": {
+      "passed": true,
+      "platform": "Windows x64 Java 25 JRE",
+      "download_bytes": 58589419,
+      "integrity": "Official Adoptium SHA-256 checked, archive extracted, executable hash stored",
+      "windows_jre_execution": false
+    },
+    "native_prepare": {
+      "passed": true,
+      "kind": "cached native preparation from previous verified export; resources and runtime manifest checked, server hash verified, default mods/shader seeded",
+      "cold_export_from_new_launcher": false,
+      "game_spawned": false
+    },
+    "fabric_preload": {
+      "passed": true,
+      "loader": "0.20.1",
+      "classpath_entries": 82,
+      "verified_loader_libraries": 7,
+      "game_spawned": false
+    },
+    "modrinth": {
+      "passed": true,
+      "mods": [
+        "Sodium",
+        "Iris",
+        "Distant Horizons"
+      ],
+      "operations": "Search, resolve required dependencies, download binaries and verify hashes through the new launcher backend",
+      "minecraft": "26.3",
+      "sources_read": false,
+      "gameplay_verified": false
+    },
+    "full_packs_roundtrip": {
+      "passed": true,
+      "operations": "Import full existing Prism ZIP and Modrinth mrpack 0.3.5; remove only verified own bootstrap; export Prism and reimport; retain native mode and original shader",
+      "worlds_or_accounts_exported": false
+    }
+  },
+  "open": [
+    "Microsoft application registration/approval and real account sign-in",
+    "Real Windows GPU game session and authenticated multiplayer",
+    "Sodium/Iris/Distant Horizons gameplay through this launcher",
+    "Full Prism/official launcher feature parity, other loaders, legacy launch arguments, skins and auto-update",
+    "Java JAR execution inside the native Rust engine remains absent"
+  ],
+  "reproduce": [
+    "cargo test --workspace --locked",
+    "cargo clippy --workspace --all-targets --locked -- -D warnings",
+    "python scripts/build_launcher_entry.py",
+    "python scripts/test_launcher_java_entry.py --java JAVA_PATH",
+    "cargo run -p rusted-launcher --example pack_probe -- PRISM_ZIP MRPACK RUNTIME_DIR",
+    "cargo run -p rusted-launcher --example mod_probe",
+    "python scripts/package_launcher.py --source"
+  ]
+}

@@ -1,0 +1,14 @@
+[workspace]
+resolver = "2"
+members = ["native", "launcher-bridge", "launcher"]
+exclude = ["engine"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.90"
+license = "MIT"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

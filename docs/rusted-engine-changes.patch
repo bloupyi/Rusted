@@ -1,0 +1,2593 @@
+--- a/engine/Cargo.lock
++++ b/engine/Cargo.lock
+@@ -936,6 +936,12 @@
+ dependencies = [
+  "horizon-mod-sdk",
+ ]
++
++[[package]]
++name = "fastrand"
++version = "2.5.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
+ 
+ [[package]]
+ name = "fdeflate"
+@@ -1400,6 +1406,7 @@
+  "naga",
+  "png",
+  "pollster",
++ "rusted-platform",
+  "rustix 1.1.5",
+  "serde",
+  "serde_json",
+@@ -3155,6 +3162,16 @@
+ ]
+ 
+ [[package]]
++name = "rusted-platform"
++version = "0.3.0"
++dependencies = [
++ "serde",
++ "serde_json",
++ "tempfile",
++ "zip",
++]
++
++[[package]]
+ name = "rustix"
+ version = "0.38.44"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -3608,6 +3625,19 @@
+ version = "0.13.5"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "adb6935a6f5c20170eeceb1a3835a49e12e19d792f6dd344ccc76a985ca5a6ca"
++
++[[package]]
++name = "tempfile"
++version = "3.23.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "2d31c77bdf42a745371d260a26ca7163f1e0924b64afa0b688e61b5a9fa02f16"
++dependencies = [
++ "fastrand",
++ "getrandom 0.3.4",
++ "once_cell",
++ "rustix 1.1.5",
++ "windows-sys 0.61.2",
++]
+ 
+ [[package]]
+ name = "termcolor"
+--- a/engine/Cargo.toml
++++ b/engine/Cargo.toml
+@@ -1,6 +1,7 @@
+ [workspace]
+ exclude = ["launcher", "crates/horizon-telemetry-server", "crates/horizon-mod-registry", "third_party/wgpu-hal"]
+ members = [
++    "crates/rusted-platform",
+     "crates/horizon-core",
+     "crates/horizon-dualsense",
+     "crates/horizon-threads",
+--- a/engine/crates/horizon-client/Cargo.toml
++++ b/engine/crates/horizon-client/Cargo.toml
+@@ -1,13 +1,23 @@
+ [package]
+ name = "horizon-client"
+-default-run = "horizon-client"
++default-run = "rusted"
+ version = "0.1.0"
+ edition.workspace = true
+ license.workspace = true
+ rust-version = "1.90"
+-description = "Horizon native development client"
++description = "Rusted native client, derived from Horizon"
++autobins = false
++
++[[bin]]
++name = "rusted"
++path = "src/main.rs"
++
++[[bin]]
++name = "horizon-ctl"
++path = "src/bin/horizon-ctl/main.rs"
+ 
+ [dependencies]
++rusted-platform = { path = "../rusted-platform" }
+ horizon-assets = { path = "../horizon-assets" }
+ horizon-client-core = { path = "../horizon-client-core" }
+ horizon-client-input = { path = "../horizon-client-input" }
+@@ -80,7 +90,7 @@
+ # DirectX 12 driver (`graphicsApi`, graphics.rs).
+ wgpu = { version = "30.0.1", default-features = false, features = ["gles"] }
+ 
+-[target.'cfg(windows)'.build-dependencies]
++[build-dependencies]
+ # The icon resource in the .exe (build.rs).
+ winresource = "0.1"
+ 
+--- a/engine/crates/horizon-client/build.rs
++++ b/engine/crates/horizon-client/build.rs
+@@ -1,15 +1,13 @@
+-//! Embeds Horizon's icon (`packaging/icons/horizon.ico`) in the Windows executables, as icon
+-//! resource 1: Explorer and the task bar show it, and the window takes it as its icon.
++//! Rusted Windows icon and executable identity, including cross builds.
+ fn main() {
+-    let dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_default();
+-    let ico = format!("{dir}/../../packaging/icons/horizon.ico");
+-    println!("cargo:rerun-if-changed={ico}");
+-    #[cfg(windows)]
+-    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("windows") {
+-        let mut resource = winresource::WindowsResource::new();
+-        resource.set_icon(&ico);
+-        if let Err(e) = resource.compile() {
+-            panic!("embedding {ico}: {e}");
+-        }
++    println!("cargo:rerun-if-changed=assets/rusted-icon.ico");
++    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("windows") {
++        return;
+     }
++    let mut resource = winresource::WindowsResource::new();
++    resource.set_icon("assets/rusted-icon.ico");
++    resource
++        .set("ProductName", "Rusted")
++        .set("FileDescription", "Rusted native Minecraft client");
++    resource.compile().expect("embed Rusted identity");
+ }
+--- a/engine/crates/horizon-client/src/audio.rs
++++ b/engine/crates/horizon-client/src/audio.rs
+@@ -538,7 +538,7 @@
+                 *out = T::from_sample(*s);
+             }
+         },
+-        |e| log::warn!("Horizon: audio stream error: {e}"),
++        |e| log::warn!("Rusted: audio stream error: {e}"),
+         None,
+     )?;
+     Ok(stream)
+@@ -556,7 +556,7 @@
+         if output && registry.is_empty() {
+             // The game then plays nothing on a working output (#1035, #1076).
+             log::warn!(
+-                "Horizon: no sounds in {}: they were not copied from your Minecraft \
++                "Rusted: no sounds in {}: they were not copied from your Minecraft \
+                  install; prepare the game again in the launcher (or run \
+                  horizon-prepare sounds)",
+                 root.join("assets").display()
+@@ -572,7 +572,7 @@
+             Ok(v) => (Some(v), true),
+             Err(e) => {
+                 if output {
+-                    log::warn!("Horizon: no sound: {e}");
++                    log::warn!("Rusted: no sound: {e}");
+                 }
+                 (None, false)
+             }
+@@ -627,7 +627,7 @@
+             match open_device(&device, mixer.clone()) {
+                 Ok((stream, config)) => {
+                     log::info!(
+-                        "Horizon: audio output {name} ({} Hz, {} channels, {})",
++                        "Rusted: audio output {name} ({} Hz, {} channels, {})",
+                         config.sample_rate().0,
+                         config.channels(),
+                         config.sample_format()
+--- a/engine/crates/horizon-client/src/benchmark.rs
++++ b/engine/crates/horizon-client/src/benchmark.rs
+@@ -82,8 +82,8 @@
+         .spawn(move || {
+             let control = Control(requests);
+             match run(&control, setup) {
+-                Ok(path) => println!("Horizon: benchmark report {}", path.display()),
+-                Err(e) => eprintln!("Horizon: benchmark failed: {e}"),
++                Ok(path) => println!("Rusted: benchmark report {}", path.display()),
++                Err(e) => eprintln!("Rusted: benchmark failed: {e}"),
+             }
+             let _ = control.call("quit");
+         })
+--- a/engine/crates/horizon-client/src/bin/horizon-ctl/commands.rs
++++ b/engine/crates/horizon-client/src/bin/horizon-ctl/commands.rs
+@@ -143,6 +143,8 @@
+     "font",
+     "packs",
+     "mods",
++    "java-mods",
++    "rusted",
+     "shader-packs",
+     "graphics",
+     "graphics-advanced",
+--- a/engine/crates/horizon-client/src/crafting.rs
++++ b/engine/crates/horizon-client/src/crafting.rs
+@@ -1212,7 +1212,7 @@
+             let v: Value = match serde_json::from_slice(&fs::read(&path)?) {
+                 Ok(v) => v,
+                 Err(e) => {
+-                    log::warn!("Horizon: recipe {name} not loaded: {e}");
++                    log::warn!("Rusted: recipe {name} not loaded: {e}");
+                     continue;
+                 }
+             };
+--- a/engine/crates/horizon-client/src/crash.rs
++++ b/engine/crates/horizon-client/src/crash.rs
+@@ -297,11 +297,11 @@
+     crate::telemetry::keep_crash(home, &report);
+     match report.save(home) {
+         Ok(path) => {
+-            eprintln!("Horizon: crash report saved to {}", path.display());
++            eprintln!("Rusted: crash report saved to {}", path.display());
+             Some(path)
+         }
+         Err(e) => {
+-            eprintln!("Horizon: could not save a crash report: {e}");
++            eprintln!("Rusted: could not save a crash report: {e}");
+             eprintln!("{}", report.text());
+             None
+         }
+--- a/engine/crates/horizon-client/src/discord_presence.rs
++++ b/engine/crates/horizon-client/src/discord_presence.rs
+@@ -112,6 +112,9 @@
+ /// Starts the presence thread, once: when the game starts, never for a dedicated server.
+ /// `automated` runs (offscreen, benchmarks) only talk to a test's fake Discord.
+ pub fn start(enabled: bool, automated: bool) {
++    if !crate::rusted::UPSTREAM_SERVICES {
++        return;
++    }
+     let fake_discord = std::env::var_os(IPC_DIR_ENV).is_some();
+     if THREAD.get().is_some()
+         || std::env::var_os("HORIZON_NO_DISCORD").is_some_and(|v| v != "0")
+@@ -129,7 +132,7 @@
+         Ok(handle) => {
+             let _ = THREAD.set(handle.thread().clone());
+         }
+-        Err(e) => log::warn!("Horizon: no Discord presence: {e}"),
++        Err(e) => log::warn!("Rusted: no Discord presence: {e}"),
+     }
+ }
+ 
+@@ -216,7 +219,7 @@
+         match c.set_activity(activity(wanted.status, wanted.since)) {
+             Ok(()) => sent = Some((wanted, now)),
+             Err(e) => {
+-                log::info!("Horizon: Discord presence disconnected ({e})");
++                log::info!("Rusted: Discord presence disconnected ({e})");
+                 client = None;
+                 sent = None;
+             }
+@@ -338,11 +341,11 @@
+             };
+             match client.handshake() {
+                 Ok(()) => {
+-                    log::info!("Horizon: connected to Discord for Rich Presence");
++                    log::info!("Rusted: connected to Discord for Rich Presence");
+                     Some(client)
+                 }
+                 Err(e) => {
+-                    log::debug!("Horizon: Discord at {} refused: {e}", path.display());
++                    log::debug!("Rusted: Discord at {} refused: {e}", path.display());
+                     None
+                 }
+             }
+@@ -370,7 +373,7 @@
+             match read_frame(&mut self.pipe)? {
+                 (FRAME, frame) if ours(&frame) => {
+                     if frame["evt"] == "ERROR" {
+-                        log::info!("Horizon: Discord presence: {}", frame["data"]["message"]);
++                        log::info!("Rusted: Discord presence: {}", frame["data"]["message"]);
+                     }
+                     return Ok(());
+                 }
+--- a/engine/crates/horizon-client/src/game.rs
++++ b/engine/crates/horizon-client/src/game.rs
+@@ -390,7 +390,7 @@
+             match arg.as_str() {
+                 "--help" | "-h" => {
+                     println!(
+-                        "Horizon — Minecraft Java Edition {} in Rust\n\n  --resources PATH        Prepared resources (horizon-prepare)\n  --render-distance N     Chunks, 2..64 (default 12)\n  --world NAME            World folder under saves/ (default \"New World\")\n  --seed N                World seed for new worlds (default 0)\n  --width N, --height N   Window size (default 1280 x 720)\n  --creative              Creative mode (default survival)\n  --test-terrain          Simple test terrain instead of vanilla generation\n  --frames N              Exit after N frames (testing)\n  --world-frames N        Exit after N frames drawn in the world (testing)\n  --smoke-report PATH     Write a JSON report on exit\n  --benchmark SCENARIO    Run a benchmark (standard, village, forest, ocean, mountain), write its report to benchmarks/ and quit\n  --control               Accept horizon-ctl commands on a local socket\n  --control-socket PATH   Control socket path (default $XDG_RUNTIME_DIR/horizon-control.sock)\n  --server HOST[:PORT]    Join a multiplayer server (offline mode) at start\n  --quickPlaySingleplayer WORLD  Open this world of saves/ at start, only if it exists (vanilla's)\n  --quickPlayMultiplayer HOST[:PORT]  The same as --server (vanilla's name)\n  --name NAME             Player name for multiplayer (default: generated once, kept in horizon-player.txt)\n  --session-file PATH     Signed-in account from the launcher (read once, then deleted)\n  --dev-mod PATH          A Horizon mod (.hmod or folder) to develop: always on, reloaded when rebuilt\n  --in-frame              Run single player's world in the frame, not on its server thread\n  --pregen                Add Horizon's /pregen command (docs/pregeneration.md)\n\nControls: mouse look, WASD move, Space jump, Left Shift sneak, Left Ctrl sprint,\nleft click break, right click place/use, 1-9/scroll hotbar, E inventory,\nQ drop, F3 debug, Esc pause.",
++                        "Rusted — Minecraft Java Edition {} in Rust\n\n  --resources PATH        Prepared resources (horizon-prepare)\n  --render-distance N     Chunks, 2..64 (default 12)\n  --world NAME            World folder under saves/ (default \"New World\")\n  --seed N                World seed for new worlds (default 0)\n  --width N, --height N   Window size (default 1280 x 720)\n  --creative              Creative mode (default survival)\n  --test-terrain          Simple test terrain instead of vanilla generation\n  --frames N              Exit after N frames (testing)\n  --world-frames N        Exit after N frames drawn in the world (testing)\n  --smoke-report PATH     Write a JSON report on exit\n  --benchmark SCENARIO    Run a benchmark (standard, village, forest, ocean, mountain), write its report to benchmarks/ and quit\n  --control               Accept horizon-ctl commands on a local socket\n  --control-socket PATH   Control socket path (default $XDG_RUNTIME_DIR/horizon-control.sock)\n  --server HOST[:PORT]    Join a multiplayer server (offline mode) at start\n  --quickPlaySingleplayer WORLD  Open this world of saves/ at start, only if it exists (vanilla's)\n  --quickPlayMultiplayer HOST[:PORT]  The same as --server (vanilla's name)\n  --name NAME             Player name for multiplayer (default: generated once, kept in horizon-player.txt)\n  --session-file PATH     Signed-in account from the launcher (read once, then deleted)\n  --dev-mod PATH          A Horizon mod (.hmod or folder) to develop: always on, reloaded when rebuilt\n  --in-frame              Run single player's world in the frame, not on its server thread\n  --pregen                Add Horizon's /pregen command (docs/pregeneration.md)\n\nControls: mouse look, WASD move, Space jump, Left Shift sneak, Left Ctrl sprint,\nleft click break, right click place/use, 1-9/scroll hotbar, E inventory,\nQ drop, F3 debug, Esc pause.",
+                         horizon_core::VANILLA_VERSION
+                     );
+                     return Ok(None);
+@@ -495,7 +495,7 @@
+                     o.player_name = Some(session.name.clone());
+                     horizon_client::auth::set_current(session);
+                 }
+-                Err(e) => eprintln!("Horizon: not signed in: {e}"),
++                Err(e) => eprintln!("Rusted: not signed in: {e}"),
+             }
+         }
+         Ok(Some(o))
+@@ -12373,7 +12373,7 @@
+     }
+     fn update_world(&mut self) {
+         if let Err(e) = self.poll_remote() {
+-            log::warn!("Horizon: {e}");
++            log::warn!("Rusted: {e}");
+         }
+         self.prepare_lod();
+         if self.lod.is_some() {
+@@ -12445,7 +12445,7 @@
+                     .save_later(&modified, self.pack.assets.registry, self.res.biomes())
+             })
+         {
+-            log::warn!("Horizon: failed to save unloaded chunks: {e}");
++            log::warn!("Rusted: failed to save unloaded chunks: {e}");
+         }
+         let (far_distance, far_reduced) = self.far_terrain_choice();
+         if let Some(renderer) = self.renderer.as_mut() {
+@@ -12552,8 +12552,8 @@
+         let size = self.options.window_size.map(f64::from);
+         self.fullscreen = horizon_client::window::FullscreenState::new(fullscreen);
+         let attributes = Window::default_attributes()
+-            .with_title("Horizon")
+-            .with_window_icon(horizon_client::window::icon());
++            .with_title(horizon_client::rusted::title())
++            .with_window_icon(horizon_client::rusted::icon());
+         // Wayland names the window by its app id, which the horizon.desktop entry matches.
+         #[cfg(target_os = "linux")]
+         let attributes = winit::platform::wayland::WindowAttributesExtWayland::with_name(
+@@ -13402,7 +13402,7 @@
+                                     format!(", cpu {:.1} ms", (end - start).as_secs_f32() * 1000.0)
+                                 });
+                             log::info!(
+-                                "Horizon: slow frame {cpu:.1} ms{worked} ({steps} ticks): {}",
++                                "Rusted: slow frame {cpu:.1} ms{worked} ({steps} ticks): {}",
+                                 horizon_client::spans::describe(&spans)
+                             );
+                         }
+@@ -13466,7 +13466,7 @@
+                         if self.frames == 0 {
+                             // The launcher times Play to this line (launcher/src/perf.rs).
+                             log::info!(
+-                                "Horizon: first frame after {} ms",
++                                "Rusted: first frame after {} ms",
+                                 self.started.elapsed().as_millis()
+                             );
+                         }
+@@ -13580,7 +13580,7 @@
+     fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
+         self.pad_close_output();
+         if let Err(e) = self.save_for_exit() {
+-            log::warn!("Horizon: failed to save the world on exit: {e}");
++            log::warn!("Rusted: failed to save the world on exit: {e}");
+         }
+         self.finish_perf();
+     }
+@@ -14121,7 +14121,7 @@
+             ));
+         }
+         self.pending_entry = Some(entry);
+-        log::info!("Horizon: world entry waiting for world resources");
++        log::info!("Rusted: world entry waiting for world resources");
+         Ok(true)
+     }
+ 
+@@ -14195,7 +14195,7 @@
+     fn join_world_rest(&mut self) -> Result<()> {
+         if self.rest_loader.is_some() {
+             let waited = Instant::now();
+-            log::info!("Horizon: waiting for world resources");
++            log::info!("Rusted: waiting for world resources");
+             while self.rest_loader.is_some() {
+                 self.poll_world_rest()?;
+                 if self.rest_loader.is_some() {
+@@ -14203,7 +14203,7 @@
+                 }
+             }
+             log::info!(
+-                "Horizon: world resources joined after {} ms",
++                "Rusted: world resources joined after {} ms",
+                 waited.elapsed().as_millis()
+             );
+         }
+@@ -14319,7 +14319,7 @@
+         // Minecraft.rollbackResourcePacks: the packs' textures don't fit, start
+         // with the game's own resources.
+         Err(e) if root != vanilla_root => {
+-            log::warn!("Horizon: resource packs failed to load ({e}); using the default resources");
++            log::warn!("Rusted: resource packs failed to load ({e}); using the default resources");
+             pack_error = Some(e.to_string());
+             root = vanilla_root.to_path_buf();
+             None
+@@ -14330,7 +14330,7 @@
+         if menu {
+             horizon_client::telemetry::mark_ui_ready();
+             log::info!(
+-                "Horizon: UI bundle ready after {} ms",
++                "Rusted: UI bundle ready after {} ms",
+                 started.elapsed().as_millis()
+             );
+             publish(ui, &root);
+@@ -14348,7 +14348,7 @@
+         // Minecraft.rollbackResourcePacks: the packs break loading, start
+         // with the game's own resources.
+         Err(e) if root != vanilla_root => {
+-            log::warn!("Horizon: resource packs failed to load ({e}); using the default resources");
++            log::warn!("Rusted: resource packs failed to load ({e}); using the default resources");
+             pack_error = Some(e.to_string());
+             root = vanilla_root.to_path_buf();
+             let assets = Assets::load(vanilla_root)?;
+@@ -14370,7 +14370,7 @@
+         if menu {
+             horizon_client::telemetry::mark_ui_ready();
+             log::info!(
+-                "Horizon: UI bundle ready after {} ms",
++                "Rusted: UI bundle ready after {} ms",
+                 started.elapsed().as_millis()
+             );
+             publish(ui, &root);
+@@ -14448,7 +14448,7 @@
+     if menu {
+         horizon_client::telemetry::mark_core_ready();
+         log::info!(
+-            "Horizon: core-ready after {} ms",
++            "Rusted: core-ready after {} ms",
+             started.elapsed().as_millis()
+         );
+     }
+@@ -14459,7 +14459,7 @@
+     let renderer_cpu = menu.then(|| prepare_renderer_textures(&pack));
+     if menu {
+         log::info!(
+-            "Horizon: handoff CPU resources prepared on worker in {} ms",
++            "Rusted: handoff CPU resources prepared on worker in {} ms",
+             prepared_at.elapsed().as_millis()
+         );
+     }
+@@ -14488,7 +14488,7 @@
+                 progress.set(9);
+                 horizon_client::telemetry::mark_rest_ready();
+                 log::info!(
+-                    "Horizon: rest-ready after {} ms",
++                    "Rusted: rest-ready after {} ms",
+                     started.elapsed().as_millis()
+                 );
+                 Ok(())
+@@ -14548,7 +14548,7 @@
+     let recipes = Recipes::load(root, &items)?;
+     let transformers = horizon_client::block_transform::Transformers::load(root, assets.registry)?;
+     log::info!(
+-        "Horizon: resources loaded in {:.1}s; {} block states, {} items, {} biomes; {} worker threads",
++        "Rusted: resources loaded in {:.1}s; {} block states, {} items, {} biomes; {} worker threads",
+         started.elapsed().as_secs_f32(),
+         facts.states.len(),
+         items.items.len(),
+@@ -14984,8 +14984,8 @@
+             .map(f64::from);
+         self.fullscreen = horizon_client::window::FullscreenState::new(fullscreen);
+         let attributes = Window::default_attributes()
+-            .with_title("Horizon")
+-            .with_window_icon(horizon_client::window::icon());
++            .with_title(horizon_client::rusted::title())
++            .with_window_icon(horizon_client::rusted::icon());
+         // Wayland names the window by its app id, which the horizon.desktop entry matches.
+         #[cfg(target_os = "linux")]
+         let attributes = winit::platform::wayland::WindowAttributesExtWayland::with_name(
+@@ -15035,7 +15035,7 @@
+     /// and title panorama.
+     fn set_ui(&mut self, gui: UiResources, root: PathBuf) {
+         log::info!(
+-            "Horizon: loading the title artwork after {} ms",
++            "Rusted: loading the title artwork after {} ms",
+             self.started.elapsed().as_millis()
+         );
+         self.menu.set_root(root, &self.settings);
+@@ -15104,13 +15104,13 @@
+                     self.menu.perf.title_shown()
+                 }
+                 Ok(_) => {}
+-                Err(e) => log::warn!("Horizon: loading screen frame failed: {e}"),
++                Err(e) => log::warn!("Rusted: loading screen frame failed: {e}"),
+             }
+         }
+         if !self.shown {
+             self.shown = true;
+             log::info!(
+-                "Horizon: loading screen shown after {} ms",
++                "Rusted: loading screen shown after {} ms",
+                 self.started.elapsed().as_millis()
+             );
+         }
+@@ -15139,7 +15139,7 @@
+             self.settings.horizon.api,
+         )?;
+         log::info!(
+-            "Horizon: world renderer ready after {} ms",
++            "Rusted: world renderer ready after {} ms",
+             self.started.elapsed().as_millis()
+         );
+         let renderer_ms = renderer_at.elapsed().as_millis();
+@@ -15180,7 +15180,7 @@
+         game.apply_settings();
+         game.previous = Instant::now();
+         log::info!(
+-            "Horizon: startup handoff {} ms (renderer {} ms, start_game {} ms)",
++            "Rusted: startup handoff {} ms (renderer {} ms, start_game {} ms)",
+             handoff_at.elapsed().as_millis(),
+             renderer_ms,
+             game_ms
+@@ -15370,7 +15370,7 @@
+     let mut pack_error = None;
+     options.resources = packs::startup_root(&vanilla_root, &early_settings.resource_packs, &[])
+         .unwrap_or_else(|e| {
+-            log::warn!("Horizon: resource packs not applied: {e}");
++            log::warn!("Rusted: resource packs not applied: {e}");
+             pack_error = Some(e.to_string());
+             vanilla_root.clone()
+         });
+--- a/engine/crates/horizon-client/src/game/agent_settings.rs
++++ b/engine/crates/horizon-client/src/game/agent_settings.rs
+@@ -25,7 +25,7 @@
+         if self.settings.extras.no_ai {
+             if self.options.control.is_some() {
+                 log::warn!(
+-                    "Horizon: control socket not opened: {}",
++                    "Rusted: control socket not opened: {}",
+                     horizon_core::no_ai::REFUSAL
+                 );
+             }
+@@ -35,7 +35,7 @@
+             // Asked for on the command line: failing to listen is an error.
+             let server = control::Server::start(path)
+                 .map_err(|e| format!("control socket {}: {e}", path.display()))?;
+-            log::info!("Horizon: control socket {}", server.path().display());
++            log::info!("Rusted: control socket {}", server.path().display());
+             self.control = Some(server);
+         } else if self.agent_control_on {
+             self.open_agent_socket();
+@@ -49,10 +49,10 @@
+         let path = self.agent_socket_path();
+         match control::Server::start(&path) {
+             Ok(server) => {
+-                log::info!("Horizon: control socket {}", server.path().display());
++                log::info!("Rusted: control socket {}", server.path().display());
+                 self.control = Some(server);
+             }
+-            Err(e) => log::warn!("Horizon: control socket {}: {e}", path.display()),
++            Err(e) => log::warn!("Rusted: control socket {}: {e}", path.display()),
+         }
+     }
+ 
+@@ -68,7 +68,7 @@
+             .is_some_and(|c| !c.path().as_os_str().is_empty());
+         if self.settings.extras.no_ai || (changed && !wanted) {
+             if open {
+-                log::info!("Horizon: control socket closed");
++                log::info!("Rusted: control socket closed");
+                 self.control = None;
+             }
+         } else if changed && wanted && self.control.is_none() {
+--- a/engine/crates/horizon-client/src/game/commands/pregen.rs
++++ b/engine/crates/horizon-client/src/game/commands/pregen.rs
+@@ -206,7 +206,7 @@
+                 .count();
+             let [missing, lighting, unlit] = streaming.unstick_light(&mut self.world, &row);
+             log::warn!(
+-                "Horizon: pregeneration waits on row {:?}: {missing} not loaded, {lighting} being lit, \
++                "Rusted: pregeneration waits on row {:?}: {missing} not loaded, {lighting} being lit, \
+                  {unlit} unlit with no light job (queued again), {waiting} not post-processed; {:?}",
+                 row.first(),
+                 streaming.stages()
+--- a/engine/crates/horizon-client/src/game/control.rs
++++ b/engine/crates/horizon-client/src/game/control.rs
+@@ -672,12 +672,14 @@
+                     "font" => Page::Font,
+                     "packs" => Page::Packs,
+                     "mods" => Page::Mods,
++                    "java-mods" => Page::JavaMods,
+                     "shader-packs" => Page::ShaderPacks,
+                     "graphics" => Page::Graphics,
+                     "graphics-advanced" => Page::GraphicsAdvanced,
+                     "extras" => Page::Extras,
+                     "credits" => Page::Credits,
+                     "horizon" => Page::Horizon,
++                    "rusted" => Page::Horizon,
+                     "agent" => Page::Agent,
+                     other => return Err(format!("unknown options page {other}").into()),
+                 };
+--- a/engine/crates/horizon-client/src/game/dialogs.rs
++++ b/engine/crates/horizon-client/src/game/dialogs.rs
+@@ -58,7 +58,7 @@
+     /// under the warning screen, it is what Back returns to.
+     pub(super) fn show_dialog(&mut self, tag: &Tag) {
+         let Some(dialog) = Dialog::parse(tag) else {
+-            log::warn!("Horizon: failed to show dialog for data {tag:?}");
++            log::warn!("Rusted: failed to show dialog for data {tag:?}");
+             return;
+         };
+         let values = dialog.inputs.iter().map(|i| i.control.initial()).collect();
+@@ -144,7 +144,7 @@
+                     self.send_chat(&format!("/{command}"));
+                 } else {
+                     log::warn!(
+-                        "Horizon: commands are not supported in configuration, trying to run '{command}'"
++                        "Rusted: commands are not supported in configuration, trying to run '{command}'"
+                     );
+                 }
+             }
+@@ -153,7 +153,7 @@
+                 use horizon_client::clipboard::Clipboard;
+                 self.clipboard.set(&value);
+             }
+-            Some(other) => log::info!("Horizon: dialog action {other:?} is not supported yet"),
++            Some(other) => log::info!("Rusted: dialog action {other:?} is not supported yet"),
+             None => {}
+         }
+         if !self.dialog_open() {
+@@ -178,7 +178,7 @@
+                 });
+                 match found {
+                     Some(tag) => self.show_dialog(&tag),
+-                    None => log::warn!("Horizon: unknown dialog {id}"),
++                    None => log::warn!("Rusted: unknown dialog {id}"),
+                 }
+             }
+             tag => self.show_dialog(tag),
+@@ -200,7 +200,7 @@
+                     .and_then(|r| r.registries.data("minecraft:dialog", *id).cloned());
+                 match tag {
+                     Some(tag) => self.show_dialog(&tag),
+-                    None => log::warn!("Horizon: unknown dialog {id}"),
++                    None => log::warn!("Rusted: unknown dialog {id}"),
+                 }
+             }
+         }
+--- a/engine/crates/horizon-client/src/game/extras.rs
++++ b/engine/crates/horizon-client/src/game/extras.rs
+@@ -111,7 +111,7 @@
+                 &mut title.mode
+         {
+             log::info!(
+-                "Horizon: reconnecting to {} in {} s",
++                "Rusted: reconnecting to {} in {} s",
+                 horizon_client::net::shown_address(&retry.address),
+                 retry.seconds_left(std::time::Instant::now())
+             );
+--- a/engine/crates/horizon-client/src/game/functions.rs
++++ b/engine/crates/horizon-client/src/game/functions.rs
+@@ -108,7 +108,7 @@
+             .collect();
+         let store = DataStore::load(&packs);
+         for (id, e) in &store.errors {
+-            log::warn!("Horizon: failed to load function {id}: {e}");
++            log::warn!("Rusted: failed to load function {id}: {e}");
+         }
+         self.fns.store = store;
+         self.sync_function_registries();
+--- a/engine/crates/horizon-client/src/game/growth.rs
++++ b/engine/crates/horizon-client/src/game/growth.rs
+@@ -67,11 +67,11 @@
+     match features {
+         Ok(Some(features)) => {
+             res.behaviours().set_live_features(Arc::new(features));
+-            log::info!("Horizon: live features ready in {:?}", started.elapsed());
++            log::info!("Rusted: live features ready in {:?}", started.elapsed());
+         }
+         Ok(None) => {
+-            log::warn!("Horizon: the worldgen bundle has no features; saplings will not grow")
++            log::warn!("Rusted: the worldgen bundle has no features; saplings will not grow")
+         }
+-        Err(e) => log::warn!("Horizon: live features unavailable: {e}"),
++        Err(e) => log::warn!("Rusted: live features unavailable: {e}"),
+     }
+ }
+--- a/engine/crates/horizon-client/src/game/integrated.rs
++++ b/engine/crates/horizon-client/src/game/integrated.rs
+@@ -139,7 +139,7 @@
+ impl Drop for Integrated {
+     fn drop(&mut self) {
+         if let Err(error) = self.halt() {
+-            log::error!("Horizon: integrated server shutdown: {error}");
++            log::error!("Rusted: integrated server shutdown: {error}");
+         }
+     }
+ }
+@@ -262,7 +262,7 @@
+                     &ready_tx,
+                 );
+                 if let Err(e) = result {
+-                    log::error!("Horizon: integrated server: {e}");
++                    log::error!("Rusted: integrated server: {e}");
+                     *server_flags.failure.lock().unwrap() = Some(e.to_string());
+                     let _ = ready_tx.send(Err(e.to_string()));
+                 }
+@@ -629,7 +629,7 @@
+         match pending {
+             Publish::Open(listener, settings) => {
+                 if let Err(e) = host.hub.lan.listen_on(listener, true) {
+-                    log::error!("Horizon: Open to LAN: {e}");
++                    log::error!("Rusted: Open to LAN: {e}");
+                 }
+                 host.settings = settings;
+                 host.hub.config.force_game_mode = settings.force_game_mode;
+--- a/engine/crates/horizon-client/src/game/levels.rs
++++ b/engine/crates/horizon-client/src/game/levels.rs
+@@ -377,7 +377,7 @@
+                     format!(", cpu {:.1} ms", (end - start).as_secs_f32() * 1000.0)
+                 });
+             log::info!(
+-                "Horizon: slow tick {wall:.1} ms{cpu} ({} mobs): {}",
++                "Rusted: slow tick {wall:.1} ms{cpu} ({} mobs): {}",
+                 self.mobs.len(),
+                 horizon_client::spans::describe(&spans)
+             );
+--- a/engine/crates/horizon-client/src/game/mods.rs
++++ b/engine/crates/horizon-client/src/game/mods.rs
+@@ -234,14 +234,14 @@
+                 id: m.id.clone(),
+                 content,
+             }),
+-            Err(e) => log::warn!("Horizon: mod {} content not loaded: {e}", m.id),
++            Err(e) => log::warn!("Rusted: mod {} content not loaded: {e}", m.id),
+         }
+     }
+     match mod_content::resource_root(root, &mods, &here.join(".horizon-cache")) {
+         Ok(out) => {
+             if out != root {
+                 log::info!(
+-                    "Horizon: content from {} mod(s) in {}",
++                    "Rusted: content from {} mod(s) in {}",
+                     mods.len(),
+                     out.display()
+                 );
+@@ -249,7 +249,7 @@
+             out
+         }
+         Err(e) => {
+-            log::warn!("Horizon: content mods not loaded: {e}");
++            log::warn!("Rusted: content mods not loaded: {e}");
+             root.to_owned()
+         }
+     }
+@@ -264,7 +264,7 @@
+         let found = horizon_mods::find(&dir).len() + self.mods.dev.len();
+         if found > 0 {
+             log::warn!(
+-                "Horizon: {found} mod(s) not started: this build has no mod runtime (build with --features mods)"
++                "Rusted: {found} mod(s) not started: this build has no mod runtime (build with --features mods)"
+             );
+         }
+     }
+@@ -620,7 +620,7 @@
+             if self.options.execution_role.is_client() {
+                 self.system_message(Text::literal("Mods reloaded").with_color(text::GRAY));
+             } else {
+-                log::info!("Horizon: mods reloaded");
++                log::info!("Rusted: mods reloaded");
+             }
+         }
+     }
+--- a/engine/crates/horizon-client/src/game/moved_extras.rs
++++ b/engine/crates/horizon-client/src/game/moved_extras.rs
+@@ -33,6 +33,9 @@
+         /// At start: remembers the moved extras that were off, and installs
+         /// the ones that were on, in the background.
+         pub(in crate::game) fn start_moved_extras(&mut self) {
++            if !horizon_client::rusted::UPSTREAM_SERVICES {
++                return;
++            }
+             let off = moved_extras::nothing_to_do(&self.settings.extras);
+             let pending = moved_extras::pending(&self.settings.extras);
+             if off.is_empty() && pending.is_empty() {
+@@ -93,7 +96,7 @@
+                             installed = true;
+                         }
+                         Err(e) => {
+-                            log::warn!("Horizon: {} not installed, next start retries: {e}", m.id);
++                            log::warn!("Rusted: {} not installed, next start retries: {e}", m.id);
+                             self.mods.moved.notices.push(
+                                 Text::literal(format!(
+                                     "{} moved to the mod browser; it couldn't be installed for you yet, Horizon tries again at the next start",
+--- a/engine/crates/horizon-client/src/game/packs.rs
++++ b/engine/crates/horizon-client/src/game/packs.rs
+@@ -40,7 +40,7 @@
+         "xdg-open"
+     };
+     if let Err(e) = std::process::Command::new(program).arg(dir).spawn() {
+-        log::warn!("Horizon: could not open {}: {e}", dir.display());
++        log::warn!("Rusted: could not open {}: {e}", dir.display());
+     }
+ }
+ /// `Util.getPlatform().openUri`: the system browser on the link.
+@@ -137,7 +137,7 @@
+             return;
+         }
+         if let Err(e) = self.reload_selected_packs() {
+-            log::warn!("Horizon: resource reload failed: {e}");
++            log::warn!("Rusted: resource reload failed: {e}");
+             if self.screen != super::Screen::Options {
+                 self.open_options_at(
+                     self.title.is_some(),
+--- a/engine/crates/horizon-client/src/game/pad.rs
++++ b/engine/crates/horizon-client/src/game/pad.rs
+@@ -160,7 +160,7 @@
+ 
+     fn pad_button_logged(&mut self, event_loop: &ActiveEventLoop, button: Button, down: bool) {
+         if let Err(e) = self.pad_button(event_loop, button, down) {
+-            log::warn!("Horizon: controller {}: {e}", button.name());
++            log::warn!("Rusted: controller {}: {e}", button.name());
+         }
+     }
+ 
+--- a/engine/crates/horizon-client/src/game/pad/hardware.rs
++++ b/engine/crates/horizon-client/src/game/pad/hardware.rs
+@@ -74,7 +74,7 @@
+             }
+             Err(gilrs::Error::NotImplemented(_)) => None,
+             Err(e) => {
+-                log::warn!("Horizon: controllers are unavailable: {e}");
++                log::warn!("Rusted: controllers are unavailable: {e}");
+                 None
+             }
+         };
+@@ -380,7 +380,7 @@
+                 let end = Instant::now() + Duration::from_millis(u64::from(pulse.millis) + 50);
+                 self.pad.devices.rumbles.push((effect, end));
+             }
+-            Err(e) => log::debug!("Horizon: controller vibration: {e}"),
++            Err(e) => log::debug!("Rusted: controller vibration: {e}"),
+         }
+     }
+ 
+--- a/engine/crates/horizon-client/src/game/pad_menu.rs
++++ b/engine/crates/horizon-client/src/game/pad_menu.rs
+@@ -947,7 +947,7 @@
+                 None => self.options_key(key.expect("a key"), None),
+             };
+             if let Err(e) = result {
+-                log::warn!("Horizon: on-screen keyboard: {e}");
++                log::warn!("Rusted: on-screen keyboard: {e}");
+             }
+         } else if self.title.is_some() {
+             match key {
+--- a/engine/crates/horizon-client/src/game/persist.rs
++++ b/engine/crates/horizon-client/src/game/persist.rs
+@@ -1020,7 +1020,7 @@
+         let keys: HashSet<(i32, i32)> = unloaded.iter().map(|c| (c.x, c.z)).collect();
+         let chunks = self.entity_chunks(&keys, true);
+         if let Err(e) = self.save.save_entities_later(chunks) {
+-            log::warn!("Horizon: failed to save entities: {e}");
++            log::warn!("Rusted: failed to save entities: {e}");
+         }
+     }
+     /// Leaving a dimension: its entities are saved with it.
+--- a/engine/crates/horizon-client/src/game/remote.rs
++++ b/engine/crates/horizon-client/src/game/remote.rs
+@@ -312,7 +312,7 @@
+         }
+         self.join_world_rest()?;
+         if let Err(error) = self.join_server(address, name, None, cookies) {
+-            log::warn!("Horizon: could not join server: {error}");
++            log::warn!("Rusted: could not join server: {error}");
+             if self.title.is_none() {
+                 self.title = Some(horizon_client::title::Title::new(
+                     std::env::current_dir()?.join("saves"),
+@@ -839,7 +839,7 @@
+                             break;
+                         }
+                         Next::Lost => {
+-                            log::warn!("Horizon: the chunk decoder stopped; a column is missing");
++                            log::warn!("Rusted: the chunk decoder stopped; a column is missing");
+                             continue;
+                         }
+                     };
+@@ -912,7 +912,7 @@
+                     if let Some(r) = self.remote.as_mut() {
+                         r.decode_errors += 1;
+                         if r.decode_errors <= 20 {
+-                            log::warn!("Horizon: skipped undecodable packet {e}");
++                            log::warn!("Rusted: skipped undecodable packet {e}");
+                         }
+                     }
+                 }
+@@ -920,7 +920,7 @@
+                     reason,
+                     from_server,
+                 } => {
+-                    log::info!("Horizon: disconnected: {reason}");
++                    log::info!("Rusted: disconnected: {reason}");
+                     // ClientboundTransferPacket left a target: connect there
+                     // instead of showing the disconnect, the stored cookies
+                     // carried over (ClientCommonPacketListenerImpl.
+--- a/engine/crates/horizon-client/src/game/remote_chunks.rs
++++ b/engine/crates/horizon-client/src/game/remote_chunks.rs
+@@ -186,7 +186,7 @@
+                 }
+             });
+         if let Err(e) = spawned {
+-            log::warn!("Horizon: no chunk decoder thread ({e}); chunks decode in the frame");
++            log::warn!("Rusted: no chunk decoder thread ({e}); chunks decode in the frame");
+         }
+         Self { jobs, done }
+     }
+@@ -244,7 +244,7 @@
+         let chunk = match column {
+             Ok(chunk) => chunk,
+             Err(e) => {
+-                log::warn!("Horizon: chunk {} {}: {e}", p.x, p.z);
++                log::warn!("Rusted: chunk {} {}: {e}", p.x, p.z);
+                 return;
+             }
+         };
+--- a/engine/crates/horizon-client/src/game/server_links.rs
++++ b/engine/crates/horizon-client/src/game/server_links.rs
+@@ -57,7 +57,7 @@
+         .filter(|l| {
+             let ok = valid_untrusted_uri(&l.link);
+             if !ok {
+-                log::warn!("Horizon: server sent an invalid link: {}", l.link);
++                log::warn!("Rusted: server sent an invalid link: {}", l.link);
+             }
+             ok
+         })
+--- a/engine/crates/horizon-client/src/game/server_mods.rs
++++ b/engine/crates/horizon-client/src/game/server_mods.rs
+@@ -384,13 +384,13 @@
+                 let state = match crate::game::render_control::parse_state(registry, &b.state) {
+                     Ok(state) => state,
+                     Err(e) => {
+-                        log::warn!("Horizon: a server mod set {}: {e}", b.state);
++                        log::warn!("Rusted: a server mod set {}: {e}", b.state);
+                         continue;
+                     }
+                 };
+                 if let Err(e) = self.place_state([b.x, b.y, b.z], state, false) {
+                     log::debug!(
+-                        "Horizon: a server mod's block at {} {} {}: {e:?}",
++                        "Rusted: a server mod's block at {} {} {}: {e:?}",
+                         b.x,
+                         b.y,
+                         b.z
+@@ -565,7 +565,7 @@
+                         let over = queued.len() - MAX_QUEUED_WRITES;
+                         queued.drain(..over);
+                         log::warn!(
+-                            "Horizon: mod {name} set more blocks than wait for their level: {over} dropped"
++                            "Rusted: mod {name} set more blocks than wait for their level: {over} dropped"
+                         );
+                     }
+                 }
+--- a/engine/crates/horizon-client/src/game/server_packs.rs
++++ b/engine/crates/horizon-client/src/game/server_packs.rs
+@@ -326,7 +326,7 @@
+                 entry.accept_textures = setting;
+             }
+             if let Err(e) = servers::save(&file, &list) {
+-                log::warn!("Horizon: could not save {}: {e}", file.display());
++                log::warn!("Rusted: could not save {}: {e}", file.display());
+             }
+         }
+         Ok(())
+@@ -373,7 +373,7 @@
+             match download::Queue::open(dir) {
+                 Ok(queue) => state.queue = Some(queue),
+                 Err(e) => {
+-                    log::error!("Horizon: failed to open the download queue: {e}");
++                    log::error!("Rusted: failed to open the download queue: {e}");
+                     // Every request failed, as the notifier would hear it.
+                     let (progress, events) = std::sync::mpsc::channel();
+                     for _ in &requests {
+@@ -411,7 +411,7 @@
+             .map(|(id, path)| packs::server_pack(*id, path))
+             .collect();
+         let Some(server) = server else {
+-            log::warn!("Horizon: invalid pack metadata in a server pack, ignoring all");
++            log::warn!("Rusted: invalid pack metadata in a server pack, ignoring all");
+             self.finish_pack_reload(false);
+             return;
+         };
+@@ -452,7 +452,7 @@
+         match handle {
+             Ok(handle) => self.server_packs.reload = Some(PackReload { progress, handle }),
+             Err(e) => {
+-                log::error!("Horizon: could not start the pack reload worker: {e}");
++                log::error!("Rusted: could not start the pack reload worker: {e}");
+                 self.finish_pack_reload(false);
+             }
+         }
+@@ -476,7 +476,7 @@
+         {
+             Ok(()) => true,
+             Err(e) => {
+-                log::warn!("Horizon: server resource pack reload failed: {e}");
++                log::warn!("Rusted: server resource pack reload failed: {e}");
+                 false
+             }
+         };
+--- a/engine/crates/horizon-client/src/game/startup_menu.rs
++++ b/engine/crates/horizon-client/src/game/startup_menu.rs
+@@ -656,7 +656,7 @@
+             if let Some(loader) = loaded.rest_loader.take()
+                 && let Err(error) = loader.finish()
+             {
+-                log::warn!("Horizon: replaced resource generation failed: {error}");
++                log::warn!("Rusted: replaced resource generation failed: {error}");
+             }
+         }
+         self.loaded = None;
+--- a/engine/crates/horizon-client/src/game/world_loading.rs
++++ b/engine/crates/horizon-client/src/game/world_loading.rs
+@@ -255,7 +255,7 @@
+                 });
+             match spawned {
+                 Ok(thread) => *preload = Preload::Started { thread, left: None },
+-                Err(e) => log::warn!("Horizon: world data preload: {e}"),
++                Err(e) => log::warn!("Rusted: world data preload: {e}"),
+             }
+         }
+         Preload::Idle => {}
+@@ -268,7 +268,7 @@
+                 super::lan::forget_sync_data();
+                 horizon_threads::release_free_memory();
+                 *preload = Preload::Idle;
+-                log::info!("Horizon: preloaded world data dropped, no world opened");
++                log::info!("Rusted: preloaded world data dropped, no world opened");
+             }
+         }
+     }
+--- a/engine/crates/horizon-client/src/gfx.rs
++++ b/engine/crates/horizon-client/src/gfx.rs
+@@ -122,7 +122,7 @@
+     keep_depth: bool,
+ ) -> wgpu::RenderPass<'e> {
+     encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+-        label: Some("Horizon world, after culling"),
++        label: Some("Rusted world, after culling"),
+         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+             view,
+             resolve_target: None,
+@@ -815,7 +815,7 @@
+ fn describe_adapter(adapter: &wgpu::Adapter) {
+     let info = adapter.get_info();
+     log::info!(
+-        "Horizon renderer: {} ({:?}, {:?})",
++        "Rusted renderer: {} ({:?}, {:?})",
+         info.name,
+         info.backend,
+         info.device_type
+@@ -885,7 +885,7 @@
+     for (attempt, backends) in order.iter().copied().enumerate() {
+         let name = backends_name(backends);
+         if attempt > 0 {
+-            log::warn!("Horizon renderer: trying {name} ({})", failures.join("; "));
++            log::warn!("Rusted renderer: trying {name} ({})", failures.join("; "));
+         }
+         let instance = wgpu::Instance::new(instance_descriptor(backends));
+         let surface = if offscreen {
+@@ -946,7 +946,7 @@
+             limits.max_texture_array_layers,
+         ));
+         let desc = wgpu::DeviceDescriptor {
+-            label: Some("Horizon device"),
++            label: Some("Rusted device"),
+             required_features: features,
+             required_limits: limits,
+             ..Default::default()
+@@ -981,20 +981,20 @@
+ /// Vulkan is loaded at run time (the game links no graphics library), so a
+ /// missing driver shows here rather than as a missing-DLL dialog.
+ #[cfg(target_os = "windows")]
+-const NO_GPU_DRIVER: &str = "No graphics driver with Vulkan, DirectX 12 or OpenGL found: Horizon needs \
++const NO_GPU_DRIVER: &str = "No graphics driver with Vulkan, DirectX 12 or OpenGL found: Rusted needs \
+      a GPU driver with one of them. Install the latest driver for your NVIDIA, AMD or Intel GPU and \
+      start the game again";
+ #[cfg(target_os = "macos")]
+ const NO_GPU_DRIVER: &str = "No Metal graphics device found";
+ #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+-const NO_GPU_DRIVER: &str = "No Vulkan or OpenGL graphics driver found: Horizon needs the Vulkan loader \
++const NO_GPU_DRIVER: &str = "No Vulkan or OpenGL graphics driver found: Rusted needs the Vulkan loader \
+      (libvulkan.so.1) and a Vulkan driver for your GPU (Mesa's, or NVIDIA's), or OpenGL through EGL";
+ /// Logs a step of the renderer's start, for a native crash in the graphics
+ /// driver: it leaves no panic or crash report, so the log's last line is the
+ /// only sign of where the game stopped. The log file is written unbuffered;
+ /// the flush is for loggers that buffer.
+ fn startup_step(step: std::fmt::Arguments) {
+-    log::info!("Horizon renderer: {step}");
++    log::info!("Rusted renderer: {step}");
+     log::logger().flush();
+ }
+ /// How far the first frame on a new device got, for `startup_step`.
+@@ -1070,7 +1070,7 @@
+             // devices can invalidate the driver's swapchain state on the same
+             // window.
+             Some(renderer) => {
+-                describe_adapter(&renderer.adapter);
++                // Resource reload keeps the same device; report it only when it is opened.
+                 check_layers(&renderer.adapter.limits(), layers)?;
+                 Opened {
+                     surface: if offscreen {
+@@ -1149,7 +1149,7 @@
+         }
+         let gpu_timer = timing::GpuTimer::new(&device, &queue);
+         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+-            label: Some("Horizon terrain"),
++            label: Some("Rusted terrain"),
+             source: wgpu::ShaderSource::Wgsl(include_str!("terrain.wgsl").into()),
+         });
+         let entry = |binding, visibility, ty| wgpu::BindGroupLayoutEntry {
+@@ -1166,14 +1166,14 @@
+         };
+         let sprite_arrays = layers.div_ceil(split).max(1);
+         if sprite_arrays > 1 {
+-            log::info!("Horizon: {layers} block textures in {sprite_arrays} arrays");
++            log::info!("Rusted: {layers} block textures in {sprite_arrays} arrays");
+         }
+         let sprite_constants = [
+             ("SPRITE_ARRAYS", f64::from(sprite_arrays)),
+             ("SPRITE_SPLIT", f64::from(split)),
+         ];
+         let bindings = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+-            label: Some("Horizon terrain bindings"),
++            label: Some("Rusted terrain bindings"),
+             entries: &[
+                 entry(
+                     0,
+@@ -1222,7 +1222,7 @@
+             ],
+         });
+         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+-            label: Some("Horizon terrain layout"),
++            label: Some("Rusted terrain layout"),
+             bind_group_layouts: &[Some(&bindings)],
+             ..Default::default()
+         });
+@@ -1413,7 +1413,7 @@
+             Some(alpha_blend),
+         );
+         let globals = device.create_buffer(&wgpu::BufferDescriptor {
+-            label: Some("Horizon globals"),
++            label: Some("Rusted globals"),
+             size: std::mem::size_of::<Globals>() as u64,
+             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+             mapped_at_creation: false,
+@@ -1532,7 +1532,7 @@
+         });
+         let group = terrain_group(
+             &device,
+-            "Horizon terrain resources",
++            "Rusted terrain resources",
+             &bindings,
+             &globals,
+             &sprite_views,
+@@ -1668,7 +1668,7 @@
+         )?;
+         hud.atlas_texture = Some(atlas.clone());
+         let entity_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+-            label: Some("Horizon entities"),
++            label: Some("Rusted entities"),
+             source: wgpu::ShaderSource::Wgsl(entity_shader().into()),
+         });
+         let entity_bindings = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+@@ -2266,7 +2266,7 @@
+             ..Default::default()
+         });
+         let border_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+-            label: Some("Horizon world border"),
++            label: Some("Rusted world border"),
+             source: wgpu::ShaderSource::Wgsl(include_str!("border.wgsl").into()),
+         });
+         let border_attributes = wgpu::vertex_attr_array![0=>Float32x3,1=>Float32x2];
+@@ -2326,7 +2326,7 @@
+             cache: None,
+         });
+         let screen_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+-            label: Some("Horizon screen effects"),
++            label: Some("Rusted screen effects"),
+             source: wgpu::ShaderSource::Wgsl(include_str!("screen.wgsl").into()),
+         });
+         let screen_attributes =
+@@ -2757,7 +2757,7 @@
+         let read = cull.is_some_and(|c| c.depth_test() == cull::DepthTest::InShader);
+         device
+             .create_texture(&wgpu::TextureDescriptor {
+-                label: Some("Horizon depth"),
++                label: Some("Rusted depth"),
+                 size: wgpu::Extent3d {
+                     width: config.width,
+                     height: config.height,
+@@ -3406,7 +3406,7 @@
+         let views = sprite_views(&self.sprite_textures, &self.sprite_unused, Some(levels + 1));
+         self.group = terrain_group(
+             &self.device,
+-            "Horizon terrain resources",
++            "Rusted terrain resources",
+             &self.terrain_layout,
+             &self.globals,
+             &views,
+@@ -3583,7 +3583,7 @@
+         let mut encoder = section_copies.unwrap_or_else(|| {
+             self.device
+                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+-                    label: Some("Horizon frame"),
++                    label: Some("Rusted frame"),
+                 })
+         });
+         if self.animated_textures {
+@@ -4602,7 +4602,7 @@
+                 },
+             })];
+             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+-                label: Some("Horizon world"),
++                label: Some("Rusted world"),
+                 color_attachments: &attachments,
+                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                     view: world_depth,
+@@ -5269,7 +5269,7 @@
+         texture: &wgpu::Texture,
+     ) -> wgpu::Buffer {
+         let buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+-            label: Some("Horizon screenshot"),
++            label: Some("Rusted screenshot"),
+             size: u64::from(self.padded_row()) * u64::from(self.config.height),
+             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+             mapped_at_creation: false,
+--- a/engine/crates/horizon-client/src/gfx/animate.rs
++++ b/engine/crates/horizon-client/src/gfx/animate.rs
+@@ -109,7 +109,7 @@
+             let bytes: u64 = chains.iter().map(|(chain, _)| chain.len() as u64).sum();
+             if bytes > limit {
+                 log::warn!(
+-                    "Horizon: layer {}'s animation ({bytes} bytes) does not fit in a storage buffer; it stays still",
++                    "Rusted: layer {}'s animation ({bytes} bytes) does not fit in a storage buffer; it stays still",
+                     animation.layer
+                 );
+                 continue;
+@@ -386,7 +386,7 @@
+     match internal.or(pollster::block_on(validation.pop())) {
+         None => Some(pipeline),
+         Some(e) => {
+-            log::warn!("Horizon renderer: animated sprites drawn on the CPU ({e})");
++            log::warn!("Rusted renderer: animated sprites drawn on the CPU ({e})");
+             None
+         }
+     }
+--- a/engine/crates/horizon-client/src/gfx/arena.rs
++++ b/engine/crates/horizon-client/src/gfx/arena.rs
+@@ -162,7 +162,7 @@
+             )?;
+             if !std::mem::replace(&mut self.spilled, true) {
+                 log::warn!(
+-                    "Horizon: video memory is full; more terrain is kept in system memory \
++                    "Rusted: video memory is full; more terrain is kept in system memory \
+                      (lower the render distance if frames slow down)"
+                 );
+             }
+--- a/engine/crates/horizon-client/src/gfx/occlusion.rs
++++ b/engine/crates/horizon-client/src/gfx/occlusion.rs
+@@ -602,7 +602,7 @@
+                 self.changed_late.clear();
+                 return;
+             }
+-            log::warn!("Horizon: the occlusion worker stopped; culling on the render thread");
++            log::warn!("Rusted: the occlusion worker stopped; culling on the render thread");
+             self.worker = None;
+         }
+         self.edits.clear();
+--- a/engine/crates/horizon-client/src/gfx/panorama.rs
++++ b/engine/crates/horizon-client/src/gfx/panorama.rs
+@@ -16,7 +16,7 @@
+ impl Faces {
+     pub fn load(root: &Path) -> Self {
+         Self::try_load(root).unwrap_or_else(|error| {
+-            log::warn!("Horizon: title panorama unavailable ({error})");
++            log::warn!("Rusted: title panorama unavailable ({error})");
+             Self {
+                 size: 1,
+                 pixels: [96, 110, 111, 255].repeat(6),
+--- a/engine/crates/horizon-client/src/heartbeat.rs
++++ b/engine/crates/horizon-client/src/heartbeat.rs
+@@ -21,6 +21,10 @@
+ /// Starts the pings, once. Call when the game itself starts (not a dedicated server, not a
+ /// benchmark or an automated run).
+ pub fn start() {
++    // This fork does not contribute sessions to the upstream product's live count.
++    if !crate::rusted::UPSTREAM_SERVICES {
++        return;
++    }
+     if PINGER.get().is_some() || std::env::var_os("HORIZON_NO_HEARTBEAT").is_some() {
+         return;
+     }
+@@ -34,7 +38,7 @@
+         Ok(handle) => {
+             let _ = PINGER.set(handle.thread().clone());
+         }
+-        Err(e) => log::warn!("Horizon: no live count ping: {e}"),
++        Err(e) => log::warn!("Rusted: no live count ping: {e}"),
+     }
+ }
+ 
+@@ -62,7 +66,7 @@
+             Err(e) => {
+                 // Said once, not every minute the server is away.
+                 if !failed {
+-                    log::info!("Horizon: the live count ping failed ({e}); trying again later");
++                    log::info!("Rusted: the live count ping failed ({e}); trying again later");
+                 }
+                 failed = true;
+                 wait = (wait * 2).min(MAX_WAIT);
+--- a/engine/crates/horizon-client/src/hud.rs
++++ b/engine/crates/horizon-client/src/hud.rs
+@@ -489,7 +489,10 @@
+         if full {
+             images.extend(atlas_sprites(root, &images));
+         }
+-        // The title screen's "JAVA EDITION" banner reads "RUST EDITION".
++        if let Some((width, height, pixels)) = crate::rusted::title_logo() {
++            images.push((crate::rusted::TITLE_LOGO.into(), width, height, pixels));
++        }
++        // Fallback when the separate Rusted title artwork is unavailable.
+         if let Some(edition) = images
+             .iter_mut()
+             .find(|i| i.0 == crate::title_edition::SPRITE)
+--- a/engine/crates/horizon-client/src/lib.rs
++++ b/engine/crates/horizon-client/src/lib.rs
+@@ -140,6 +140,7 @@
+ pub mod recipe_book;
+ pub mod recipe_book_screen;
+ pub mod reconnect;
++pub mod rusted;
+ pub mod save;
+ pub mod scoreboard_cmd;
+ pub mod screen_draw;
+--- a/engine/crates/horizon-client/src/locator_bar.rs
++++ b/engine/crates/horizon-client/src/locator_bar.rs
+@@ -174,7 +174,7 @@
+                 {
+                     out.insert(format!("{namespace}:{name}"), style);
+                 } else {
+-                    log::warn!("Horizon: invalid waypoint style {}", path.display());
++                    log::warn!("Rusted: invalid waypoint style {}", path.display());
+                 }
+             }
+         }
+--- a/engine/crates/horizon-client/src/logging.rs
++++ b/engine/crates/horizon-client/src/logging.rs
+@@ -48,9 +48,12 @@
+ /// Where the launcher runs the game and keeps its saves: `HORIZON_HOME`, else `horizon` in the
+ /// platform data folder (launcher/src/backend.rs `game_home`).
+ pub fn game_home() -> PathBuf {
+-    match std::env::var_os("HORIZON_HOME").filter(|h| !h.is_empty()) {
++    match std::env::var_os("RUSTED_HOME")
++        .or_else(|| std::env::var_os("HORIZON_HOME"))
++        .filter(|h| !h.is_empty())
++    {
+         Some(h) => PathBuf::from(h),
+-        None => data_dir().join("horizon"),
++        None => data_dir().join("rusted"),
+     }
+ }
+ 
+@@ -241,10 +244,8 @@
+                         if let Some(latest) = &mut self.file
+                             && let Err(e) = roll(&mut latest.file, &self.dir, self.date)
+                         {
+-                            let _ = writeln!(
+-                                stderr.lock(),
+-                                "Horizon: could not roll over the log: {e}"
+-                            );
++                            let _ =
++                                writeln!(stderr.lock(), "Rusted: could not roll over the log: {e}");
+                         }
+                         self.date = date;
+                     }
+@@ -277,7 +278,7 @@
+ static LOGGER: std::sync::OnceLock<Logger> = std::sync::OnceLock::new();
+ 
+ fn ours(target: &str) -> bool {
+-    target.starts_with("horizon")
++    target.starts_with("horizon") || target == "rusted" || target.starts_with("rusted::")
+ }
+ 
+ impl log::Log for Logger {
+@@ -362,14 +363,14 @@
+         Ok(Some(latest)) => Some(latest),
+         Ok(None) => {
+             eprintln!(
+-                "Horizon: another game is writing {}; this one logs to the terminal only",
++                "Rusted: another game is writing {}; this one logs to the terminal only",
+                 dir.join("latest.log").display()
+             );
+             None
+         }
+         Err(e) => {
+             eprintln!(
+-                "Horizon: could not open {}: {e}",
++                "Rusted: could not open {}: {e}",
+                 dir.join("latest.log").display()
+             );
+             None
+@@ -386,7 +387,7 @@
+             .name("Log writer".into())
+             .spawn(move || writer.run(receive))
+         {
+-            eprintln!("Horizon: could not start the log writer: {e}");
++            eprintln!("Rusted: could not start the log writer: {e}");
+         }
+         Logger {
+             out,
+--- a/engine/crates/horizon-client/src/main.rs
++++ b/engine/crates/horizon-client/src/main.rs
+@@ -1,4 +1,4 @@
+-//! Horizon: native Rust client for Minecraft Java Edition 26.3 gameplay.
++//! Rusted: native client derived from Horizon, with its own launcher integration.
+ #![forbid(unsafe_code)]
+ mod game;
+ 
+@@ -10,6 +10,19 @@
+ static MOD_API_LEVEL: [u8; 27] = horizon_mods::api_level::MARK;
+ 
+ fn main() {
++    let mut arguments = std::env::args_os().skip(1);
++    if arguments.next().as_deref() == Some(std::ffi::OsStr::new("--inspect-mods")) {
++        let Some(directory) = arguments.next() else {
++            eprintln!("Rusted: --inspect-mods requires a mods directory");
++            std::process::exit(2);
++        };
++        let report = rusted_platform::scan(std::path::Path::new(&directory));
++        println!(
++            "{}",
++            serde_json::to_string_pretty(&report).expect("serializable inventory")
++        );
++        return;
++    }
+     std::hint::black_box(&MOD_API_LEVEL);
+     horizon_client::telemetry::mark_start();
+     let args: Vec<String> = std::env::args().skip(1).collect();
+@@ -24,11 +37,12 @@
+     if !help {
+         logging::init(&home, thread);
+         // The log's first line names the build, so a bug report that carries the log says which one it was.
+-        log::info!("Horizon {}", crash::version());
++        log::info!("{}", horizon_client::rusted::title());
++        log::info!("{}", horizon_client::rusted::CREDITS);
+         crash::install(home.clone(), side);
+     }
+     if let Err(error) = game::run() {
+-        log::error!("Horizon: {error}");
++        log::error!("Rusted: {error}");
+         if !help {
+             crash::report_error(&home, side, &*error);
+         }
+--- a/engine/crates/horizon-client/src/mobs/trial_spawner.rs
++++ b/engine/crates/horizon-client/src/mobs/trial_spawner.rs
+@@ -217,7 +217,7 @@
+                             let id = rel.to_string_lossy().replace('\\', "/");
+                             out.insert(format!("{ns}:{id}"), c);
+                         }
+-                        None => log::warn!("Horizon: bad trial spawner config {}", path.display()),
++                        None => log::warn!("Rusted: bad trial spawner config {}", path.display()),
+                     }
+                 }
+             }
+--- a/engine/crates/horizon-client/src/mod_content.rs
++++ b/engine/crates/horizon-client/src/mod_content.rs
+@@ -1247,11 +1247,11 @@
+     if fs::read(out.join(STAMP)).is_ok_and(|s| s == stamp.as_bytes()) {
+         // A reused root warns as the build did.
+         let warnings = fs::read_to_string(out.join(WARNINGS)).unwrap_or_default();
+-        warnings.lines().for_each(|w| log::warn!("Horizon: {w}"));
++        warnings.lines().for_each(|w| log::warn!("Rusted: {w}"));
+         return Ok(out);
+     }
+     for warning in build(base, mods, &out)? {
+-        log::warn!("Horizon: {warning}");
++        log::warn!("Rusted: {warning}");
+     }
+     fs::write(out.join(STAMP), stamp)?;
+     Ok(out)
+--- a/engine/crates/horizon-client/src/model_library.rs
++++ b/engine/crates/horizon-client/src/model_library.rs
+@@ -97,7 +97,7 @@
+                     match read() {
+                         Ok(model) => Arc::new(model),
+                         Err(e) if or_missing => {
+-                            log::warn!("Horizon: missing block model {name}: {e}");
++                            log::warn!("Rusted: missing block model {name}: {e}");
+                             skipped.insert(name);
+                             continue;
+                         }
+--- a/engine/crates/horizon-client/src/models/catalog.rs
++++ b/engine/crates/horizon-client/src/models/catalog.rs
+@@ -159,7 +159,7 @@
+                 Ok(loaded) => loaded,
+                 Err(e) => {
+                     log::warn!(
+-                        "Horizon: blockstate definition of {namespace}:{path} not loaded: {e}"
++                        "Rusted: blockstate definition of {namespace}:{path} not loaded: {e}"
+                     );
+                     continue;
+                 }
+@@ -212,7 +212,7 @@
+         let library = match models.block_library(root, names.clone()) {
+             Ok(library) => library,
+             Err(e) => {
+-                log::warn!("Horizon: block models incomplete ({e}); using the missing model");
++                log::warn!("Rusted: block models incomplete ({e}); using the missing model");
+                 models.block_library_or_missing(root, names)?
+             }
+         };
+--- a/engine/crates/horizon-client/src/offline_name.rs
++++ b/engine/crates/horizon-client/src/offline_name.rs
+@@ -33,7 +33,7 @@
+     let name = generate(seed());
+     if let Err(e) = fs::write(&path, format!("{KEY}{name}\n")) {
+         log::warn!(
+-            "Horizon: could not keep the player name in {}: {e}",
++            "Rusted: could not keep the player name in {}: {e}",
+             path.display()
+         );
+     }
+--- a/engine/crates/horizon-client/src/options_ui.rs
++++ b/engine/crates/horizon-client/src/options_ui.rs
+@@ -834,6 +834,7 @@
+     Font,
+     Packs,
+     Mods,
++    JavaMods,
+     /// Horizon's shader packs, either kind (`shader_pack_list`).
+     ShaderPacks,
+     /// Horizon's graphics settings (`graphics_ui`).
+@@ -1063,7 +1064,7 @@
+ /// What a button opening one of Horizon's pages says on hover.
+ fn horizon_page_tooltip(page: Page) -> Option<&'static str> {
+     Some(match page {
+-        Page::Horizon => "Horizon's own settings: graphics, controllers, extras and mods.",
++        Page::Horizon => "Rusted settings: graphics, controllers, extras and mods.",
+         Page::Graphics => "Graphics, simply: each setting says what it costs.",
+         Page::GraphicsAdvanced => {
+             "Every graphics setting, Horizon's included, with what each costs."
+@@ -1077,7 +1078,7 @@
+             "Shader packs from the shaderpacks folder: Horizon's own and those in the shaders/ format. One runs at a time."
+         }
+         Page::Mods => {
+-            "Mods made for Horizon, from the horizon-mods folder. Each runs in a sandbox and stays off until you turn it on."
++            "Native .hmod mods run in a sandbox. Java mod compatibility is listed separately."
+         }
+         _ => return None,
+     })
+@@ -1167,13 +1168,14 @@
+             Page::Font => "options.font.title",
+             Page::Packs => "resourcePack.title",
+             Page::Mods => "Mods",
++            Page::JavaMods => "Rusted - Java mod compatibility",
+             Page::ShaderPacks => "Shader Packs",
+             Page::Graphics | Page::GraphicsAdvanced => "options.videoTitle",
+             Page::Controller => "Controller Settings",
+             Page::PadBinds => "Controller Binds",
+-            Page::Extras => "Horizon Extras",
++            Page::Extras => "Rusted Extras",
+             Page::Credits => "credits_and_attribution.screen.title",
+-            Page::Horizon => "Horizon Settings",
++            Page::Horizon => "Rusted Settings",
+             Page::Agent => "AI Agent",
+         }
+     }
+@@ -1330,7 +1332,7 @@
+                         0.0,
+                         0.0,
+                         150.0,
+-                        Text::literal("Horizon Graphics..."),
++                        Text::literal("Rusted Graphics..."),
+                         Act::Push(Page::Graphics),
+                     ),
+                     Some(button(
+@@ -1485,17 +1487,48 @@
+                 rows
+             }
+             Page::Font => pairs(&[Opt::ForceUnicode, Opt::JapaneseGlyphs]),
++            Page::JavaMods => {
++                let report = crate::rusted::java_mods();
++                let mut rows = vec![
++                    Row::Header("Java mods require their JVM loader"),
++                    Row::Header("Sodium / Iris / Distant Horizons: not supported natively"),
++                    Row::Note(report.directory.display().to_string()),
++                ];
++                if report.mods.is_empty() {
++                    rows.push(Row::Header("No Java mods found"));
++                }
++                for item in &report.mods {
++                    rows.push(Row::Note(format!(
++                        "{} [{}]",
++                        item.name,
++                        item.loaders.join(" / ")
++                    )));
++                    rows.push(Row::Note(item.diagnostic.clone()));
++                }
++                rows.extend(report.errors.iter().cloned().map(Row::Note));
++                rows
++            }
+             Page::Mods => {
++                let compatibility = || {
++                    Row::Buttons(
++                        button(
++                            0.0,
++                            0.0,
++                            310.0,
++                            Text::literal("Java mod compatibility..."),
++                            Act::Push(Page::JavaMods),
++                        ),
++                        None,
++                    )
++                };
+                 if s.mods.installed.is_empty() {
+-                    return vec![Row::Header(
+-                        "No mods: put .hmod files in the horizon-mods folder",
+-                    )];
+-                }
+-                s.mods
+-                    .installed
+-                    .iter()
+-                    .enumerate()
+-                    .map(|(i, installed)| {
++                    return vec![
++                        compatibility(),
++                        Row::Header("No mods: put .hmod files in the horizon-mods folder"),
++                    ];
++                }
++                std::iter::once(compatibility())
++                    .chain(s.mods.installed.iter().enumerate().map(|(i, installed)| {
+                         let mut label = Text::literal(format!("{}: ", installed.title))
+                             .append(on_off(s.mods.is_on(i)));
+                         if installed.problem.is_some() {
+@@ -1523,7 +1556,7 @@
+                             let widget = button(0.0, 0.0, 310.0, label, Act::ToggleMod(i));
+                             Row::Buttons(if dead { inactive(widget) } else { widget }, None)
+                         }
+-                    })
++                    }))
+                     .collect()
+             }
+             Page::ShaderPacks => {
+@@ -1598,7 +1631,7 @@
+                     // Vanilla's Telemetry Data and Credits slots: Horizon's
+                     // settings and its mods, as a mod adds its button here.
+                     // Credits & Attribution (WinScreen's credits) follows them.
+-                    ("Horizon Settings...", Some(Page::Horizon)),
++                    ("Rusted Settings...", Some(Page::Horizon)),
+                     ("Mods...", Some(Page::Mods)),
+                     ("options.credits_and_attribution", Some(Page::Credits)),
+                 ];
+@@ -1651,6 +1684,18 @@
+                     out.push(inactive(button(x, y, 210.0, tr(key), Act::None)));
+                 }
+                 out.push(done(h - 27.0));
++                out.push(Widget {
++                    x: 0.0,
++                    y: h - 44.0,
++                    w,
++                    h: 9.0,
++                    kind: WKind::Text {
++                        text: Text::literal(crate::rusted::CREDITS),
++                        color: u32::MAX,
++                        centered: true,
++                    },
++                    list: false,
++                });
+                 top = 0.0;
+                 bottom = 0.0;
+             }
+@@ -2183,7 +2228,7 @@
+                     && !opt.available()
+                 {
+                     tooltip = Some(atlas.font.split(
+-                        &Text::literal("This feature is not yet available in Horizon."),
++                        &Text::literal("This feature is not yet available in Rusted."),
+                         170.0,
+                     ));
+                 }
+--- a/engine/crates/horizon-client/src/save.rs
++++ b/engine/crates/horizon-client/src/save.rs
+@@ -1218,7 +1218,7 @@
+                 Some(tag) => Some((start.name.as_str().into(), tag)),
+                 None => {
+                     log::warn!(
+-                        "Horizon: structure start {} not saved: one of its pieces cannot be",
++                        "Rusted: structure start {} not saved: one of its pieces cannot be",
+                         start.name
+                     );
+                     None
+@@ -1798,7 +1798,7 @@
+         return Some(record.clone());
+     };
+     let old = read_region_record(root, cache, "poi", x, z).unwrap_or_else(|e| {
+-        log::warn!("Horizon: could not read the poi record of chunk {x} {z}: {e}");
++        log::warn!("Rusted: could not read the poi record of chunk {x} {z}: {e}");
+         None
+     });
+     let tag = match (encode_poi(chunk, tables), old) {
+@@ -2108,7 +2108,7 @@
+                     let result = write_region_records(&root, cache, folder, &records);
+                     if let Err(e) = &result {
+                         let message = format!("failed to write {folder} files: {e}");
+-                        log::warn!("Horizon: {message}");
++                        log::warn!("Rusted: {message}");
+                         *outstanding.error.lock().unwrap() = Some(message);
+                     }
+                     // Keep failed snapshots readable; never report them as durable.
+@@ -3746,7 +3746,7 @@
+             .save
+             .save_protos(&saved, self.registry.registry, &self.biomes)
+         {
+-            log::warn!("Horizon: failed to save proto chunks: {e}");
++            log::warn!("Rusted: failed to save proto chunks: {e}");
+         }
+     }
+     fn save_finished(&self, mut chunk: Chunk) {
+@@ -3760,7 +3760,7 @@
+             .save_later(&[Arc::new(chunk)], self.registry.registry, &self.biomes)
+             .and_then(|_| self.save.save_entities_later(vec![(key, entities)]));
+         if let Err(e) = saved {
+-            log::warn!("Horizon: failed to save chunk {} {}: {e}", key.0, key.1);
++            log::warn!("Rusted: failed to save chunk {} {}: {e}", key.0, key.1);
+         }
+     }
+     fn decorates(&self) -> bool {
+--- a/engine/crates/horizon-client/src/server_packs.rs
++++ b/engine/crates/horizon-client/src/server_packs.rs
+@@ -170,7 +170,7 @@
+ }
+ impl ServerPacks {
+     fn report(&mut self, id: u128, status: i32) {
+-        log::debug!("Horizon: server pack {id:032x} changed status to {status}");
++        log::debug!("Rusted: server pack {id:032x} changed status to {status}");
+         if self.reporting {
+             self.replies.push((id, status));
+         }
+--- a/engine/crates/horizon-client/src/server_packs/download.rs
++++ b/engine/crates/horizon-client/src/server_packs/download.rs
+@@ -129,12 +129,12 @@
+                 Err(_) => ("error", "no_access".into()),
+             },
+             Err(e) => {
+-                log::error!("Horizon: failed to download {}: {e}", request.url);
++                log::error!("Rusted: failed to download {}: {e}", request.url);
+                 ("error", "download_failed".into())
+             }
+         });
+         if let Err(e) = append_log(&dir.join("log.json"), &entry) {
+-            log::error!("Horizon: failed to log download of {}: {e}", request.url);
++            log::error!("Rusted: failed to log download of {}: {e}", request.url);
+         }
+         match result {
+             Ok(path) => batch.downloaded.push((request.id, path)),
+@@ -199,13 +199,13 @@
+     let target = request.sha1.as_ref().map(|sha1| dir.join(sha1));
+     if let (Some(target), Some(sha1)) = (&target, &request.sha1) {
+         if matches(target, sha1) {
+-            log::info!("Horizon: returning cached file since actual hash matches requested");
++            log::info!("Rusted: returning cached file since actual hash matches requested");
+             touch(target);
+             return Ok(target.clone());
+         }
+         if target.exists() {
+             log::warn!(
+-                "Horizon: existing file {} not found or had mismatched hash",
++                "Rusted: existing file {} not found or had mismatched hash",
+                 target.display()
+             );
+         }
+@@ -349,7 +349,7 @@
+             }
+             Ok(()) => {}
+             Err(e) => log::warn!(
+-                "Horizon: failed to delete cache file {}: {e}",
++                "Rusted: failed to delete cache file {}: {e}",
+                 path.display()
+             ),
+         }
+--- a/engine/crates/horizon-client/src/sprites.rs
++++ b/engine/crates/horizon-client/src/sprites.rs
+@@ -176,7 +176,7 @@
+                 // `MissingTextureAtlasSprite.getLocation()`: vanilla models name the
+                 // missing texture on purpose (block/air.json's particle), #853.
+                 if name != "minecraft:missingno" {
+-                    log::warn!("Horizon: using the missing texture for {name}: {e}");
++                    log::warn!("Rusted: using the missing texture for {name}: {e}");
+                 }
+                 // MissingTextureAtlasSprite.generateMissingImage: 16x16,
+                 // magenta and black quarters.
+--- a/engine/crates/horizon-client/src/streaming.rs
++++ b/engine/crates/horizon-client/src/streaming.rs
+@@ -1408,7 +1408,7 @@
+                 Ok(Done::Saved(protos)) => self.receive_saved(protos),
+                 Ok(other) => self.deferred.push(other),
+                 Err(_) => {
+-                    log::warn!("Horizon: chunk generation did not finish before saving");
++                    log::warn!("Rusted: chunk generation did not finish before saving");
+                     break;
+                 }
+             }
+--- a/engine/crates/horizon-client/src/structure_blocks.rs
++++ b/engine/crates/horizon-client/src/structure_blocks.rs
+@@ -126,7 +126,7 @@
+     loot.get_or_insert_with(|| match LootData::load(root) {
+         Ok(data) => Some(Arc::new(data)),
+         Err(e) => {
+-            log::warn!("Horizon: loot tables unavailable, structure containers stay empty: {e}");
++            log::warn!("Rusted: loot tables unavailable, structure containers stay empty: {e}");
+             None
+         }
+     })
+--- a/engine/crates/horizon-client/src/telemetry.rs
++++ b/engine/crates/horizon-client/src/telemetry.rs
+@@ -204,7 +204,7 @@
+ /// Keeps the crash for the launcher to send, if the player allows crash reports.
+ pub fn keep_crash(home: &Path, report: &crate::crash::Report) {
+     if let Err(e) = outbox::push(home, &crash_item(report)) {
+-        log::warn!("Horizon: could not keep the crash report to send: {e}");
++        log::warn!("Rusted: could not keep the crash report to send: {e}");
+     }
+ }
+ 
+@@ -218,7 +218,7 @@
+         home,
+         &Item::new(Source::Game, version(), Payload::Benchmark(data)),
+     ) {
+-        log::warn!("Horizon: could not keep the benchmark report to send: {e}");
++        log::warn!("Rusted: could not keep the benchmark report to send: {e}");
+     }
+ }
+ 
+@@ -301,7 +301,7 @@
+         {
+             let item = Item::new(Source::Game, version(), Payload::Perf(perf));
+             if let Err(e) = outbox::push(home, &item) {
+-                log::warn!("Horizon: could not keep the session's performance summary: {e}");
++                log::warn!("Rusted: could not keep the session's performance summary: {e}");
+             }
+         }
+         *self = Self {
+--- a/engine/crates/horizon-client/src/title.rs
++++ b/engine/crates/horizon-client/src/title.rs
+@@ -921,22 +921,38 @@
+         }
+         match &self.mode {
+             Mode::Main => {
+-                // LogoRenderer: the logo's top 44 of 64 rows, then the edition
+-                // banner's top 14 of 16 rows overlapping its bottom by 7.
+-                batch.sprite_region(
+-                    atlas,
+-                    "gui/title/minecraft",
+-                    [(w / 2.0).floor() - 128.0, 30.0, 256.0, 44.0],
+-                    256.0,
+-                    64.0,
+-                );
+-                batch.sprite_region(
+-                    atlas,
+-                    crate::title_edition::SPRITE,
+-                    [(w / 2.0).floor() - 64.0, 30.0 + 44.0 - 7.0, 128.0, 14.0],
+-                    128.0,
+-                    16.0,
+-                );
++                if let Some(logo) = atlas.sprites.get(crate::rusted::TITLE_LOGO) {
++                    let scale = (256.0 / logo.w as f32)
++                        .min(64.0 / logo.h as f32)
++                        .min((w - 24.0).max(1.0) / logo.w as f32);
++                    let (logo_w, logo_h) = (logo.w as f32 * scale, logo.h as f32 * scale);
++                    batch.sprite_scaled(
++                        atlas,
++                        crate::rusted::TITLE_LOGO,
++                        (w - logo_w) / 2.0,
++                        30.0,
++                        logo_w,
++                        logo_h,
++                        u32::MAX,
++                    );
++                } else {
++                    // LogoRenderer: the logo's top 44 of 64 rows, then the edition
++                    // banner's top 14 of 16 rows overlapping its bottom by 7.
++                    batch.sprite_region(
++                        atlas,
++                        "gui/title/minecraft",
++                        [(w / 2.0).floor() - 128.0, 30.0, 256.0, 44.0],
++                        256.0,
++                        64.0,
++                    );
++                    batch.sprite_region(
++                        atlas,
++                        crate::title_edition::SPRITE,
++                        [(w / 2.0).floor() - 64.0, 30.0 + 44.0 - 7.0, 128.0, 14.0],
++                        128.0,
++                        16.0,
++                    );
++                }
+                 if !hide_splash && let Some(splash) = self.splash.as_deref() {
+                     let tw = HudBatch::text_width(atlas, splash);
+                     let start = batch.vertices.len();
+@@ -964,7 +980,11 @@
+                         ];
+                     }
+                 }
+-                let version = format!("Horizon {} (Rust)", horizon_core::VANILLA_VERSION);
++                let version = format!(
++                    "Rusted {} | MC {}",
++                    crate::rusted::VERSION,
++                    horizon_core::VANILLA_VERSION
++                );
+                 batch.text(atlas, &version, 2.0, h - 10.0, u32::MAX, true);
+                 // A nightly names its build in the top-left corner, the one spot no button reaches at any GUI
+                 // scale, so screenshots and reports say which build they come from.
+--- a/engine/crates/horizon-client/src/title_edition.rs
++++ b/engine/crates/horizon-client/src/title_edition.rs
+@@ -1,10 +1,10 @@
+-//! "RUST EDITION" under the classic title screen's logo.
++//! "RUSTED EDITION" under the classic title screen's logo.
+ //!
+ //! Vanilla's `textures/gui/title/edition.png` reads "JAVA EDITION". Horizon
+ //! never ships Mojang's art, so the banner is rebuilt at load time from the
+-//! player's own texture: "EDITION" is kept column for column, the "T" is lifted
+-//! out of it, and R, U and S are Horizon's own glyphs (MIT, the rectangles
+-//! below), drawn the way the texture's letters are built (a face with darker
++//! player's own texture: "EDITION" is kept column for column. R, U and S come
++//! from Horizon (MIT); T, E, D and the six-letter layout are Rusted changes,
++//! drawn the way the texture's letters are built (a face with darker
+ //! sides and a light bottom edge, a dark extrusion under it, a black outline
+ //! and a soft rim) in the shades sampled from the texture itself. Only
+ //! vanilla 26.3's exact texture is rebuilt: a resource pack's edition.png
+@@ -21,17 +21,14 @@
+ const VANILLA: u64 = 0x4249_0538_6dfb_181f;
+ /// "EDITION", outline included, starts at this column; left of it is "JAVA".
+ const EDITION_START: usize = 204;
+-/// The columns of the "T"'s body (face and extrusion) inside "EDITION".
+-const T_BODY: (usize, usize) = (335, 376);
+ /// Where the texture's letters put their faces, and how deep they are drawn.
+ const FACE_TOP: usize = 4;
+ const EXTRUSION: usize = 8;
+ const OUTLINE: usize = 3;
+ /// The face-to-face spacing between letters.
+-const LETTER_GAP: usize = 6;
+-/// The new glyphs' face width: "RUST" then spans "JAVA"'s columns to within
+-/// a texel, so "EDITION" stays where it is and the banner stays centred.
+-const GLYPH_WIDTH: usize = 42;
++const LETTER_GAP: usize = 5;
++/// Six narrower Rusted glyphs fit the original word area; EDITION stays in place.
++const GLYPH_WIDTH: usize = 27;
+ /// The first face column, as "JAVA"'s.
+ const FIRST_FACE: usize = 4;
+ 
+@@ -54,7 +51,23 @@
+     [0, 29, 35, 39],
+ ];
+ 
+-/// The banner rebuilt to read "RUST EDITION", or `None` when the texture is
++// Rusted's additional glyphs use the same original 42 by 39 design grid.
++const T: &[[usize; 4]] = &[[0, 0, 42, 10], [15, 0, 27, 39]];
++const E: &[[usize; 4]] = &[
++    [0, 0, 11, 39],
++    [0, 0, 42, 10],
++    [0, 15, 35, 25],
++    [0, 29, 42, 39],
++];
++const D: &[[usize; 4]] = &[
++    [0, 0, 11, 39],
++    [0, 0, 33, 10],
++    [31, 7, 42, 32],
++    [0, 29, 33, 39],
++];
++const RUSTED_GLYPHS: [&[[usize; 4]]; 6] = [R, U, S, T, E, D];
++
++/// The banner rebuilt to read "RUSTED EDITION", or `None` when the texture is
+ /// not vanilla's (a resource pack's own).
+ pub fn rust_edition(width: u32, height: u32, pixels: &[u8]) -> Option<Vec<u8>> {
+     (fingerprint(width, height, pixels) == VANILLA).then(|| compose(pixels))
+@@ -129,22 +142,17 @@
+ /// Faces of the new glyphs, positioned in the texture.
+ fn glyph_faces() -> Vec<bool> {
+     let mut face = vec![false; WIDTH * HEIGHT];
+-    for (i, glyph) in [R, U, S].into_iter().enumerate() {
++    for (i, glyph) in RUSTED_GLYPHS.into_iter().enumerate() {
+         let left = FIRST_FACE + i * (GLYPH_WIDTH + LETTER_GAP);
+         for &[x0, y0, x1, y1] in glyph {
+             for y in FACE_TOP + y0..FACE_TOP + y1 {
+-                for x in left + x0..left + x1 {
++                for x in left + x0 * GLYPH_WIDTH / 42..left + x1 * GLYPH_WIDTH / 42 {
+                     face[y * WIDTH + x] = true;
+                 }
+             }
+         }
+     }
+     face
+-}
+-
+-/// Where the "T" lifted from "EDITION" goes: one letter gap after the S.
+-fn t_left() -> usize {
+-    FIRST_FACE + 3 * (GLYPH_WIDTH + LETTER_GAP)
+ }
+ 
+ /// Draw faces within `columns` the way the texture's letters are drawn.
+@@ -209,57 +217,6 @@
+ }
+ 
+ /// Every pixel of "EDITION"'s "T": its body, and the outline pixels nearer to
+-/// it than to its neighbours.
+-fn t_pixels(pixels: &[u8]) -> Vec<(usize, usize)> {
+-    const NONE: u8 = 0;
+-    const T: u8 = 1;
+-    const OTHER: u8 = 2;
+-    let mut owner = vec![NONE; WIDTH * HEIGHT];
+-    let mut queue = VecDeque::new();
+-    for y in 0..HEIGHT {
+-        for x in EDITION_START..WIDTH {
+-            let p = pixel(pixels, x, y);
+-            if p[3] == 255 && lum(p) >= 30 {
+-                owner[y * WIDTH + x] = if (T_BODY.0..=T_BODY.1).contains(&x) {
+-                    T
+-                } else {
+-                    OTHER
+-                };
+-                queue.push_back((x, y));
+-            }
+-        }
+-    }
+-    while let Some((x, y)) = queue.pop_front() {
+-        let label = owner[y * WIDTH + x];
+-        for (dx, dy) in [
+-            (-1, -1),
+-            (0, -1),
+-            (1, -1),
+-            (-1, 0),
+-            (1, 0),
+-            (-1, 1),
+-            (0, 1),
+-            (1, 1),
+-        ] {
+-            let (nx, ny) = (x as isize + dx, y as isize + dy);
+-            if !(EDITION_START as isize..WIDTH as isize).contains(&nx)
+-                || !(0..HEIGHT as isize).contains(&ny)
+-            {
+-                continue;
+-            }
+-            let (nx, ny) = (nx as usize, ny as usize);
+-            if owner[ny * WIDTH + nx] == NONE && pixel(pixels, nx, ny)[3] > 0 {
+-                owner[ny * WIDTH + nx] = label;
+-                queue.push_back((nx, ny));
+-            }
+-        }
+-    }
+-    (0..HEIGHT)
+-        .flat_map(|y| (EDITION_START..WIDTH).map(move |x| (x, y)))
+-        .filter(|&(x, y)| owner[y * WIDTH + x] == T)
+-        .collect()
+-}
+-
+ /// Close the pockets left of "EDITION" that no gap reaches from outside, as
+ /// the texture's letters fill their counters with the outline.
+ fn fill_counters(out: &mut [u8], outline: Rgba) {
+@@ -320,7 +277,7 @@
+     }
+ }
+ 
+-/// "RUST" in place of "JAVA"; `pixels` is a 512x64 RGBA banner laid out as
++/// "RUSTED" in place of "JAVA"; `pixels` is a 512x64 RGBA banner laid out as
+ /// vanilla's.
+ fn compose(pixels: &[u8]) -> Vec<u8> {
+     let palette = Palette::sample(pixels);
+@@ -329,10 +286,6 @@
+         row[..EDITION_START * 4].fill(0);
+     }
+     draw_glyphs(&mut out, &glyph_faces(), &palette, 0..EDITION_START);
+-    let left = t_left();
+-    for (x, y) in t_pixels(pixels) {
+-        put(&mut out, x + left - T_BODY.0, y, pixel(pixels, x, y));
+-    }
+     fill_counters(&mut out, palette.outline);
+     soften_edges(&mut out, palette.soft);
+     out
+@@ -408,7 +361,7 @@
+     }
+ 
+     #[test]
+-    fn rust_replaces_java_and_edition_is_untouched() {
++    fn rusted_replaces_java_and_preserves_pack_art_and_edition() {
+         let source = stand_in();
+         let out = compose(&source);
+         assert_eq!(out.len(), WIDTH * HEIGHT * 4);
+@@ -417,46 +370,23 @@
+             columns(&source, EDITION_START..WIDTH)
+         );
+         assert!(!out.as_chunks::<4>().0.contains(&[255, 0, 255, 255]));
+-        // R, U and S: their strokes are faces, their notches and counters not.
+-        let lit = |x: usize, y: usize| lum(pixel(&out, x, y)) >= 100;
+-        let glyph = |i: usize, x: usize, y: usize| {
+-            lit(
+-                FIRST_FACE + i * (GLYPH_WIDTH + LETTER_GAP) + x,
+-                FACE_TOP + y,
+-            )
+-        };
+-        for (i, shape) in [R, U, S].into_iter().enumerate() {
++        for (i, shape) in RUSTED_GLYPHS.into_iter().enumerate() {
+             for &[x0, y0, x1, y1] in shape {
+-                assert!(glyph(i, (x0 + x1) / 2, (y0 + y1) / 2), "glyph {i}");
+-            }
+-        }
+-        assert!(!glyph(0, 38, 21), "R's notch between bowl and leg");
+-        assert!(!glyph(0, 20, 30), "R's open bottom");
+-        assert!(!glyph(1, 20, 5), "U's open top");
+-        assert!(!glyph(1, 2, 36), "U's rounded corner");
+-        assert!(!glyph(2, 2, 22), "S's lower-left notch");
+-        assert!(!glyph(2, 38, 17), "S's upper-right notch");
+-        // The T is EDITION's, moved.
+-        let shift = T_BODY.0 - t_left();
+-        for y in 0..HEIGHT {
+-            for x in T_BODY.0..=T_BODY.1 {
+-                let p = pixel(&source, x, y);
+-                if p[3] == 255 && lum(p) >= 30 {
+-                    assert_eq!(pixel(&out, x - shift, y), p, "T at {x},{y}");
+-                }
++                let x = FIRST_FACE + i * (GLYPH_WIDTH + LETTER_GAP) + (x0 + x1) * GLYPH_WIDTH / 84;
++                assert!(
++                    lum(pixel(&out, x, FACE_TOP + (y0 + y1) / 2)) >= 100,
++                    "glyph {i}"
++                );
+             }
+         }
+         assert_soft_rim(&out);
+-        // Nothing below the 14 GUI rows vanilla draws, and the word gap stays open.
+         assert!(out[WIDTH * 55 * 4..].iter().all(|&b| b == 0));
+-        let gap = columns(&out, 195..EDITION_START);
+-        assert!(gap.as_chunks::<4>().0.iter().all(|p| p[3] == 0));
+-        // Centred: "RUST" spans "JAVA"'s columns to within a texel.
+-        let used = |x: usize| (0..HEIGHT).any(|y| pixel(&out, x, y)[3] > 0);
+-        let last = (0..EDITION_START).rev().find(|&x| used(x)).unwrap();
+         assert!(
+-            used(0) && (193..=195).contains(&last),
+-            "RUST ends at {last}"
++            columns(&out, 195..EDITION_START)
++                .as_chunks::<4>()
++                .0
++                .iter()
++                .all(|p| p[3] == 0)
+         );
+     }
+ 
+--- a/engine/crates/horizon-client/src/vanillagen.rs
++++ b/engine/crates/horizon-client/src/vanillagen.rs
+@@ -153,12 +153,12 @@
+         let unsupported = generator.unsupported_features();
+         if !unsupported.is_empty() {
+             log::warn!(
+-                "Horizon: {} placed features cannot run and will be skipped",
++                "Rusted: {} placed features cannot run and will be skipped",
+                 unsupported.len()
+             );
+             if !dir.join("blocks/block-properties.nbt").exists() {
+                 log::warn!(
+-                    "Horizon: the worldgen bundle lacks the block behavior exports (worldgen/blocks/*.nbt); \
++                    "Rusted: the worldgen bundle lacks the block behavior exports (worldgen/blocks/*.nbt); \
+                      prepare again (the launcher, or horizon-prepare --prepare) to add them"
+                 );
+             }
+@@ -417,7 +417,7 @@
+     }
+     let started = std::time::Instant::now();
+     let data = GeneratorData::load(dir, registry)?;
+-    log::info!("Horizon: worldgen data loaded in {:?}", started.elapsed());
++    log::info!("Rusted: worldgen data loaded in {:?}", started.elapsed());
+     cache.push((dir.to_owned(), data.clone()));
+     Ok(data)
+ }
+@@ -460,7 +460,7 @@
+         match worker.generate_proto(ChunkPos::new(x, z)) {
+             Ok(chunk) => Box::new(VanillaProto::Ready(Box::new(chunk))),
+             Err(e) => {
+-                log::warn!("Horizon: generating chunk {x} {z} failed: {e}");
++                log::warn!("Rusted: generating chunk {x} {z} failed: {e}");
+                 Box::new(VanillaProto::Failed(x, z))
+             }
+         }
+@@ -491,7 +491,7 @@
+                 Err(_) => unreachable!(),
+             };
+             if let Err(e) = worker.decorate(&mut array) {
+-                log::warn!("Horizon: decorating chunk failed: {e}");
++                log::warn!("Rusted: decorating chunk failed: {e}");
+             }
+             for (slot, chunk) in region.iter_mut().zip(array) {
+                 *slot = Box::new(VanillaProto::Ready(Box::new(chunk)));
+--- a/engine/crates/horizon-client/src/vanillagen/lod.rs
++++ b/engine/crates/horizon-client/src/vanillagen/lod.rs
+@@ -72,7 +72,7 @@
+                 ) {
+                     Ok(generator) => generator,
+                     Err(error) => {
+-                        log::warn!("Horizon: far decoration unavailable: {error}");
++                        log::warn!("Rusted: far decoration unavailable: {error}");
+                         worker.stop.store(true, Ordering::Relaxed);
+                         return;
+                     }
+@@ -111,7 +111,7 @@
+                         Ok(_) => {}
+                         Err(error) => {
+                             log::warn!(
+-                                "Horizon: far decoration failed at {} {}: {error}",
++                                "Rusted: far decoration failed at {} {}: {error}",
+                                 key.0,
+                                 key.1
+                             );
+@@ -397,7 +397,7 @@
+         {
+             Ok(samples) => samples,
+             Err(error) => {
+-                log::warn!("Horizon: direct far sampling failed: {error}");
++                log::warn!("Rusted: direct far sampling failed: {error}");
+                 return vec![Column::default(); side * side];
+             }
+         };
+--- a/engine/crates/horizon-client/src/vanillagen/structure_mobs.rs
++++ b/engine/crates/horizon-client/src/vanillagen/structure_mobs.rs
+@@ -176,7 +176,7 @@
+         let Some(data) = self.data.get_or_init(|| {
+             let data = load(&self.root);
+             if data.is_none() {
+-                log::error!("Horizon: no mob data, structure mobs are finalized when loaded");
++                log::error!("Rusted: no mob data, structure mobs are finalized when loaded");
+             }
+             data
+         }) else {
+@@ -215,7 +215,7 @@
+         } else if let Some(r) = any.downcast_mut::<XoroshiroRandom>() {
+             run(&mut level, r, difficulty, &spawn, &mut m)
+         } else {
+-            log::error!("Horizon: unknown region random, structure mobs are finalized when loaded");
++            log::error!("Rusted: unknown region random, structure mobs are finalized when loaded");
+             return false;
+         };
+         let mut mobs = vec![(m, Some(raw))];
+--- /dev/null
++++ b/engine/RUSTED.md
+@@ -0,0 +1,40 @@
++# Moteur Rusted
++
++Cette arborescence est une base de code maintenue par Rusted, dérivée du code
++MIT de Horizon au commit `8993772de0bf4b0f92c9f76be64f7a1e6b21cf37`.
++L'essentiel de la simulation et du rendu provient encore de Horizon : Rusted
++ne revendique pas l'écriture originale de ces composants. La licence d'origine
++reste dans `LICENSE`; la provenance de chaque fichier initial est enregistrée
++dans `../horizon/source-baseline.json`.
++
++Les modifications Rusted actuelles sont intégrées aux sources du jeu :
++
++- Binaire `rusted`, bannière RUSTED EDITION, fenêtre, icône et menus Rusted.
++- Dossier `RUSTED_HOME`, avec repli sur HORIZON_HOME pour les outils existants.
++- Module original `rusted-platform`, partagé avec la passerelle : inventaire
++  des métadonnées des mods Java, sans exécution et sans extraction des archives.
++- Page de compatibilité dans Options > Mods, alimentée par l'instance du lanceur.
++- Commande `rusted --inspect-mods CHEMIN` utilisable sans GPU ni compte.
++- Désactivation du compteur de joueurs Horizon, de son identité Discord et
++  des migrations automatiques vers son registre de mods dans ce produit dérivé.
++- Crédit de Horizon dans l'écran des crédits et au début du journal.
++
++Le système natif `.hmod` reste celui hérité de Horizon. Identifier Fabric,
++Quilt, Forge ou NeoForge ne signifie pas que leurs mods Java fonctionnent.
++Sodium, Iris et Distant Horizons ne s'exécutent pas dans le moteur natif.
++
++Depuis la racine de Rusted :
++
++```sh
++python scripts/rusted.py changes
++python scripts/rusted.py build
++```
++
++La compilation génère `rusted-build.json`, qui lie les exécutables à
++l'empreinte de ces sources. L'empaquetage refuse un ancien moteur ou un moteur
++compilé avant les dernières modifications. Les dossiers `.local`, les JAR et
++les ressources de Minecraft ne font pas partie de cette arborescence publique.
++
++Les autres documents de cette arborescence sont ceux de Horizon conservés comme
++référence technique. Leur nom, leurs liens et leur feuille de route décrivent
++le projet amont, pas les fonctionnalités ajoutées ou promises par Rusted.
+Binary asset: engine/crates/horizon-client/assets/rusted-icon-64.rgba; sha256=8bf783292b9e2c59326ca60c67e8cfe53bf4676452a11c0c291c5d5cab4b79b8
+Binary asset: engine/crates/horizon-client/assets/rusted-icon.ico; sha256=c10781adfbdfc4e066fc7a5b8f5bcda408aca06cdb5254f715f4f7ee1d0839e5
+--- /dev/null
++++ b/engine/crates/horizon-client/rusted_icon.rs
+@@ -0,0 +1,4 @@
++// Copper R supplied by the project owner; transparent icon adaptation in artwork/.
++pub fn rgba() -> Vec<u8> {
++    include_bytes!("assets/rusted-icon-64.rgba").to_vec()
++}
+--- /dev/null
++++ b/engine/crates/horizon-client/src/rusted.rs
+@@ -0,0 +1,77 @@
++//! Rusted's native integration surface. The upstream simulation stays independent.
++pub use rusted_platform::{CREDITS, NAME};
++pub const VERSION: &str = "0.3.5";
++pub const TITLE_LOGO: &str = "rusted/title-logo";
++/// No Horizon telemetry, registry migrations or Discord application identity in Rusted.
++pub const UPSTREAM_SERVICES: bool = false;
++#[path = "../rusted_icon.rs"]
++mod icon_data;
++pub fn icon() -> Option<winit::window::Icon> {
++    winit::window::Icon::from_rgba(icon_data::rgba(), 64, 64).ok()
++}
++use std::sync::OnceLock;
++
++/// The bridge sets the original launcher instance; saves still use the isolated native home.
++/// Cache the inventory so drawing menus never rereads every mod archive each frame.
++pub fn java_mods() -> &'static rusted_platform::Report {
++    static REPORT: OnceLock<rusted_platform::Report> = OnceLock::new();
++    REPORT.get_or_init(|| {
++        let instance = std::env::var_os("RUSTED_INSTANCE_DIR")
++            .map(std::path::PathBuf::from)
++            .unwrap_or_else(crate::logging::game_home);
++        rusted_platform::scan(&instance.join("mods"))
++    })
++}
++
++pub fn title() -> String {
++    format!(
++        "{NAME} {VERSION} - Minecraft {}",
++        horizon_core::VANILLA_VERSION
++    )
++}
++
++/// The project's title artwork is a separate PNG beside the executable.
++/// Discard transparent padding when placing it, while keeping its aspect ratio.
++pub fn title_logo() -> Option<(u32, u32, Vec<u8>)> {
++    let path = std::env::var_os("RUSTED_TITLE_LOGO")
++        .map(std::path::PathBuf::from)
++        .or_else(|| {
++            std::env::current_exe()
++                .ok()
++                .map(|p| p.with_file_name("rusted-title.png"))
++        })?;
++    if std::fs::metadata(&path).ok()?.len() > 8 * 1024 * 1024 {
++        return None;
++    }
++    let bytes = std::fs::read(path).ok()?;
++    // Validate dimensions before asking the PNG decoder to allocate its buffer.
++    if bytes.get(..8)? != b"\x89PNG\r\n\x1a\n" {
++        return None;
++    }
++    let width = u32::from_be_bytes(bytes.get(16..20)?.try_into().ok()?);
++    let height = u32::from_be_bytes(bytes.get(20..24)?.try_into().ok()?);
++    if width == 0 || height == 0 || width > 4096 || height > 2048 {
++        return None;
++    }
++    let (width, height, pixels) = crate::hud::decode_bytes(&bytes).ok()?;
++    let (mut left, mut top, mut right, mut bottom) = (width, height, 0, 0);
++    for (i, pixel) in pixels.as_chunks::<4>().0.iter().enumerate() {
++        if pixel[3] >= 8 {
++            let (x, y) = (i as u32 % width, i as u32 / width);
++            left = left.min(x);
++            top = top.min(y);
++            right = right.max(x + 1);
++            bottom = bottom.max(y + 1);
++        }
++    }
++    if left >= right || top >= bottom {
++        return None;
++    }
++    let mut cropped = Vec::with_capacity(((right - left) * (bottom - top) * 4) as usize);
++    for y in top..bottom {
++        cropped.extend_from_slice(
++            &pixels[((y * width + left) * 4) as usize..((y * width + right) * 4) as usize],
++        );
++    }
++    Some((right - left, bottom - top, cropped))
++}
+--- /dev/null
++++ b/engine/crates/rusted-platform/Cargo.toml
+@@ -0,0 +1,15 @@
++[package]
++name = "rusted-platform"
++version = "0.3.0"
++edition = "2021"
++rust-version = "1.90"
++license = "MIT"
++description = "Rusted identity and read-only Java mod diagnostics shared by game and launcher bridge"
++
++[dependencies]
++serde = { version = "1", features = ["derive"] }
++serde_json = "1"
++zip = { version = "=2.4.2", default-features = false, features = ["deflate"] }
++
++[dev-dependencies]
++tempfile = "=3.23.0"
+--- /dev/null
++++ b/engine/crates/rusted-platform/src/lib.rs
+@@ -0,0 +1,207 @@
++//! Rusted's launcher integration. Reading metadata never executes Java or loads a mod.
++use serde::Serialize;
++use std::{
++    fs,
++    io::Read,
++    path::{Path, PathBuf},
++};
++
++pub const NAME: &str = "Rusted";
++pub const VERSION: &str = env!("CARGO_PKG_VERSION");
++pub const UPSTREAM_REVISION: &str = "8993772de0bf4b0f92c9f76be64f7a1e6b21cf37";
++pub const CREDITS: &str = "Based on Horizon (MIT), Ludovic Marie and contributors";
++const MAX_METADATA: u64 = 256 * 1024;
++
++#[derive(Debug, Serialize)]
++pub struct JavaMod {
++    pub file: String,
++    pub name: String,
++    pub loaders: Vec<String>,
++    pub native_compatible: bool,
++    pub diagnostic: String,
++}
++
++#[derive(Debug, Serialize)]
++pub struct Report {
++    pub schema: u32,
++    pub project: &'static str,
++    pub version: &'static str,
++    pub directory: PathBuf,
++    pub mods: Vec<JavaMod>,
++    pub errors: Vec<String>,
++}
++
++fn inspect(path: &Path) -> Result<JavaMod, String> {
++    let file = fs::File::open(path).map_err(|_| "Cannot read archive")?;
++    let mut archive = zip::ZipArchive::new(file).map_err(|_| "Invalid JAR/ZIP archive")?;
++    let mut loaders = Vec::new();
++    let mut name = path
++        .file_name()
++        .unwrap_or_default()
++        .to_string_lossy()
++        .into_owned();
++    for (entry, loader, name_key) in [
++        ("fabric.mod.json", "Fabric", Some("name")),
++        (
++            "quilt.mod.json",
++            "Quilt",
++            Some("quilt_loader.metadata.name"),
++        ),
++        ("META-INF/mods.toml", "Forge", None),
++        ("META-INF/neoforge.mods.toml", "NeoForge", None),
++    ] {
++        let Ok(mut metadata) = archive.by_name(entry) else {
++            continue;
++        };
++        if metadata.size() > MAX_METADATA {
++            return Err("Mod metadata exceeds 256 KiB".into());
++        }
++        loaders.push(loader.into());
++        if let Some(key) = name_key {
++            let mut body = Vec::new();
++            metadata
++                .by_ref()
++                .take(MAX_METADATA + 1)
++                .read_to_end(&mut body)
++                .map_err(|_| "Unreadable mod metadata")?;
++            if body.len() as u64 > MAX_METADATA {
++                return Err("Mod metadata exceeds 256 KiB".into());
++            }
++            let json: serde_json::Value =
++                serde_json::from_slice(&body).map_err(|_| "Invalid JSON mod metadata")?;
++            let value = key.split('.').try_fold(&json, |v, k| v.get(k));
++            if let Some(value) = value
++                .and_then(|v| v.as_str())
++                .filter(|v| !v.trim().is_empty())
++            {
++                name = value
++                    .chars()
++                    .filter(|c| !c.is_control())
++                    .take(120)
++                    .collect();
++            }
++        }
++    }
++    Ok(JavaMod {
++        file: path
++            .file_name()
++            .unwrap_or_default()
++            .to_string_lossy()
++            .into_owned(),
++        name,
++        loaders,
++        native_compatible: false,
++        diagnostic: "Java loader required. Native execution unavailable.".into(),
++    })
++}
++
++/// Only immediate .jar files, including .JAR. No extraction, traversal or network access.
++pub fn scan(directory: &Path) -> Report {
++    let mut report = Report {
++        schema: 1,
++        project: NAME,
++        version: VERSION,
++        directory: directory.into(),
++        mods: Vec::new(),
++        errors: Vec::new(),
++    };
++    let entries = match fs::read_dir(directory) {
++        Ok(entries) => entries,
++        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return report,
++        Err(_) => {
++            report.errors.push("Cannot read mods directory".into());
++            return report;
++        }
++    };
++    for entry in entries {
++        let Ok(entry) = entry else {
++            report.errors.push("Cannot read directory entry".into());
++            continue;
++        };
++        let path = entry.path();
++        if !path
++            .extension()
++            .is_some_and(|v| v.eq_ignore_ascii_case("jar"))
++        {
++            continue;
++        }
++        let file = entry.file_name().to_string_lossy().into_owned();
++        let result = if entry.file_type().is_ok_and(|kind| kind.is_file()) {
++            inspect(&path)
++        } else {
++            Err("Mod is not a regular file".into())
++        };
++        match result {
++            Ok(item) => report.mods.push(item),
++            Err(reason) => {
++                report.errors.push(format!("{file}: {reason}"));
++                report.mods.push(JavaMod {
++                    file: file.clone(),
++                    name: file,
++                    loaders: Vec::new(),
++                    native_compatible: false,
++                    diagnostic: reason,
++                });
++            }
++        }
++    }
++    report.mods.sort_by(|a, b| a.file.cmp(&b.file));
++    report.errors.sort();
++    report
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use std::io::Write;
++    fn jar(path: &Path, files: &[(&str, &[u8])]) {
++        let mut out = zip::ZipWriter::new(fs::File::create(path).unwrap());
++        for (name, body) in files {
++            out.start_file(*name, zip::write::SimpleFileOptions::default())
++                .unwrap();
++            out.write_all(body).unwrap();
++        }
++        out.finish().unwrap();
++    }
++    #[test]
++    fn detects_multiple_loader_metadata_without_claiming_native_execution() {
++        let dir = tempfile::tempdir().unwrap();
++        jar(
++            &dir.path().join("priority.JAR"),
++            &[
++                ("fabric.mod.json", br#"{"name":"Sodium"}"#),
++                ("META-INF/neoforge.mods.toml", b"modLoader=\"javafml\""),
++            ],
++        );
++        jar(
++            &dir.path().join("quilt.jar"),
++            &[(
++                "quilt.mod.json",
++                br#"{"quilt_loader":{"metadata":{"name":"Example"}}}"#,
++            )],
++        );
++        let report = scan(dir.path());
++        assert!(report.errors.is_empty());
++        assert_eq!(report.mods[0].loaders, ["Fabric", "NeoForge"]);
++        assert_eq!(report.mods[0].name, "Sodium");
++        assert_eq!(report.mods[1].name, "Example");
++        assert!(report.mods.iter().all(|m| !m.native_compatible));
++    }
++    #[test]
++    fn unreadable_and_oversized_mods_are_visible_and_files_unchanged() {
++        let dir = tempfile::tempdir().unwrap();
++        let bad = dir.path().join("broken.jar");
++        fs::write(&bad, b"not a zip").unwrap();
++        jar(
++            &dir.path().join("large.jar"),
++            &[("fabric.mod.json", &vec![b' '; MAX_METADATA as usize + 1])],
++        );
++        jar(&dir.path().join("unknown.jar"), &[]);
++        let report = scan(dir.path());
++        assert_eq!(report.mods.len(), 3);
++        assert_eq!(report.errors.len(), 2);
++        assert!(report.mods[2].loaders.is_empty());
++        assert_eq!(fs::read(bad).unwrap(), b"not a zip");
++        assert!(scan(&dir.path().join("absent")).mods.is_empty());
++    }
++}

@@ -1,0 +1,9 @@
+{
+  "os": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "arch": "x86_64",
+  "python": "3.12.14",
+  "java": "openjdk version \"21.0.12.1\" 2026-08-18\nOpenJDK Runtime Environment (build 21.0.12.1+1-1-deb13u1-Debian)\nOpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-deb13u1-Debian, mixed mode, sharing)",
+  "native_sha256": "9c15c3231a4ea0464de6b1eb5fcc2a5e2896ac162c7fe259bfd01a5cd07ad828",
+  "minecraft_launched": false,
+  "windows_runtime_tested": false
+}

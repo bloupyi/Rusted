@@ -1,0 +1,141 @@
+{
+  "schema": 1,
+  "project": "Rusted Launcher",
+  "version": "0.2.0",
+  "recorded_at": "2026-10-29T14:30:31.194133+00:00",
+  "native_engine": {
+    "version": "0.3.5",
+    "source_sha256": "82f75936e25b3f695dc4668940d4af4ec28f4c839b10106481dc50db9e9b8c86",
+    "change": "Only original icon containers updated in engine source this release; attributed Horizon fork retained"
+  },
+  "icon": {
+    "origin": "https://i.ibb.co/6Rnd09fY/model.png",
+    "sha256": "f8a7ff022a512b1daa80768defb946e936ba90aaef015c1633c8479cb2d80304",
+    "png_copied_byte_for_byte": true,
+    "black_pixels_removed": false,
+    "generated_retouch_used": false
+  },
+  "catalog": {
+    "official_versions": 63,
+    "stable": [
+      "26.3",
+      "26.2",
+      "26.1.2",
+      "26.1.1",
+      "26.1"
+    ],
+    "latest_snapshot": "26.4-snapshot-6",
+    "special_snapshot": "26w14a",
+    "all_metadata_sha1_and_no_mapping_files_verified": true,
+    "bootstrap_available_offline": true,
+    "runtime_refresh_and_persisted_snapshot_filter": true,
+    "native_supported_versions": [
+      "26.3"
+    ],
+    "other_versions_backend": "Java or Fabric when loader available",
+    "official_java_major": 25
+  },
+  "validation": {
+    "workspace_tests_linux": "37 passed",
+    "windows_tests_wine": "13 passed: 2 auth/DPAPI, 3 catalogue, 6 core, 2 native adapter",
+    "fmt": "passed",
+    "clippy_linux_and_windows": "all targets -D warnings passed",
+    "real_preload_without_game": [
+      "26.1",
+      "26.1.1",
+      "26.1.2",
+      "26.2",
+      "26.3",
+      "26.1-snapshot-1",
+      "26.4-snapshot-6",
+      "26w14a"
+    ],
+    "ui_wine": {
+      "passed": true,
+      "catalogue_5_and_63_entries": true,
+      "draft_preserved_across_filter_and_page_changes": true,
+      "native_filter_26_3_only": true,
+      "creation_automatic_preload_completed": true,
+      "real_modrinth_search_displayed_as_cards": true,
+      "microsoft_missing_id_configuration_inline": true,
+      "test_environment_note": "Wine helper needed readiness delay and WM_GETTEXT to inspect remote edit controls correctly; test harness corrected."
+    },
+    "old_complete_prism_and_mrpack_import_export_roundtrip": "passed",
+    "private_java_entry": "Unicode and private frame regression passed"
+  },
+  "download_benchmark": {
+    "bytes": 1780887,
+    "kind": "cold per-file cache, public Mojang CDN, Linux benchmark; not a Windows or Prism comparison",
+    "pooled_twenty_four_workers_seconds": 8.44685872,
+    "previous_four_fresh_agents_seconds": 32.060006927,
+    "sample_files": 256,
+    "speedup": 3.795494631760575
+  },
+  "microsoft": {
+    "opens_browser_and_copies_device_code": true,
+    "independent_from_preparation_job": true,
+    "public_client_id_source": "Maintainer-provided launcher-config.json or advanced Accounts configuration",
+    "bundled_client_id": "empty; application not registered yet",
+    "real_account_login_verified": false
+  },
+  "native_mod_compatibility": {
+    "implemented": "Strict adapter for Fabric vanilla textures/languages to native resource packs, no Java execution",
+    "tests": "Original synthetic Fabric JAR; source unchanged; code/mixins/traversal/gameplay refused; real native menu displays translated fixture string",
+    "screenshot": "docs/screenshots/rusted-native-fabric-resources-0.2.0.png",
+    "native_game_test": {
+      "passed": true,
+      "kind": "real native resource-pack load from original Fabric resource-only fixture",
+      "java_executed": false,
+      "account": false,
+      "state": {
+        "busy": null,
+        "dialog": {
+          "open": null,
+          "screen": null
+        },
+        "dimension": "minecraft:overworld",
+        "gamemode": "survival",
+        "held": null,
+        "looking_at": null,
+        "menu": {
+          "mode": "main",
+          "worlds": []
+        },
+        "mining": null,
+        "paused": false,
+        "player": null,
+        "pointer_grabbed": false,
+        "screen": "title",
+        "selected": 1,
+        "sleeping": null,
+        "swings": 0,
+        "ticks": 0,
+        "time": {
+          "day": 0,
+          "day_time": 1000,
+          "time_of_day": 1000
+        },
+        "using": null,
+        "weather": {
+          "raining": false,
+          "thundering": false
+        },
+        "world": null
+      },
+      "screenshot": {
+        "path": "/workspace/Rusted/build/versions-qa/native-resources-z8971j9n/native-menu.png",
+        "sha256": "6dca9111b7a05d3546c462636768203ee271023a36c201d2fdfb185e379174c9"
+      },
+      "pack": "/workspace/Rusted/build/versions-qa/native-compat-fixture/instances/instance-6X0YxV/minecraft/rusted/native-data/resourcepacks/rusted-fabric-rusted_fixture-d4652325ecf9.zip"
+    },
+    "Sodium_Iris_Distant_Horizons_native_execution": false,
+    "Java_mod_sources_read": false
+  },
+  "limits": [
+    "Own Microsoft app id/approval still required, no real account login test",
+    "Wine is not a real Windows desktop or GPU gameplay test",
+    "Java JARs with code and Iris GLSL not executed natively",
+    "Native engine version porting beyond 26.3 not implemented",
+    "Full Prism feature parity remains open"
+  ]
+}

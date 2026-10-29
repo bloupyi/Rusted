@@ -1,0 +1,29 @@
+schema = 1
+id = "rusted_soft_light"
+name = "Rusted Soft Light"
+version = "0.1.0"
+api = "0.1"
+description = "Original Rusted colour grading: restrained warmth and saturation. No shadows, bloom or Iris compatibility."
+license = "MIT"
+
+[[post]]
+file = "grade.wgsl"
+name = "Rusted colour grade"
+
+[[options]]
+id = "warmth"
+name = "Warmth"
+type = "float"
+default = 0.04
+min = 0.0
+max = 0.2
+step = 0.01
+
+[[options]]
+id = "saturation"
+name = "Saturation"
+type = "float"
+default = 1.05
+min = 0.0
+max = 2.0
+step = 0.05
