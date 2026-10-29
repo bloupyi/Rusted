@@ -1,60 +1,72 @@
-# Connexion Microsoft : configuration de l’éditeur
+# Connexion Microsoft de Rusted Launcher 0.2.3
 
-Les joueurs ne doivent saisir aucun identifiant d’application. Dans une distribution
-configurée, ils cliquent **Se connecter avec Microsoft** : le navigateur ouvre
-Microsoft, le code de connexion est copié, puis le lanceur reçoit sa propre session.
-Le mot de passe reste sur le site Microsoft. Un compte possédant Minecraft Java
-et un profil Xbox/Minecraft est nécessaire.
+Cliquer **Se connecter avec Microsoft** : Rusted ouvre Microsoft dans le navigateur
+et copie le code de connexion. Si Microsoft demande ce code, le coller, choisir son
+compte puis confirmer. Le lanceur attend la validation et récupère le profil Minecraft.
+Aucun identifiant d’application, portail Azure, secret ou réglage de projet n’est
+demandé au joueur. Le compte doit avoir accès à Minecraft Java et disposer d’un
+profil Xbox/Minecraft.
 
-## Enregistrement unique de Rusted
+## Comparaison avec FaultlineLauncher
 
-Microsoft OAuth exige un identifiant public pour reconnaître le logiciel qui demande
-la connexion. Les autres lanceurs fournissent le leur dans leur distribution.
-Ouvrir simplement une page de connexion Microsoft sans application enregistrée ne
-permet pas de recevoir un jeton Minecraft. Cet enregistrement relève du mainteneur,
-pas de chaque joueur. Aucun secret client ne doit être créé ou distribué pour ce flux.
+Le dépôt fourni par le propriétaire a été inspecté à la révision
+`acc0e7524c41826a0ddc110d135578c7ef7ff7c1`. Son fichier main.js appelle
+`new Auth('select_account').launch('electron')`, via **msmc 5.0.5**, dont l’archive
+npm a été vérifiée contre l’intégrité SHA-512 de son package-lock.json.
 
-1. Avec le compte qui administrera Rusted, ouvrir https://entra.microsoft.com puis
-   **Inscriptions d’applications > Nouvelle inscription**. L’accès à un annuaire
-   permettant les inscriptions est nécessaire.
-2. Nommer l’application **Rusted Launcher** et accepter les **comptes Microsoft
-   personnels**. Dans Authentification, autoriser les flux de **clients publics**.
-   Le flux de code d’appareil utilise l’autorité `consumers` et ne nécessite pas
-   d’URI de retour ni de secret client.
-3. Vérifier les conditions/approbations Minecraft/Xbox requises pour cette application.
-   Une inscription Entra seule ne garantit pas l’accès aux API Minecraft Services.
-4. Fournir une fois le GUID public **ID d’application (client)** à la publication,
-   dans la variable GitHub Actions `RUSTED_MICROSOFT_CLIENT_ID` du dépôt, ou dans
-   `launcher/default-config.json` pour un assemblage local. Ce n’est ni un ID de
-   locataire, ni un ID d’objet, ni un secret. Ne pas utiliser l’identité d’un autre lanceur.
-5. Assembler, valider le ZIP Windows puis vérifier une vraie connexion avec un compte
-   autorisé avant d’annoncer l’authentification comme validée.
+Cette bibliothèque inclut le client OAuth Live public `00000000402b5328` et utilise
+`login.live.com`. Elle ne nécessite donc pas que Faultline enregistre sa propre
+application Entra. L’affirmation précédente selon laquelle tout lanceur devait
+obligatoirement enregistrer sa propre application était trop générale.
 
-## Assemblage et vérifications
+Rusted utilise désormais ce même client public par défaut avec le **flux par code
+d’appareil** Live, et une implémentation Rust originale :
 
-Le pipeline Windows de distribution attend la variable publique
-`RUSTED_MICROSOFT_CLIENT_ID`. Les tests unitaires et de communication continuent
-sans elle. `scripts/package_launcher.py` injecte l’identité dans
-`launcher-config.json`, à côté de l’exécutable. Ce fichier appartient à la distribution :
-il n’est plus éditable dans la page Comptes et ne fait plus partie des préférences
-joueur. Il est lu à chaque ouverture, même avec un ancien profil utilisateur.
+- demande : `https://login.live.com/oauth20_connect.srf` ;
+- validation du code et renouvellement : `https://login.live.com/oauth20_token.srf` ;
+- portées : `XboxLive.signin offline_access` ;
+- échanges Xbox Live, XSTS, Minecraft Services et vérification du profil/licence.
 
-L’assemblage normal échoue si l’identité est vide ou mal formée. La seule exception
-est `--allow-unconfigured-auth`, réservée au développement : elle crée un ZIP nommé
-`-preview.zip`, avec `microsoft_login_configured: false` et
-`distribution_kind: development-preview` dans son manifeste. Le bouton Microsoft
-est alors désactivé avec une explication, sans demander d’ID au joueur. La validation
-du format d’un GUID ne prouve pas son enregistrement ni l’autorisation Xbox/Minecraft.
+Faultline utilise une fenêtre Electron et le code d’autorisation ; Rusted ouvre le
+navigateur habituel et évite d’ajouter Electron à son lanceur Rust. Le client public
+partagé n’est pas une application enregistrée au nom de Rusted. Les réponses de
+consentement Microsoft peuvent donc afficher l’identité du client existant.
+Son fonctionnement dépend des politiques du service Microsoft.
 
-Les ZIP 0.2.1 précédents ont été validés pour leur scan Defender et leur premier
-démarrage, mais leur configuration Microsoft était vide. Ils ne valident donc
-aucune connexion. Aucun accès Azure administrateur n’est disponible dans
-l’environnement de développement pour créer l’application à la place du propriétaire.
+Le client Live ne doit pas être envoyé aux points d’entrée Entra
+`login.microsoftonline.com/consumers/oauth2/v2.0` : ceux-ci renvoient AADSTS700016.
+Le renouvellement des sessions suit également le fournisseur qui les a émises.
+
+## Distribution et identité personnalisée facultative
+
+Le client public est intégré dans le lanceur et dans `launcher-config.json`.
+Un ancien fichier de configuration vide utilise automatiquement ce défaut ;
+les anciennes préférences joueur ne peuvent pas le remplacer. Aucun champ d’ID
+n’est affiché dans Comptes. Le pipeline Windows ne dépend plus d’une variable
+Azure/GitHub obligatoire.
+
+Le mainteneur peut facultativement fournir son propre GUID d’application Entra
+via `RUSTED_MICROSOFT_CLIENT_ID` ou `launcher/default-config.json`. Ce chemin conserve
+le flux Entra existant et requiert les autorisations propres à cette application.
+Les identifiants non reconnus ou mal formés sont refusés. Aucun secret client
+n’est nécessaire ni distribué.
 
 Les sessions et les jetons de renouvellement sont chiffrés avec Windows DPAPI.
 « Déconnecter de Rusted » retire la session locale ; les autorisations distantes
-se gèrent dans le compte Microsoft. Ne pas partager le dossier accounts.
+se gèrent dans le compte Microsoft. Aucun compte Faultline ou fichier de jeton
+existant n’a été lu ou importé pour cette adaptation.
 
-Documentation officielle :
-https://learn.microsoft.com/entra/identity-platform/quickstart-register-app
+## Vérifications et limites
+
+Les points d’entrée Microsoft réels ont accepté le client public et renvoyé un code
+de connexion ; le sondage sans validation utilisateur renvoie `authorization_pending`.
+Un test explicite du code Rust demande ce code, annule immédiatement, puis vérifie
+qu’aucune session n’a été enregistrée. Il n’affiche ni code ni jeton dans les journaux.
+Ce test ne remplace pas une connexion réelle : licence/profil, échanges Xbox/XSTS,
+consentement, renouvellement d’une vraie session et partie restent à valider avec
+un compte utilisateur. Les anciens ZIP 0.2.1 ne contenaient pas ce changement.
+
+Références :
+https://github.com/bloupyi/FaultlineLauncher/blob/acc0e7524c41826a0ddc110d135578c7ef7ff7c1/main.js#L292
+https://github.com/Hanro50/MSMC (MIT ; référence de comparaison, dépendance non embarquée)
 https://learn.microsoft.com/entra/identity-platform/v2-oauth2-device-code

@@ -1,3 +1,28 @@
+# Priorité actuelle — 0.2.3, connexion inspirée de Faultline
+
+L’utilisateur a fourni bloupyi/FaultlineLauncher. À la révision acc0e75, main.js
+emploie msmc 5.0.5 (archive npm vérifiée contre son lockfile) et son client Live
+public 00000000402b5328. L’exigence précédente d’une inscription Entra propre à
+Rusted était trop générale. Le client fonctionne sur login.live.com : demande de
+code réelle 200, puis authorization_pending au sondage sans validation utilisateur.
+Sur login.microsoftonline.com/consumers, ce même client retourne AADSTS700016.
+
+Rusted 0.2.3 intègre ce client par défaut, sans Electron, via le code d’appareil
+et le navigateur normal. Aucune saisie d’ID, aucun enregistrement Azure requis
+pour ce parcours de compatibilité. Config absente/vide -> défaut intégré ; les
+anciennes préférences restent ignorées. Les GUID Entra personnalisés restent pris
+en charge et utilisent leur propre point d’entrée pour login ET renouvellement.
+Aucun compte réel ou jeton existant n’a été lu ; la connexion complète n’est pas
+encore validée. Ne pas prétendre que ce client partagé est une application Rusted.
+
+Le pipeline Windows est réactivé sans variable obligatoire et conserve Defender.
+Il peut réutiliser uniquement les deux binaires moteur MSVC inchangés du run validé
+40907164336 : archive épinglée au SHA-256, empreinte des sources moteur et empreintes
+du reçu contrôlées avant toute copie. Les wrappers, le lanceur, les ressources,
+les manifests et les notices sont réassemblés depuis les sources actuelles.
+Si le cache manque ou ne correspond pas, recompilation depuis les sources.
+Aucun nouveau ZIP à livrer avant la validation Windows/Defender 0.2.3 réelle.
+
 # Priorité — connexion Microsoft et sources 0.2.2
 
 L’utilisateur veut une connexion Microsoft classique sans saisir d’ID. Le champ

@@ -22,12 +22,15 @@ fn task() -> Task {
 fn microsoft_identity_is_publisher_configuration_not_player_settings() {
     let directory = tempfile::tempdir().unwrap();
     let config = directory.path().join("launcher-config.json");
-    assert!(
-        rusted_launcher::auth::configured_client_id(directory.path())
-            .unwrap()
-            .is_empty()
+    assert_eq!(
+        rusted_launcher::auth::configured_client_id(directory.path()).unwrap(),
+        rusted_launcher::auth::DEFAULT_CLIENT_ID
     );
-    for client in ["", "11111111-2222-4333-8444-555555555555"] {
+    for client in [
+        "",
+        rusted_launcher::auth::DEFAULT_CLIENT_ID,
+        "11111111-2222-4333-8444-555555555555",
+    ] {
         model::atomic_json(
             &config,
             &serde_json::json!({"schema":1,"microsoft_client_id":client}),
@@ -35,7 +38,11 @@ fn microsoft_identity_is_publisher_configuration_not_player_settings() {
         .unwrap();
         assert_eq!(
             rusted_launcher::auth::configured_client_id(directory.path()).unwrap(),
-            client
+            if client.is_empty() {
+                rusted_launcher::auth::DEFAULT_CLIENT_ID
+            } else {
+                client
+            }
         );
     }
     for client in [

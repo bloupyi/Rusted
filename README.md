@@ -15,12 +15,13 @@ vers le registre Horizon sont désactivés pour ce produit dérivé.
 
 ## Rusted Launcher — Windows
 
-**Connexion Microsoft actuellement indisponible dans les ZIP 0.2.1** : la
-configuration éditeur fournie est vide. Les sources 0.2.2 retirent toute saisie d’ID
-du parcours joueur et empêchent un nouvel assemblage normal sans cette configuration.
-L’application Rusted doit encore être enregistrée/autorisée une seule fois côté
-mainteneur : [suivi](docs/MICROSOFT-SETUP.md). Aucun nouveau ZIP jouable n’est annoncé
-avant cette étape.
+Les sources **0.2.3** fournissent la connexion Microsoft sans configuration, avec
+le client public Live utilisé par msmc/FaultlineLauncher et une implémentation Rust.
+Aucun ID ni inscription Azure n’est demandé au joueur. Les points d’entrée Microsoft
+ont accepté la demande de code ; une connexion complète avec un vrai compte reste
+à valider. Voir [la comparaison](docs/MICROSOFT-SETUP.md).
+
+Les archives 0.2.1 ci-dessous sont historiques et leur connexion n’est pas configurée :
 
 **[Archives Windows validées — Rusted Launcher 0.2.1](https://github.com/bloupyi/Rusted/actions/runs/40907164336/artifacts/12914112107)**
 (téléchargement Actions avec connexion GitHub). L'artefact contient le ZIP complet
@@ -50,8 +51,8 @@ automatique à la création ou à l'import de l'instance ; Jouer attend sa fin s
 nécessaire. Les vérifications Windows sont suivies dans
 [GitHub Actions](https://github.com/bloupyi/Rusted/actions/runs/40907164336).
 
-La connexion utilise l’application Microsoft propre au projet, à configurer par
-le mainteneur avant distribution : [guide Microsoft](docs/MICROSOFT-SETUP.md). Les préparations se font
+La connexion utilise par défaut un client public Microsoft Live partagé ; une identité
+Entra personnalisée reste facultative : [guide Microsoft](docs/MICROSOFT-SETUP.md). Les préparations se font
 sans compte. Cette première version n'atteint pas encore toute la parité de Prism ;
 lire [les fonctions et limites](docs/RUSTED-LAUNCHER.md). Le jeu/renderer reste dérivé
 de Horizon, tandis que l'interface et le contrôleur de ce lanceur sont originaux.

@@ -1,4 +1,4 @@
-//! Microsoft device login with the launcher's own registered public client id.
+//! Microsoft browser/device login, including the public Live client used by msmc.
 //! Passwords are entered in the system browser; refresh/session tokens use Windows DPAPI.
 use crate::{
     download,
@@ -13,20 +13,38 @@ use std::{
     path::Path,
     time::{Duration, Instant},
 };
-pub const UNAVAILABLE: &str = "La connexion Microsoft n'est pas disponible dans cette version. Une mise a jour du lanceur est necessaire ; aucun reglage n'est demande au joueur.";
+/// Public Live OAuth client used by msmc 5.0.5, Faultline's locked dependency.
+/// A shared compatibility identity, not a separately registered Rusted app.
+pub const DEFAULT_CLIENT_ID: &str = "00000000402b5328";
+pub const UNAVAILABLE: &str = "La configuration Microsoft de cette version est invalide. Retelercharger une version complete du lanceur ; aucun reglage n'est demande au joueur.";
 
 fn valid_client_id(id: &str) -> bool {
-    id.len() == 36
-        && id.bytes().enumerate().all(|(index, byte)| {
-            if matches!(index, 8 | 13 | 18 | 23) {
-                byte == b'-'
-            } else {
-                byte.is_ascii_hexdigit()
-            }
-        })
-        && id
-            .bytes()
-            .any(|byte| byte.is_ascii_hexdigit() && byte != b'0')
+    id == DEFAULT_CLIENT_ID
+        || (id.len() == 36
+            && id.bytes().enumerate().all(|(index, byte)| {
+                if matches!(index, 8 | 13 | 18 | 23) {
+                    byte == b'-'
+                } else {
+                    byte.is_ascii_hexdigit()
+                }
+            })
+            && id
+                .bytes()
+                .any(|byte| byte.is_ascii_hexdigit() && byte != b'0'))
+}
+
+fn oauth_endpoints(client_id: &str) -> (&'static str, &'static str) {
+    if client_id == DEFAULT_CLIENT_ID {
+        (
+            "https://login.live.com/oauth20_connect.srf",
+            "https://login.live.com/oauth20_token.srf",
+        )
+    } else {
+        (
+            "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode",
+            "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
+        )
+    }
 }
 
 /// Publisher configuration beside the executable; never a player preference.
@@ -34,7 +52,9 @@ pub fn configured_client_id(executable_dir: &Path) -> Result<String> {
     let path = executable_dir.join("launcher-config.json");
     let metadata = match fs::metadata(&path) {
         Ok(metadata) => metadata,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(String::new()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(DEFAULT_CLIENT_ID.into())
+        }
         Err(_) => return Err("Configuration du lanceur inaccessible.".into()),
     };
     if metadata.len() > 65536 {
@@ -51,7 +71,11 @@ pub fn configured_client_id(executable_dir: &Path) -> Result<String> {
     if !client.is_empty() && !valid_client_id(client) {
         return Err("Configuration Microsoft du lanceur invalide. Retelercharger une version complete de Rusted.".into());
     }
-    Ok(client.to_owned())
+    Ok(if client.is_empty() {
+        DEFAULT_CLIENT_ID.into()
+    } else {
+        client.to_owned()
+    })
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Account {
@@ -166,10 +190,24 @@ pub fn sign_in(store: &Store, client_id: &str, task: &Task) -> Result<Account> {
     }
     task.check()?;
     task.status("Demande de connexion Microsoft");
-    let d=body(download::agent().post("https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode").send_form(&[("client_id",client_id),("scope","XboxLive.signin offline_access")]).map_err(|_|"Demande Microsoft refusee. L'application doit autoriser les clients publics et les comptes personnels.")?)?;
+    let (device_endpoint, token_endpoint) = oauth_endpoints(client_id);
+    let mut parameters = vec![
+        ("client_id", client_id),
+        ("scope", "XboxLive.signin offline_access"),
+    ];
+    if client_id == DEFAULT_CLIENT_ID {
+        parameters.push(("response_type", "device_code"));
+    }
+    let d = body(download::agent().post(device_endpoint).send_form(&parameters)
+        .map_err(|_| "Impossible de demander la connexion a Microsoft. Verifier la connexion Internet puis reessayer.")?)?;
     let device = value(&d, "device_code")?;
     let code = value(&d, "user_code")?;
-    let uri = value(&d, "verification_uri")?;
+    let uri = d
+        .get("verification_uri_complete")
+        .and_then(Value::as_str)
+        .map(str::to_owned)
+        .map(Ok)
+        .unwrap_or_else(|| value(&d, "verification_uri"))?;
     let parsed =
         url::Url::parse(&uri).map_err(|_| "Adresse de verification Microsoft invalide.")?;
     if parsed.scheme() != "https"
@@ -192,13 +230,11 @@ pub fn sign_in(store: &Store, client_id: &str, task: &Task) -> Result<Account> {
         if Instant::now() >= deadline {
             return Err("Le code Microsoft a expire. Recommencer la connexion.".into());
         }
-        let request = download::agent()
-            .post("https://login.microsoftonline.com/consumers/oauth2/v2.0/token")
-            .send_form(&[
-                ("grant_type", "urn:ietf:params:oauth:grant-type:device_code"),
-                ("client_id", client_id),
-                ("device_code", &device),
-            ]);
+        let request = download::agent().post(token_endpoint).send_form(&[
+            ("grant_type", "urn:ietf:params:oauth:grant-type:device_code"),
+            ("client_id", client_id),
+            ("device_code", &device),
+        ]);
         match request {
             Ok(r) => {
                 let v = body(r)?;
@@ -217,7 +253,7 @@ pub fn sign_in(store: &Store, client_id: &str, task: &Task) -> Result<Account> {
                 match v["error"].as_str() {
                     Some("authorization_pending") => {}
                     Some("slow_down") => interval = (interval + 5).min(30),
-                    Some("authorization_declined") => {
+                    Some("authorization_declined" | "access_denied") => {
                         return Err("Connexion annulee dans le navigateur.".into())
                     }
                     _ => return Err("Connexion Microsoft refusee ou expiree.".into()),
@@ -271,9 +307,12 @@ pub fn session(store: &Store, id: &str, task: &Task) -> Result<Session> {
         return Ok(s);
     }
     task.status("Renouvellement de la session Microsoft");
+    if !valid_client_id(&s.client_id) {
+        return Err("Session Microsoft incompatible. Reconnecter ce compte.".into());
+    }
     let v = body(
         download::agent()
-            .post("https://login.microsoftonline.com/consumers/oauth2/v2.0/token")
+            .post(oauth_endpoints(&s.client_id).1)
             .send_form(&[
                 ("client_id", s.client_id.as_str()),
                 ("grant_type", "refresh_token"),
@@ -369,6 +408,58 @@ fn unprotect(_: &[u8]) -> Result<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn live_and_entra_sessions_use_their_respective_token_issuers() {
+        assert_eq!(
+            oauth_endpoints(DEFAULT_CLIENT_ID).1,
+            "https://login.live.com/oauth20_token.srf"
+        );
+        assert_eq!(
+            oauth_endpoints("11111111-2222-4333-8444-555555555555").1,
+            "https://login.microsoftonline.com/consumers/oauth2/v2.0/token"
+        );
+        assert!(valid_client_id(DEFAULT_CLIENT_ID));
+        assert!(!valid_client_id("00000000402b5329"));
+    }
+
+    #[test]
+    #[ignore = "Contacts Microsoft without a user account; run explicitly for release validation"]
+    fn public_live_client_can_request_a_code_without_an_account() {
+        let owned = tempfile::tempdir().unwrap();
+        let store = Store::open(owned.path().into()).unwrap();
+        let worker_store = store.clone();
+        let (events, receiver) = std::sync::mpsc::channel();
+        let cancel = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let task = Task {
+            events,
+            cancel: cancel.clone(),
+        };
+        let worker = std::thread::spawn(move || sign_in(&worker_store, DEFAULT_CLIENT_ID, &task));
+        let deadline = Instant::now() + Duration::from_secs(45);
+        let mut obtained = false;
+        while let Some(remaining) = deadline.checked_duration_since(Instant::now()) {
+            match receiver.recv_timeout(remaining) {
+                Ok(Event::DeviceCode { uri, code }) => {
+                    obtained = uri.starts_with("https://www.microsoft.com/") && !code.is_empty();
+                    break;
+                }
+                Ok(_) => {}
+                Err(_) => break,
+            }
+        }
+        cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+        let result = worker.join().unwrap();
+        assert!(
+            obtained,
+            "Microsoft did not provide a device sign-in code; no user data was printed"
+        );
+        assert!(result.is_err_and(|error| error.starts_with("Operation annulee")));
+        assert!(list(&store).unwrap().is_empty());
+        assert_eq!(
+            fs::read_dir(store.root.join("accounts")).unwrap().count(),
+            0
+        );
+    }
     #[test]
     fn missing_own_client_id_fails_before_network_or_secret_storage() {
         let d = tempfile::tempdir().unwrap();

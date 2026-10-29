@@ -1,12 +1,12 @@
-# Rusted Launcher 0.2.2 — sources en préparation, Windows x64
+# Rusted Launcher 0.2.3 — Windows x64
 
-L’authentification ne demande plus d’ID dans l’interface. Le mainteneur fournit
-l’identité Microsoft de Rusted avec la distribution. Tant qu’elle manque, seul
-un aperçu de développement nommé `-preview.zip` peut être assemblé ; il ne permet
-pas de connecter un compte. Les ZIP 0.2.1 historiques avaient une configuration vide.
-Voir [le suivi côté mainteneur](MICROSOFT-SETUP.md).
+La connexion Microsoft est fournie automatiquement, avec le même client public
+Live que la bibliothèque utilisée par FaultlineLauncher. Aucun ID d’application
+ni inscription Azure n’est demandé. La connexion ouvre le navigateur Microsoft,
+copie le code à coller si nécessaire, puis attend la validation. L’intégration est
+écrite en Rust ; Electron n’est pas embarqué. Voir [le fonctionnement](MICROSOFT-SETUP.md).
 
-Avec une distribution configurée, extraire **tout** le ZIP Windows du lanceur, puis ouvrir
+Extraire **tout** `Rusted-Launcher-Windows-0.2.3.zip`, puis ouvrir
 **Rusted Launcher.exe**. Garder le sous-dossier `rusted` à côté de l'exécutable.
 Il contient le moteur Rusted 0.3.5 et ses outils. Aucun terminal, Prism ni
 Configurer-Rusted.exe n'est nécessaire pour utiliser ce lanceur.

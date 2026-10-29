@@ -41,7 +41,7 @@ fn build_agent(seconds: u64) -> ureq::Agent {
         .timeout_connect(Duration::from_secs(20))
         .timeout_read(Duration::from_secs(15))
         .timeout(Duration::from_secs(seconds))
-        .user_agent("Rusted-Launcher/0.2.2")
+        .user_agent("Rusted-Launcher/0.2.3")
         .build()
 }
 pub fn https(url: &str) -> Result<()> {

@@ -2323,7 +2323,7 @@ unsafe fn paint(app: &App) {
     line_text(
         dc,
         app.small,
-        "Rusted Launcher 0.2.2",
+        "Rusted Launcher 0.2.3",
         27,
         r.bottom - 90,
         205,

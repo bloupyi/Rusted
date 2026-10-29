@@ -1,0 +1,21 @@
+{
+  "version": "0.2.3",
+  "reference_repository": "https://github.com/bloupyi/FaultlineLauncher",
+  "reference_commit": "acc0e7524c41826a0ddc110d135578c7ef7ff7c1",
+  "reference_dependency": "msmc 5.0.5",
+  "reference_dependency_integrity_verified": true,
+  "default_oauth_client": "00000000402b5328",
+  "own_registered_rusted_application": false,
+  "device_request_status": 200,
+  "unapproved_poll_status": 400,
+  "unapproved_poll_error": "authorization_pending",
+  "rust_real_device_request_and_cancel": "passed without account or stored session",
+  "linux_workspace_tests": 39,
+  "python_configuration_and_cache_tests": 5,
+  "windows_cross_clippy": "passed",
+  "real_account_tested": false,
+  "defender_validation": "pending",
+  "runtime_cache_source_run": 40907164336,
+  "runtime_cache_archive_sha256": "23b9e7cc34530f5a2e274140cbb1d64822669a3dc58bd580ae7779ffad15eb93",
+  "runtime_cache_requires_matching_engine_sources": true
+}
