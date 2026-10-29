@@ -1326,12 +1326,6 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
                     return Ok(());
                 }
                 let i = app.selected_or_error()?;
-                if app.job.is_some() {
-                    app.pending_play = Some(i.id);
-                    app.status = "Le jeu se lancera automatiquement apres la preparation.".into();
-                    build(app);
-                    return Ok(());
-                }
                 let account = app.settings.selected_account.clone();
                 if account.is_empty() {
                     app.pending_play = Some(i.id);
@@ -1342,6 +1336,12 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
                     if !app.settings.microsoft_client_id.is_empty() && app.auth_job.is_none() {
                         action(app, 501, 0);
                     }
+                    return Ok(());
+                }
+                if app.job.is_some() {
+                    app.pending_play = Some(i.id);
+                    app.status = "Le jeu se lancera automatiquement apres la preparation.".into();
+                    build(app);
                     return Ok(());
                 }
                 app.pending_play = None;

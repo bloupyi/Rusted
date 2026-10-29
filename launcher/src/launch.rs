@@ -408,14 +408,22 @@ pub fn classpath_jar(path: &Path, files: &[std::path::PathBuf]) -> Result<std::p
 
 pub fn profile_lock(store: &Store, instance: &Instance) -> Result<fs::File> {
     use fs2::FileExt;
+    let directory = store.path(&instance.id)?;
+    let locks = store.root.join("locks");
+    fs::create_dir_all(&locks).map_err(|_| "Dossier des verrous inaccessible.")?;
+    // Windows refuses to rename a directory containing a locked file, even when no game runs.
+    // Keep the operation lock outside the directory while retaining exclusivity during rename.
     let f = fs::OpenOptions::new()
         .create(true)
         .truncate(false)
         .read(true)
         .write(true)
-        .open(store.path(&instance.id)?.join("play.lock"))
+        .open(locks.join(format!("{}.lock", instance.id)))
         .map_err(|_| "Verrou d'instance inaccessible.")?;
     f.try_lock_exclusive()
         .map_err(|_| "Cette instance est deja utilisee par une partie ou une autre operation.")?;
+    if !directory.is_dir() {
+        return Err("Cette instance n'existe plus.".into());
+    }
     Ok(f)
 }

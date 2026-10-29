@@ -109,7 +109,7 @@ pub struct Store {
 }
 impl Store {
     pub fn open(root: PathBuf) -> Result<Self> {
-        for dir in ["instances", "cache", "accounts", "trash"] {
+        for dir in ["instances", "cache", "accounts", "trash", "locks"] {
             fs::create_dir_all(root.join(dir))
                 .map_err(|_| "Creation du dossier du lanceur impossible.")?;
         }

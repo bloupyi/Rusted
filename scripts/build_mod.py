@@ -101,9 +101,9 @@ def main():
             for notice in directory.iterdir():
                 if notice.is_file() and notice.name.lower().startswith(("license", "copying", "copyright", "notice")):
                     output.write(notice, f"META-INF/rusted/licenses/{package['name']}-{package['version']}/{notice.name}")
-        for platform, path, name in (("linux", args.linux, "librusted_backend.so"), ("windows", args.windows, "rusted_backend.dll")):
+        for target_platform, path, name in (("linux", args.linux, "librusted_backend.so"), ("windows", args.windows, "rusted_backend.dll")):
             if path:
-                resource = f"native/{platform}-x86_64/{name}"
+                resource = f"native/{target_platform}-x86_64/{name}"
                 output.write(path, resource)
                 output.writestr(resource + ".sha256", hashlib.sha256(path.read_bytes()).hexdigest())
     temporary.replace(jar)

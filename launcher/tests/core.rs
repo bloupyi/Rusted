@@ -45,8 +45,12 @@ fn concurrent_play_lock_is_rejected_and_released() {
     let i = s.create("Owned", Engine::Java, "26.3").unwrap();
     let lock = launch::profile_lock(&s, &i).unwrap();
     assert!(launch::profile_lock(&s, &i).is_err());
+    assert!(s.trash(&i).is_err());
+    assert!(s.game(&i).unwrap().is_dir());
     drop(lock);
     assert!(launch::profile_lock(&s, &i).is_ok());
+    s.trash(&i).unwrap();
+    assert!(launch::profile_lock(&s, &i).is_err());
 }
 #[test]
 fn cached_downloads_are_verified_without_network_and_cancel_keeps_files() {
