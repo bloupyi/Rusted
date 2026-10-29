@@ -1,3 +1,22 @@
+# Livrable actuel — Rusted Launcher 0.2.3 terminé
+
+ZIP complet Windows : build/windows-release-0.2.3/Rusted-Launcher-Windows-0.2.3.zip.
+Sources bab570f, CI https://github.com/bloupyi/Rusted/actions/runs/40953795188 :
+5 jobs réussis, demande Microsoft réelle sur Windows sans compte, scan Defender
+et démarrage de 20 secondes sans détection ; signatures 1.463.30.0 et protections
+RT/comportement actives. Rapports results/rusted-launcher-0.2.3-auth.json et
+results/rusted-launcher-0.2.3-windows.json. Les 1 525 fichiers du manifeste et
+46 sources du lanceur correspondent aux empreintes, ainsi que les 4 EXE au rapport.
+Le PNG original est préservé octet pour octet. Aucun compte réel testé.
+
+Contrairement à la réponse précédente trop générale, l’application Entra propre
+à Rusted n’est plus un prérequis : même client public Live que msmc/Faultline,
+flux device code dans le navigateur, aucun champ ni ID à saisir. Le ZIP 0.2.3
+contient réellement ce changement ; ne pas redonner les archives 0.2.1 anciennes.
+Les comptes sont toujours protégés par DPAPI, et les vérifications de licence
+et profil restent en place. La connexion complète avec le compte utilisateur
+et une partie restent à confirmer. Aucun Electron ni source Faultline embarqués.
+
 # Priorité actuelle — 0.2.3, connexion inspirée de Faultline
 
 L’utilisateur a fourni bloupyi/FaultlineLauncher. À la révision acc0e75, main.js

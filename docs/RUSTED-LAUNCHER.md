@@ -132,12 +132,13 @@ Modrinth. Les anciennes versions à arguments de lancement legacy sont refusées
 Les imports conservent la version Minecraft, mais installent Fabric 0.20.1 ; les packs
 exigeant une autre révision du loader peuvent nécessiter Prism.
 
-La connexion réelle dépend de l'enregistrement et, si nécessaire, de l'autorisation
-Microsoft/Xbox de l'application. Elle n'a pas été validée avec un compte réel ici.
+Le client public Live est fourni par défaut ; aucune inscription d'application
+personnelle n'est requise. Une connexion complète n'a pas encore été validée avec
+un compte réel ici ; elle nécessite l'accès Minecraft Java et un profil Xbox valide.
 L'interface et son parcours ont été essayés sous Wine. La compilation MSVC, les
 tests unitaires et de communication, un scan Defender et un premier démarrage de
 20 secondes réussissent sur Windows réel, protections en temps réel et comportementale
-actives (signatures 1.463.24.0 ; [rapport](results/rusted-launcher-0.2.1-windows.json)).
+actives (signatures 1.463.30.0 ; [rapport](results/rusted-launcher-0.2.3-windows.json)).
 Ce contrôle ne couvre pas une préparation entière, un compte réel ou une partie.
 Le jeu sur un vrai PC Windows, le GPU et le multijoueur authentifié restent à confirmer.
 Le ZIP n'est pas signé avec un certificat de publication Windows.

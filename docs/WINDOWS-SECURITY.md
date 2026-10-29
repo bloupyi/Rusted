@@ -1,3 +1,26 @@
+# Validation Windows de Rusted Launcher 0.2.3
+
+Le ZIP complet 0.2.3 a passé le scan Defender et un premier démarrage de 20 secondes
+sur Windows réel, protection en temps réel et comportementale active, sans détection.
+Moteur Defender 1.1.26100.4, signatures 1.463.30.0.
+
+- [Exécution CI](https://github.com/bloupyi/Rusted/actions/runs/40953795188).
+- [Rapport exact](results/rusted-launcher-0.2.3-windows.json).
+- SHA-256 de l’archive : `a896b80580219af25fc38ef5d39fc65c232d37175e5fdaa0ccae1d8a2cf992d5`.
+- SHA-256 du lanceur : `70840abebba6f9464f70bf3333bb1c79a923d590b46f90b2f6f127c24cc96fa2`.
+
+Le lanceur et les wrappers sont compilés sur Windows avec MSVC. Les deux binaires
+moteur inchangés sont repris de la compilation MSVC déjà validée de 0.2.1, après
+contrôle de l’archive épinglée, de l’empreinte des sources moteur et du reçu binaire.
+Les packs complets sont réassemblés, puis leur contenu final est à nouveau scanné.
+Les 1 525 empreintes du contenu et les 46 empreintes des sources du lanceur
+correspondent à la distribution récupérée et aux sources actuelles.
+
+Un test indépendant du code Rust sous Windows a obtenu un code Microsoft puis
+annulé sans compte enregistré. Le scan/démarrage ne valide ni une connexion complète,
+ni une préparation entière, ni une partie. Les exécutables restent non signés et
+ces résultats ne déterminent pas la cause de l’alerte historique 0.2.0.
+
 # Rusted Launcher 0.2.0 : détection Defender en cours d'analyse
 
 Le propriétaire a signalé **Behavior:Win32/DefenseEvasion.A!ml** sur

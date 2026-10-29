@@ -14,8 +14,39 @@
   "python_configuration_and_cache_tests": 5,
   "windows_cross_clippy": "passed",
   "real_account_tested": false,
-  "defender_validation": "pending",
+  "defender_validation": "passed: static scan and 20-second startup; real-time and behavior enabled",
   "runtime_cache_source_run": 40907164336,
   "runtime_cache_archive_sha256": "23b9e7cc34530f5a2e274140cbb1d64822669a3dc58bd580ae7779ffad15eb93",
-  "runtime_cache_requires_matching_engine_sources": true
+  "runtime_cache_requires_matching_engine_sources": true,
+  "ui_wine_cases": {
+    "missing": {
+      "passed": true,
+      "no_id_fields": true,
+      "sign_in_enabled": true,
+      "real_device_request_and_cancel": false,
+      "real_account_tested": false
+    },
+    "empty": {
+      "passed": true,
+      "no_id_fields": true,
+      "sign_in_enabled": true,
+      "real_device_request_and_cancel": false,
+      "real_account_tested": false
+    },
+    "shared": {
+      "passed": true,
+      "no_id_fields": true,
+      "sign_in_enabled": true,
+      "real_device_request_and_cancel": true,
+      "real_account_tested": false
+    }
+  },
+  "ci_run": "https://github.com/bloupyi/Rusted/actions/runs/40953795188",
+  "source_commit": "bab570f375954d30cf53c8f5ec6195f5f9083a4f",
+  "ci_conclusion": "success",
+  "windows_real_device_code_test": "passed without account or stored session",
+  "windows_defender_report": "docs/results/rusted-launcher-0.2.3-windows.json",
+  "distribution_sha256": "a896b80580219af25fc38ef5d39fc65c232d37175e5fdaa0ccae1d8a2cf992d5",
+  "native_engine_source_match_and_reuse": true,
+  "all_payload_and_current_launcher_source_hashes_verified": true
 }

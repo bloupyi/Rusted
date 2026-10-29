@@ -9,8 +9,9 @@ Aucun champ d’ID dans Comptes, aucune configuration éditeur requise pour ce d
 Voir [le détail de la comparaison](MICROSOFT-SETUP.md).
 
 La connexion complète avec un vrai compte, les vérifications licence/profil et une
-partie doivent encore être validées. Les contrôles Windows/Defender de 0.2.3 sont
-à suivre dans la CI ; ne pas assimiler les résultats 0.2.1 à ce nouveau binaire.
+partie doivent encore être validées. Les cinq jobs de la CI 0.2.3 passent, dont la demande de code Microsoft sur
+Windows, le scan Defender et le démarrage de 20 secondes, protections actives
+(signatures 1.463.30.0). Voir le [rapport exact](results/rusted-launcher-0.2.3-windows.json).
 Le client utilisé est partagé, pas une inscription Microsoft propre à Rusted.
 
 # Blocage Windows signalé — Rusted Launcher 0.2.0

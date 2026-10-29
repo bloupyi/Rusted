@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "verified_at": "2026-10-29T21:06:26.0261440Z",
+  "archive_sha256": "a896b80580219af25fc38ef5d39fc65c232d37175e5fdaa0ccae1d8a2cf992d5",
+  "defender": {
+    "service_enabled": true,
+    "antivirus_enabled": true,
+    "realtime_enabled": true,
+    "behavior_enabled": true,
+    "engine_version": "1.1.26100.4",
+    "signature_version": "1.463.30.0",
+    "signature_updated": "2026-10-29T14:51:19.0000000+00:00"
+  },
+  "executables": [
+    {
+      "file": "Rusted Launcher.exe",
+      "sha256": "70840abebba6f9464f70bf3333bb1c79a923d590b46f90b2f6f127c24cc96fa2",
+      "authenticode": "NotSigned"
+    },
+    {
+      "file": "rusted\\rusted-launch.exe",
+      "sha256": "f939200b62ef0bf038e4f212899fc73176692537ac6084eba04c32ccf28b7ea2",
+      "authenticode": "NotSigned"
+    },
+    {
+      "file": "rusted\\runtime\\rusted-prepare.exe",
+      "sha256": "e59ee1e45e07f613cad836495ea881caa0e4f0facfe246a2b21b7e6c663f37a4",
+      "authenticode": "NotSigned"
+    },
+    {
+      "file": "rusted\\runtime\\rusted.exe",
+      "sha256": "494cb741d775c7ec54f91549a86ddf487abc6530d63f301a4f37ecb39f144838",
+      "authenticode": "NotSigned"
+    }
+  ],
+  "static_scan": "passed",
+  "startup_smoke": "passed",
+  "startup_observation_seconds": 20,
+  "detections": [],
+  "limitations": [
+    "Startup observation only; no account, gameplay or full preparation validation.",
+    "A clean result does not establish that the reported detection is a false positive."
+  ],
+  "error": null
+}
