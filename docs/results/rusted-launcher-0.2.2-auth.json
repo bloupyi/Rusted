@@ -19,5 +19,11 @@
   "real_authentication_tested": false,
   "windows_defender_tested_for_this_version": false,
   "distribution_status": "blocked: Rusted Microsoft application registration/configuration required",
-  "previous_windows_validation": "0.2.1 only; does not validate 0.2.2"
+  "previous_windows_validation": "0.2.1 only; does not validate 0.2.2",
+  "ci_run": "https://github.com/bloupyi/Rusted/actions/runs/40949763727",
+  "ci_source_commit": "a4b97808a6b776b14adc2f60adcf233ec3eab347",
+  "ci_conclusion": "success",
+  "windows_unit_and_protocol_checks": "passed on genuine Windows",
+  "windows_distribution_job": "skipped: publisher identity missing",
+  "windows_workspace_tests": 39
 }

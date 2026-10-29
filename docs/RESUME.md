@@ -24,6 +24,11 @@ des contrôles d’ID et l’activation du bouton uniquement avec configuration 
 Rapport : results/rusted-launcher-0.2.2-auth.json. Pas de compte réel testé et pas
 de nouvelle validation Defender pour 0.2.2 ; l’archive 0.2.1 demeure inchangée.
 
+CI 0.2.2 réussie : https://github.com/bloupyi/Rusted/actions/runs/40949763727
+(commit a4b9780). Tests Windows réels et Linux, Clippy, passerelle, outils et parseur
+réussis ; job de distribution Windows ignoré car l’identité éditeur manque.
+Aucun nouveau binaire distribuable n’est produit.
+
 # Travail actuel — 0.2.1 et tests Windows
 
 Le propriétaire autorise la publication des sources et les tests sur GitHub,
