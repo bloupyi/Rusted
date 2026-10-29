@@ -15,6 +15,18 @@ vers le registre Horizon sont désactivés pour ce produit dérivé.
 
 ## Rusted Launcher — Windows
 
+**[Archives Windows validées — Rusted Launcher 0.2.1](https://github.com/bloupyi/Rusted/actions/runs/40907164336/artifacts/12914112107)**
+(téléchargement Actions avec connexion GitHub). L'artefact contient le ZIP complet
+`Rusted-Launcher-Windows-0.2.1.zip`, les packs Prism/Modrinth, les sources et leurs
+empreintes. Extraire tout le ZIP du lanceur, puis ouvrir `Rusted Launcher.exe`.
+Le moteur est inclus. Le [rapport Defender](docs/results/rusted-launcher-0.2.1-windows.json)
+est conservé dans le dépôt. Il s'agit d'une version de développement.
+
+Compilation MSVC, tests Windows/Linux, scan Defender et premier démarrage de
+20 secondes réussis sur la machine Windows du pipeline, protections en temps réel
+et comportementale actives. Les exécutables restent non signés ; ce contrôle
+ne valide pas un compte réel, une préparation entière ou une partie.
+
 La distribution Windows **Rusted Launcher 0.2.0 est en attente de validation antivirus** :
 Microsoft Defender a signalé `Behavior:Win32/DefenseEvasion.A!ml` sur
 `Rusted Launcher.exe`. Ne pas restaurer le fichier ni désactiver la protection pour
@@ -25,6 +37,11 @@ Le lanceur est développé dans `launcher/`. Son interface
 cuivre gère les instances, le préchargement vérifié de Java/Minecraft et des ressources
 natives avant le jeu, les comptes, les mods Fabric, la console, l'import Prism/Modrinth
 et l'export Prism. Aucun configurateur séparé ni terminal n'est requis.
+
+En 0.2.1, l'accueil présente un unique bouton **Jouer**. La préparation reste
+automatique à la création ou à l'import de l'instance ; Jouer attend sa fin si
+nécessaire. Les vérifications Windows sont suivies dans
+[GitHub Actions](https://github.com/bloupyi/Rusted/actions/runs/40907164336).
 
 La connexion utilise un identifiant d'application Microsoft propre au projet,
 **à configurer** : [guide Microsoft](docs/MICROSOFT-SETUP.md). Les préparations se font

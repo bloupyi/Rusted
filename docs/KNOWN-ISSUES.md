@@ -7,6 +7,28 @@ contourner la quarantaine. Le pipeline Windows vérifie désormais Defender acti
 scanne l'archive et observe le démarrage isolé avant d'autoriser l'upload.
 Voir [le diagnostic](WINDOWS-SECURITY.md).
 
+# Rusted Launcher 0.2.1
+
+Le bouton manuel de préchargement est supprimé : les créations et imports préparent
+déjà l'instance automatiquement. L'accueil affiche un seul bouton Jouer. Les autres
+pages gardent cette action et le nom de l'instance dans le pied de page. Annuler
+n'apparaît que pendant une opération ou un lancement en attente. Jouer attend la
+préparation et le compte ; changer d'instance, annuler ou rencontrer une erreur
+supprime cette attente.
+
+Corrigé sur Windows réel : le verrou d'opération n'est plus situé dans le dossier
+d'instance, ce qui empêchait Windows de déplacer celle-ci dans la corbeille du
+lanceur. Le verrou reste actif pendant l'opération et empêche les accès concurrents.
+Les tests de communication utilisent maintenant des flux binaires afin de vérifier
+correctement les fins de ligne LF/CRLF et les chemins Unicode sous Windows.
+
+La compilation native MSVC, les tests unitaires et de communication, le scan Defender
+et un premier démarrage de 20 secondes réussissent sur Windows réel. La protection
+en temps réel et comportementale était active (signatures 1.463.24.0).
+Voir le [rapport exact](results/rusted-launcher-0.2.1-windows.json). Ce contrôle
+ne couvre pas un compte réel, une préparation entière ou une partie et n'établit
+pas la cause du signalement antivirus de 0.2.0. Les exécutables restent non signés.
+
 # Rusted Launcher 0.2.0
 
 Résolus : catalogue déobfusqué complet (63 versions, snapshots incluses), préchargement

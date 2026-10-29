@@ -35,7 +35,8 @@ valider Microsoft Defender. Le rapport technique est conservé dans
 Le job Windows vérifie maintenant l'utilisation native de MSVC, puis appelle
 `scripts/verify_windows_release.ps1` avant l'upload des ZIP. Ce script :
 
-1. exige que Defender et sa protection en temps réel soient déjà actifs ;
+1. exige que Defender, sa protection en temps réel et son analyse comportementale
+   soient déjà actifs ;
 2. met à jour les signatures puis contrôle les empreintes du contenu distribué ;
 3. appelle le scanner officiel Microsoft dont il vérifie la signature ;
 4. observe 20 secondes du premier démarrage réel dans des dossiers temporaires
@@ -49,12 +50,31 @@ quarantainé. Son observation de démarrage ne couvre pas une préparation enti�
 l'authentification ou une partie. Un résultat sans détection doit être présenté
 avec ces limites et la version de signatures utilisée.
 
-L'environnement de développement actuel est Linux et ne fournit pas Defender.
-Le dépôt GitHub sélectionné est public et encore vide : aucun workflow n'y est
-enregistré. Exécuter ce contrôle exige une première publication des sources et
-du workflow dans le dépôt ; cette publication publique n'a pas été effectuée.
-Le nouveau contrôle n'a donc pas encore produit de résultat Windows réel. Il ne faut pas
-annoncer ce travail comme une version corrigée de l'exécutable.
+Les sources et le workflow ont été publiés avec l'autorisation du propriétaire dans
+[bloupyi/Rusted](https://github.com/bloupyi/Rusted). La validation de la version 0.2.1
+est suivie dans [GitHub Actions](https://github.com/bloupyi/Rusted/actions/runs/40907164336).
+Les cinq jobs réussissent, dont la compilation complète MSVC et le contrôle Defender
+sur Windows réel. Le [rapport exact](results/rusted-launcher-0.2.1-windows.json) donne :
+
+- archive 0.2.1 SHA-256 :
+  `a6778ff504ba886e4d0b1e5e42718073476e9dc0b93afb11681b07fb146798d6` ;
+- moteur Defender `1.1.26100.4`, signatures `1.463.24.0` ;
+- protection en temps réel et comportementale active ;
+- scan sans menace et premier démarrage de 20 secondes réussis ;
+- aucun fichier modifié ou supprimé lors de ces contrôles.
+
+Les quatre exécutables restent non signés Authenticode. La validation porte sur
+l'archive exacte de cette exécution et sur ce démarrage limité ; elle ne confirme
+pas la cause du signalement 0.2.0, ni une connexion, une préparation complète ou une
+partie. La disponibilité d'un nouveau ZIP ne justifie pas de contourner une nouvelle
+détection éventuelle sur un autre poste.
+
+Les machines Windows éphémères de GitHub démarrent avec certaines protections
+désactivées. Le script séparé `prepare_windows_defender_ci.ps1` active la protection
+en temps réel et comportementale **avant la compilation** et vérifie leur état.
+Il est limité aux machines GitHub hébergées, n'est pas exécuté par le produit,
+n'ajoute aucune exclusion et ne diminue aucune protection. Si l'activation échoue,
+le job s'arrête. Le script de validation exige ensuite que ces protections restent actives.
 
 ## Si la détection persiste pendant la validation Windows
 

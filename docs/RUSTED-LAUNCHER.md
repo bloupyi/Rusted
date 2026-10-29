@@ -130,8 +130,12 @@ exigeant une autre révision du loader peuvent nécessiter Prism.
 
 La connexion réelle dépend de l'enregistrement et, si nécessaire, de l'autorisation
 Microsoft/Xbox de l'application. Elle n'a pas été validée avec un compte réel ici.
-L'interface et les mécanismes Windows ont été essayés sous Wine ; une partie sur
-un vrai PC Windows, le GPU et le multijoueur authentifié restent à confirmer.
+L'interface et son parcours ont été essayés sous Wine. La compilation MSVC, les
+tests unitaires et de communication, un scan Defender et un premier démarrage de
+20 secondes réussissent sur Windows réel, protections en temps réel et comportementale
+actives (signatures 1.463.24.0 ; [rapport](results/rusted-launcher-0.2.1-windows.json)).
+Ce contrôle ne couvre pas une préparation entière, un compte réel ou une partie.
+Le jeu sur un vrai PC Windows, le GPU et le multijoueur authentifié restent à confirmer.
 Le ZIP n'est pas signé avec un certificat de publication Windows.
 
 Le **lanceur** et son interface sont des développements originaux Rusted. Le

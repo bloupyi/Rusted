@@ -8,7 +8,16 @@ La mise en attente est annulée en cas d'erreur, annulation ou changement d'inst
 
 Le signalement Defender 0.2.0 reste ouvert : ne pas considérer une compilation
 ou Wine comme une validation antivirus et ne pas demander d'exclusion/restauration.
-Publier puis suivre la validation Windows réelle avant de distribuer un nouveau ZIP.
+Sources publiées sur https://github.com/bloupyi/Rusted, branche master. Tests Linux
+et Windows de communication, unitaires, outils et parseur Prism réussis.
+La compilation complète Windows et le contrôle Defender de 0.2.1 ont réussi ici :
+https://github.com/bloupyi/Rusted/actions/runs/40907164336 (commit 4c1eb72).
+Les cinq jobs sont au vert. Le ZIP exact a passé le scan et le premier démarrage
+de 20 secondes avec protection en temps réel et comportementale active.
+Rapport : results/rusted-launcher-0.2.1-windows.json, signatures 1.463.24.0.
+Livrables complets : build/windows-release-0.2.1/. Cette validation ne couvre pas
+de compte réel, de préparation entière ou de partie et ne prouve pas la cause de
+la détection 0.2.0. Les exécutables restent non signés Authenticode.
 
 # Priorité actuelle : blocage Microsoft Defender 0.2.0
 
@@ -18,8 +27,9 @@ le faux positif comme établi. Aucun nouvel EXE corrigé n'a été produit. L'ar
 0.2.0 originale est préservée avec son SHA-256 pour l'analyse ; les empreintes sont
 conformes au manifeste local, mais aucun test Defender n'est possible sous Linux.
 Le workflow Windows vérifie MSVC puis ajoute scan et observation de démarrage avec
-Defender actif avant tout upload. Il reste à l'exécuter sur Windows. Le dépôt GitHub est public et vide ; il faudrait
-y publier pour la première fois les sources et le workflow pour déclencher le test. Voir WINDOWS-SECURITY.md et le rapport JSON.
+Defender actif avant tout upload. Il est maintenant publié et en cours d'exécution
+sur une machine Windows réelle ; la validation de 0.2.1 est réussie. Voir
+WINDOWS-SECURITY.md et le rapport JSON. Le signalement de l'ancien binaire reste ouvert.
 
 # État actuel — Rusted Launcher 0.2.0
 
