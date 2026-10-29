@@ -111,7 +111,7 @@ jobs:
       - run: python scripts/package_launcher.py --source
       - name: Validate release with active Microsoft Defender
         shell: pwsh
-        run: ./scripts/verify_windows_release.ps1 -ArchivePath build/Rusted-Launcher-Windows-0.2.3.zip -ReportPath build/Rusted-Windows-Validation.json
+        run: ./scripts/verify_windows_release.ps1 -ArchivePath build/Rusted-Launcher-Windows-0.2.4.zip -ReportPath build/Rusted-Windows-Validation.json
       - name: Preserve Windows validation diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -128,9 +128,9 @@ jobs:
             build/Rusted-Native-Windows-0.3.5.zip
             build/Rusted-Native-Prism-0.3.5.zip
             build/Rusted-Native-Modrinth-0.3.5.mrpack
-            build/Rusted-Launcher-Windows-0.2.3.zip
-            build/Rusted-Launcher-Source-0.2.3.zip
-            build/Rusted-Launcher-0.2.3-SHA256SUMS.txt
+            build/Rusted-Launcher-Windows-0.2.4.zip
+            build/Rusted-Launcher-Source-0.2.4.zip
+            build/Rusted-Launcher-0.2.4-SHA256SUMS.txt
 
   prism-wrapper-parser:
     runs-on: ubuntu-latest

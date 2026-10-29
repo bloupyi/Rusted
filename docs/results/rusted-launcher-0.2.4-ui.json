@@ -1,0 +1,16 @@
+{
+  "0.2.4": {
+    "resize_changed_pixels_after_forced_redraw": 0,
+    "real_account_tested": false,
+    "code_popup_shown": true,
+    "home_page_retained": true,
+    "popup_cancelled_and_closed": true,
+    "screenshot_code_is_test_placeholder": true,
+    "no_account_saved": true
+  },
+  "ui_test_environment": "Wine on Linux",
+  "original_windows_resize_bug_reproduced_under_wine": false,
+  "resize_fix": "Batch no-copy/no-redraw child positioning; queue parent and all child paints after reentrancy guard",
+  "windows_validation": "pending",
+  "real_account_tested": false
+}

@@ -15,6 +15,8 @@ $report = [ordered]@{
     executables = @()
     static_scan = 'not_run'
     startup_smoke = 'not_run'
+    resize_smoke = 'not_run'
+    microsoft_code_popup = 'not_run'
     startup_observation_seconds = 20
     detections = @()
     limitations = @('Startup observation only; no account, gameplay or full preparation validation.',
@@ -133,6 +135,56 @@ try {
     $start.EnvironmentVariables.Remove('HORIZON_SESSION_FILE')
     $process = [Diagnostics.Process]::Start($start)
     if (-not $process.WaitForInputIdle(15000)) { throw 'The launcher did not reach an idle GUI.' }
+    Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class RustedGuiSmoke {
+    [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int w, int height, uint flags);
+    [DllImport("user32.dll")] public static extern IntPtr GetDlgItem(IntPtr h, int id);
+    [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern IntPtr FindWindow(string cls, string title);
+    [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
+    [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
+    [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
+}
+'@
+    $process.Refresh()
+    $mainWindow = $process.MainWindowHandle
+    for ($resize = 0; $resize -lt 40; $resize++) {
+        if (-not [RustedGuiSmoke]::SetWindowPos($mainWindow, [IntPtr]::Zero, 0, 0,
+            (1120 + ($resize * 73) % 480), (760 + ($resize * 31) % 240), 0x16)) {
+            throw 'Launcher resize failed.'
+        }
+    }
+    [void][RustedGuiSmoke]::SetWindowPos($mainWindow, [IntPtr]::Zero, 0, 0, 1200, 820, 0x16)
+    $process.Refresh()
+    if (-not $process.Responding -or [RustedGuiSmoke]::GetDlgItem($mainWindow, 1) -eq [IntPtr]::Zero) {
+        throw 'Launcher did not remain responsive with its Play action after resizing.'
+    }
+    $report.resize_smoke = 'passed'
+    # Request a genuine Microsoft code, but never enter a user account or log the code.
+    [void][RustedGuiSmoke]::PostMessage($mainWindow, 0x111, [IntPtr]104, [IntPtr]::Zero)
+    Start-Sleep -Milliseconds 300
+    [void][RustedGuiSmoke]::PostMessage($mainWindow, 0x111, [IntPtr]501, [IntPtr]::Zero)
+    $popup = [IntPtr]::Zero
+    for ($attempt = 0; $attempt -lt 120; $attempt++) {
+        $popup = [RustedGuiSmoke]::FindWindow('RustedMicrosoftCodePopup', $null)
+        if ($popup -ne [IntPtr]::Zero) { break }
+        if ($process.HasExited) { throw 'Launcher exited while requesting Microsoft sign-in.' }
+        Start-Sleep -Milliseconds 250
+    }
+    if ($popup -eq [IntPtr]::Zero -or
+        [RustedGuiSmoke]::SendMessage([RustedGuiSmoke]::GetDlgItem($popup, 6001), 0xE, [IntPtr]::Zero, [IntPtr]::Zero).ToInt64() -le 0 -or
+        [RustedGuiSmoke]::GetDlgItem($mainWindow, 1010) -eq [IntPtr]::Zero) {
+        throw 'Microsoft code popup was not displayed above the home page.'
+    }
+    [void][RustedGuiSmoke]::PostMessage($popup, 0x10, [IntPtr]::Zero, [IntPtr]::Zero)
+    for ($attempt = 0; $attempt -lt 40 -and [RustedGuiSmoke]::IsWindow($popup); $attempt++) {
+        Start-Sleep -Milliseconds 100
+    }
+    if ([RustedGuiSmoke]::IsWindow($popup) -or @(Get-ChildItem -LiteralPath (Join-Path $data 'accounts') -File).Count -ne 0) {
+        throw 'Microsoft popup did not cancel cleanly without storing an account.'
+    }
+    $report.microsoft_code_popup = 'passed; real device request, code displayed, cancelled without account'
     # Observe the genuine first-run GUI with its automatic preparation, without entering an account.
     for ($second = 0; $second -lt $report.startup_observation_seconds; $second++) {
         Start-Sleep -Seconds 1

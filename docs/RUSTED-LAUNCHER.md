@@ -1,4 +1,4 @@
-# Rusted Launcher 0.2.3 — Windows x64
+# Rusted Launcher 0.2.4 — Windows x64
 
 La connexion Microsoft est fournie automatiquement, avec le même client public
 Live que la bibliothèque utilisée par FaultlineLauncher. Aucun ID d’application
@@ -6,10 +6,21 @@ ni inscription Azure n’est demandé. La connexion ouvre le navigateur Microsof
 copie le code à coller si nécessaire, puis attend la validation. L’intégration est
 écrite en Rust ; Electron n’est pas embarqué. Voir [le fonctionnement](MICROSOFT-SETUP.md).
 
-Extraire **tout** `Rusted-Launcher-Windows-0.2.3.zip`, puis ouvrir
+Extraire **tout** `Rusted-Launcher-Windows-0.2.4.zip`, puis ouvrir
 **Rusted Launcher.exe**. Garder le sous-dossier `rusted` à côté de l'exécutable.
 Il contient le moteur Rusted 0.3.5 et ses outils. Aucun terminal, Prism ni
 Configurer-Rusted.exe n'est nécessaire pour utiliser ce lanceur.
+
+## Nouveautés 0.2.4
+
+La connexion affiche une fenêtre au-dessus de l’accueil avec le code Microsoft,
+Copier, Ouvrir Microsoft et Annuler. Elle se ferme quand la connexion se termine
+ou est annulée. La préparation continue en arrière-plan.
+
+Le redimensionnement place désormais les contrôles en une seule opération sans
+copier leurs anciens pixels et repeint toute la fenêtre et ses enfants après
+la mise en page. Les tests Windows incluent des redimensionnements et la demande
+d’un vrai code Microsoft, annulée sans compte enregistré.
 
 ## Nouveautés 0.2.1
 

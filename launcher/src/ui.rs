@@ -1,5 +1,7 @@
 //! Original immediate navigation over native Win32 controls and an owner-drawn copper/pixel shell.
 //! The window owns App; worker threads receive only cloned model data and a message sender.
+#[path = "login_popup.rs"]
+mod login_popup;
 use rusted_launcher::{
     auth, catalog, compat, launch,
     model::{Engine, Instance, Settings, Store},
@@ -81,6 +83,7 @@ struct App {
     mod_searching: bool,
     search_generation: u64,
     pending_play: Option<String>,
+    login_popup: HWND,
 }
 impl App {
     fn selected(&self) -> Option<Instance> {
@@ -341,6 +344,7 @@ pub fn run() -> Result<()> {
             mod_searching: false,
             search_generation: 0,
             pending_play: None,
+            login_popup: std::ptr::null_mut(),
         });
         let h = GetModuleHandleW(std::ptr::null());
         let class = wide("RustedLauncherOriginal");
@@ -381,6 +385,10 @@ pub fn run() -> Result<()> {
         UpdateWindow(hwnd);
         let mut msg: MSG = std::mem::zeroed();
         while GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) > 0 {
+            let popup = (*raw).login_popup;
+            if !popup.is_null() && IsDialogMessageW(popup, &msg) != 0 {
+                continue;
+            }
             if IsDialogMessageW(hwnd, &msg) == 0 {
                 TranslateMessage(&msg);
                 DispatchMessageW(&msg);
@@ -458,6 +466,10 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
         };
         return 1;
     }
+    // No default erase while a control is moved; the buffered paint owns the background.
+    if msg == WM_ERASEBKGND {
+        return 1;
+    }
     if DISPATCHING.with(|v| v.replace(true)) {
         return DefWindowProcW(hwnd, msg, w, l);
     }
@@ -476,11 +488,12 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             0
         }
         WM_SIZE => {
-            layout(app);
-            InvalidateRect(hwnd, std::ptr::null(), 0);
+            if w as u32 != SIZE_MINIMIZED {
+                layout(app);
+                redraw(app.window);
+            }
             0
         }
-        WM_ERASEBKGND => 1,
         WM_PAINT => {
             paint(app);
             0
@@ -524,6 +537,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             if let Some(c) = &app.auth_job {
                 c.store(true, Ordering::Relaxed)
             }
+            close_login_popup(app);
             DestroyWindow(hwnd);
             0
         }
@@ -1199,26 +1213,66 @@ unsafe fn build(app: &mut App) {
     layout(app);
     app.rendered_status = app.status.clone();
     SendMessageW(app.window, WM_SETREDRAW, 1, 0);
+    redraw(app.window);
+}
+unsafe fn redraw(window: HWND) {
+    // Queue painting until the dispatch guard is released. Owner-draw callbacks during
+    // MoveWindow(repaint=true) were previously dropped by the reentrancy guard.
     RedrawWindow(
-        app.window,
+        window,
         std::ptr::null(),
         std::ptr::null_mut(),
-        RDW_INVALIDATE | RDW_ALLCHILDREN,
+        RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN,
     );
 }
 unsafe fn layout(app: &App) {
     let mut r: RECT = std::mem::zeroed();
     GetClientRect(app.window, &mut r);
-    for c in &app.controls {
-        let mut v = c.rect;
-        if c.footer {
-            v[1] += r.bottom - 91;
-            if v[0] >= 734 {
-                v[0] += r.right - 1184;
+    let positions = app
+        .controls
+        .iter()
+        .map(|c| {
+            let mut v = c.rect;
+            if c.footer {
+                v[1] += r.bottom - 91;
+                if v[0] >= 734 {
+                    v[0] += r.right - 1184;
+                }
+            }
+            (c.window, v)
+        })
+        .collect::<Vec<_>>();
+    let flags = SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOREDRAW | SWP_NOCOPYBITS;
+    let mut deferred = BeginDeferWindowPos(positions.len() as i32);
+    if !deferred.is_null() {
+        for (window, v) in &positions {
+            deferred = DeferWindowPos(
+                deferred,
+                *window,
+                std::ptr::null_mut(),
+                v[0],
+                v[1],
+                v[2],
+                v[3],
+                flags,
+            );
+            if deferred.is_null() {
+                break;
             }
         }
-        MoveWindow(c.window, v[0], v[1], v[2], v[3], 1);
+        if !deferred.is_null() && EndDeferWindowPos(deferred) != 0 {
+            return;
+        }
     }
+    for (window, v) in positions {
+        SetWindowPos(window, std::ptr::null_mut(), v[0], v[1], v[2], v[3], flags);
+    }
+}
+unsafe fn close_login_popup(app: &mut App) {
+    if !app.login_popup.is_null() && IsWindow(app.login_popup) != 0 {
+        DestroyWindow(app.login_popup);
+    }
+    app.login_popup = std::ptr::null_mut();
 }
 unsafe fn remember_draft(app: &mut App) {
     if app.page == 1 && !GetDlgItem(app.window, 210).is_null() {
@@ -1665,6 +1719,7 @@ unsafe fn tick(app: &mut App) {
         }
     }
     let mut rebuild = false;
+    let mut verification_to_open = None;
     for _ in 0..1000 {
         let Ok(e) = app.rx.try_recv() else { break };
         match e {
@@ -1679,6 +1734,7 @@ unsafe fn tick(app: &mut App) {
                 app.log_dirty = true;
             }
             Event::AccountConnected(account) => {
+                close_login_popup(app);
                 app.auth_job = None;
                 app.device = None;
                 app.settings.selected_account = account.id;
@@ -1688,6 +1744,7 @@ unsafe fn tick(app: &mut App) {
                 rebuild = true;
             }
             Event::AccountFailed(error) => {
+                close_login_popup(app);
                 app.pending_play = None;
                 app.auth_job = None;
                 app.device = None;
@@ -1696,13 +1753,13 @@ unsafe fn tick(app: &mut App) {
             }
             Event::DeviceCode { uri, code } => {
                 // Open the trusted Microsoft verification page as soon as the device flow is ready.
-                open(&uri);
                 let _ = clipboard(app.window, &code);
                 app.account_notice =
                     "Navigateur ouvert. Le code Microsoft est copie : colle-le pour te connecter."
                         .into();
+                verification_to_open = Some(uri.clone());
                 app.device = Some((uri, code));
-                app.page = 4;
+                app.page = 0;
                 rebuild = true;
             }
             Event::VersionCatalog(catalogue) => {
@@ -1835,6 +1892,14 @@ unsafe fn tick(app: &mut App) {
         GetClientRect(app.window, &mut rect);
         rect.top = rect.bottom - 12;
         InvalidateRect(app.window, &rect, 0);
+    }
+    if let Some(uri) = verification_to_open {
+        close_login_popup(app);
+        if let Some((_, code)) = &app.device {
+            app.login_popup = login_popup::show(app.window, code, app.font, app.bold);
+        }
+        redraw(app.window);
+        open(&uri);
     }
 }
 unsafe fn open(path: &str) {
@@ -2323,7 +2388,7 @@ unsafe fn paint(app: &App) {
     line_text(
         dc,
         app.small,
-        "Rusted Launcher 0.2.3",
+        "Rusted Launcher 0.2.4",
         27,
         r.bottom - 90,
         205,
