@@ -104,6 +104,17 @@ const MODELLED: &[&str] = &[
     "minecraft:written_book_content",
 ];
 impl StackData {
+    /// The complete name component, unless a plain rename superseded it.
+    pub fn custom_name_tag(&self) -> Option<Tag> {
+        let name = self.custom_name.as_ref()?;
+        Some(
+            self.custom_name_component
+                .as_ref()
+                .filter(|component| read_text(component).as_ref() == Some(name))
+                .cloned()
+                .unwrap_or_else(|| Tag::String(name.as_str().into())),
+        )
+    }
     /// An unmodelled component's saved value.
     pub fn other(&self, id: &str) -> Option<&Tag> {
         self.other.iter().find(|(k, _)| k == id).map(|(_, v)| v)
@@ -255,13 +266,9 @@ impl ItemStack {
         self.data().and_then(|d| d.custom_name.as_deref())
     }
     pub fn styled_custom_name(&self) -> Option<horizon_client_core::text::Text> {
-        let name = self.custom_name()?;
-        if let Some(component) = self.data()?.custom_name_component.as_ref()
-            && read_text(component).as_deref() == Some(name)
-        {
-            return Some(horizon_client_core::component::name_text(component));
-        }
-        Some(horizon_client_core::text::Text::legacy(name))
+        Some(horizon_client_core::component::name_text(
+            &self.data()?.custom_name_tag()?,
+        ))
     }
     /// `minecraft:item_name` in the current language (`getItemName`'s
     /// component). It stays in the patch as loaded, so a translatable name
@@ -561,13 +568,7 @@ pub fn components_tag(damage: u32, data: Option<&StackData>) -> Option<Tag> {
         if d.repair_cost > 0 {
             entries.push(("minecraft:repair_cost", Tag::Int(d.repair_cost as i32)));
         }
-        if let Some(name) = &d.custom_name {
-            let component = d
-                .custom_name_component
-                .as_ref()
-                .filter(|component| read_text(component).as_ref() == Some(name))
-                .cloned()
-                .unwrap_or_else(|| Tag::String(name.as_str().into()));
+        if let Some(component) = d.custom_name_tag() {
             entries.push(("minecraft:custom_name", component));
         }
         if let Some(potion) = &d.potion {

@@ -698,10 +698,10 @@ fn network_stack(
             ));
         }
     }
-    if let Some(name) = s.custom_name() {
+    if let Some(name) = s.data().and_then(|data| data.custom_name_tag()) {
         stack.added.push((
             horizon_protocol::item::component::CUSTOM_NAME,
-            horizon_protocol::item::Component::Text(horizon_protocol::text::literal(name)),
+            horizon_protocol::item::Component::Text(name),
         ));
     }
     // The component as loaded, so a translatable name stays one.

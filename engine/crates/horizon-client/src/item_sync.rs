@@ -451,7 +451,10 @@ mod tests {
         d.stored_enchantments
             .push((Arc::from("minecraft:sharpness"), 2));
         d.repair_cost = 9;
-        d.custom_name = Some("Keeper".to_owned());
+        d.set_loot_name(
+            "minecraft:custom_name",
+            &serde_json::json!({"text":"Keeper", "italic":false, "color":"gold"}),
+        );
         // A translatable item name reaches the client as the same component.
         let item_name = Tag::compound([("translate", Tag::String("filled_map.monument".into()))]);
         d.other
@@ -485,6 +488,10 @@ mod tests {
         );
         assert_eq!(d.repair_cost, 9);
         assert_eq!(d.custom_name.as_deref(), Some("Keeper"));
+        assert_eq!(d.custom_name_tag(), stack.data().unwrap().custom_name_tag());
+        let text = crate::item_tooltip::name_text(&back, &|_| None);
+        assert!(!text.spans[0].style.is_italic());
+        assert_eq!(text.spans[0].style.color, Some(crate::text::GOLD));
         assert_eq!(d.other("minecraft:item_name"), Some(&item_name));
         assert_eq!(
             d.trim,
