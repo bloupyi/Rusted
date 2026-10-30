@@ -24,18 +24,21 @@ pub fn play(
     task: &Task,
 ) -> Result<()> {
     if instance.engine != Engine::Fabric {
-        let mods = store.game(instance)?.join("mods");
-        if mods.is_dir()
-            && fs::read_dir(mods)
-                .map_err(|_| "Dossier des mods inaccessible.")?
-                .flatten()
-                .any(|e| {
-                    e.path()
-                        .extension()
-                        .is_some_and(|s| s.eq_ignore_ascii_case("jar"))
-                })
-        {
-            return Err("Des mods Java sont presents. Selectionner Java + Fabric dans les reglages de l'instance ; ils ne sont pas executes par le moteur natif ni par vanilla.".into());
+        let report = rusted_launch::platform::scan(&store.game(instance)?.join("mods"));
+        if !report.errors.is_empty() {
+            return Err(report.errors.join("; "));
+        }
+        let rejected: Vec<_> = report
+            .mods
+            .iter()
+            .filter(|item| instance.engine != Engine::Native || !item.native_compatible)
+            .map(|item| format!("{}: {}", item.name, item.diagnostic))
+            .collect();
+        if !rejected.is_empty() {
+            return Err(format!(
+                "Mods incompatibles avec ce moteur : {}. Choisir Java + Fabric pour les mods Java.",
+                rejected.join("; ")
+            ));
         }
     }
     let _instance_lock = profile_lock(store, instance)?;

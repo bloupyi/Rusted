@@ -109,9 +109,14 @@ jobs:
       - run: python scripts/test_import_pack_layout.py
       - run: cargo build --release --locked -p rusted-launcher
       - run: python scripts/package_launcher.py --source
+      - name: Save the compiled engine for source-verified test retries
+        uses: actions/upload-artifact@v4
+        with:
+          name: rusted-native-engine-build-0.3.6
+          path: build/Rusted-Native-Windows-0.3.6.zip
       - name: Validate release with active Microsoft Defender
         shell: pwsh
-        run: ./scripts/verify_windows_release.ps1 -ArchivePath build/Rusted-Launcher-Windows-0.2.4.zip -ReportPath build/Rusted-Windows-Validation.json
+        run: ./scripts/verify_windows_release.ps1 -ArchivePath build/Rusted-Launcher-Windows-0.2.5.zip -ReportPath build/Rusted-Windows-Validation.json
       - name: Preserve Windows validation diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -123,14 +128,14 @@ jobs:
             build/Rusted-Windows-Validation.scan.log
       - uses: actions/upload-artifact@v4
         with:
-          name: rusted-native-windows-0.3.5
+          name: rusted-native-windows-0.3.6
           path: |
-            build/Rusted-Native-Windows-0.3.5.zip
-            build/Rusted-Native-Prism-0.3.5.zip
-            build/Rusted-Native-Modrinth-0.3.5.mrpack
-            build/Rusted-Launcher-Windows-0.2.4.zip
-            build/Rusted-Launcher-Source-0.2.4.zip
-            build/Rusted-Launcher-0.2.4-SHA256SUMS.txt
+            build/Rusted-Native-Windows-0.3.6.zip
+            build/Rusted-Native-Prism-0.3.6.zip
+            build/Rusted-Native-Modrinth-0.3.6.mrpack
+            build/Rusted-Launcher-Windows-0.2.5.zip
+            build/Rusted-Launcher-Source-0.2.5.zip
+            build/Rusted-Launcher-0.2.5-SHA256SUMS.txt
 
   prism-wrapper-parser:
     runs-on: ubuntu-latest

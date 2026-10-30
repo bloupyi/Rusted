@@ -125,6 +125,20 @@ pub fn discover(world: &Path) -> Vec<DataPack> {
     packs
 }
 
+/// Loader modules with supported data are native built-in packs, before world overrides.
+pub fn mod_data(directory: &Path) -> Vec<DataPack> {
+    rusted_platform::resources::discover(directory)
+        .into_iter()
+        .filter(|(_, module)| !module.data.is_empty())
+        .filter_map(|(path, module)| {
+            Some(DataPack {
+                id: format!("mod/{}", module.id),
+                source: Source::Zip(Box::new(Zip::open(&path).ok()?)),
+            })
+        })
+        .collect()
+}
+
 // ---- functions ---------------------------------------------------------------
 
 /// A `.mcfunction`: plain command lines and macro lines.

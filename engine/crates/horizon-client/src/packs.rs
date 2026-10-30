@@ -3,6 +3,8 @@
 //! and High Contrast packs, `pack.mcmeta` metadata and format compatibility,
 //! and an overlay resource root that layers the enabled packs over the
 //! vanilla resources (later packs win), so every loader sees one tree.
+#[cfg(test)]
+mod bench;
 mod cache;
 use crate::text::Style;
 use crate::{text::Text, zip::Zip};
@@ -326,6 +328,26 @@ pub fn discover(resources: &Path, packs_dir: &Path) -> Vec<Pack> {
     out.extend(user);
     out
 }
+
+/// Passive loader modules are the built-in mod resource stack, below player/server packs.
+pub fn mod_resources(directory: &Path) -> Vec<Pack> {
+    rusted_platform::resources::discover(directory)
+        .into_iter()
+        .filter(|(_, module)| !module.assets.is_empty())
+        .map(|(path, module)| Pack {
+            id: format!("mod/{}", module.id),
+            source: Source::Zip(path),
+            title: Text::literal(module.name),
+            description: Text::literal("Rusted native mod resources"),
+            raw_description: Text::literal("Resources loaded natively; no Java executed"),
+            description_style: Style::default(),
+            compatible: true,
+            compatibility: crate::pack_screen::Compat::Compatible,
+            overlays: Vec::new(),
+            filter: Vec::new(),
+        })
+        .collect()
+}
 /// A file a pack provides: its path (folder packs) and its name inside the pack.
 type Provided = (Option<PathBuf>, String);
 /// Files a pack provides under `assets/`, keyed by their resource name; active
@@ -362,6 +384,14 @@ fn pack_files(pack: &Pack) -> io::Result<BTreeMap<String, Provided>> {
                 let prefix = format!("{root}assets/");
                 for name in zip.names() {
                     if let Some(rest) = name.strip_prefix(&prefix) {
+                        if rest.contains(':')
+                            || rest.split('/').any(|part| matches!(part, "" | "." | ".."))
+                        {
+                            return Err(io::Error::new(
+                                io::ErrorKind::InvalidData,
+                                "invalid pack resource path",
+                            ));
+                        }
                         out.insert(format!("assets/{rest}"), (None, name.to_owned()));
                     }
                 }
@@ -499,7 +529,14 @@ fn build_overlay_uncached(
         } else {
             format!("{rel}/")
         };
-        for f in files.keys().filter_map(|f| f.strip_prefix(&prefix)) {
+        // A range visits only this directory's subtree instead of rescanning
+        // the entire archive for every nested directory in a large server pack.
+        for f in files
+            .range(prefix.clone()..)
+            .map(|(name, _)| name)
+            .take_while(|name| name.starts_with(&prefix))
+            .filter_map(|name| name.strip_prefix(&prefix))
+        {
             names.insert(f.split('/').next().unwrap_or("").to_owned());
         }
         for name in names {

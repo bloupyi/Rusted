@@ -12,7 +12,7 @@ from rusted import SOURCE, verify, source_hash
 from prepare_horizon_exporters import ASSET, DESTINATION, prepare
 from build_bootstrap import DEST as BOOTSTRAP, LOCK as FABRIC
 
-VERSION = "0.3.5"
+VERSION = "0.3.6"
 # Prism 10.0.5 expands INST_MC_DIR to native Windows separators before splitting.
 # Its splitter consumes backslashes inside either kind of quotes. Leave this
 # variable unquoted for standard paths; paths with spaces need the absolute
@@ -161,7 +161,7 @@ def main():
     prism = {"minecraft/rusted/" + name: body for name, body in files.items()}
     prism["minecraft/mods/rusted-bootstrap.jar"] = files["bootstrap/rusted-bootstrap.jar"]
     prism["mmc-pack.json"] = json.dumps({"formatVersion": 1, "components": [{"uid": "net.minecraft", "version": LOCK["minecraft_version"]}, {"uid":"net.fabricmc.fabric-loader","version":FABRIC["version"]}]}).encode()
-    prism["instance.cfg"] = b"[General]\nname=Rusted 0.3.5\niconKey=rusted_0_3_5\nInstanceType=OneSix\nOverrideCommands=true\nWrapperCommand=\nPreLaunchCommand=\nPostExitCommand=\n"
+    prism["instance.cfg"] = b"[General]\nname=Rusted 0.3.6\niconKey=rusted_0_3_5\nInstanceType=OneSix\nOverrideCommands=true\nWrapperCommand=\nPreLaunchCommand=\nPostExitCommand=\n"
     prism["icon.png"] = (ROOT / "artwork/rusted-icon.png").read_bytes()
     prism["LISEZ-MOI.md"] = files["LISEZ-MOI.md"]
     write_zip(args.output_dir / f"Rusted-Native-Prism-{VERSION}.zip", prism)

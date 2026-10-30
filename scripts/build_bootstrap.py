@@ -11,7 +11,7 @@ import urllib.request
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.3.5'
+VERSION = '0.3.6'
 DEST = ROOT / 'build/bootstrap'
 LOCK = json.loads((ROOT / 'bootstrap-java/loader.lock.json').read_text())
 

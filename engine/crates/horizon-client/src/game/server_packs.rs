@@ -202,10 +202,12 @@ fn saves() -> PathBuf {
 }
 
 /// `LoadingOverlay`'s stage lines for a pack reload, indexed by `progress`.
-const RELOAD_LINES: [&str; 4] = [
+const RELOAD_LINES: [&str; 6] = [
     "Preparing resources",
-    "Loading assets",
-    "Loading pack tables",
+    "Loading models and textures",
+    "Building interface and fonts",
+    "Loading item definitions and pack tables",
+    "Preparing texture mipmaps",
     "Applying resources",
 ];
 /// A pack reload `ServerPacks::tick` asked for: the CPU half runs on a

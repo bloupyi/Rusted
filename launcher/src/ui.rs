@@ -889,7 +889,7 @@ unsafe fn build(app: &mut App) {
             if app.mod_tab == 0 {
                 if let Some(i) = &selected {
                     if i.engine == Engine::Native {
-                        button(app, 334, "Ressources Fabric", 756, 154, 224, 36);
+                        button(app, 334, "Importer un module", 756, 154, 224, 36);
                         button(app, 335, "Voir les packs", 996, 154, 138, 36);
                     }
                     let files = mods::files(&app.store, i).unwrap_or_default();
@@ -957,7 +957,14 @@ unsafe fn build(app: &mut App) {
                 button(app, 351, "Installer le mod selectionne", 784, 596, 350, 44);
                 label(
                     app,
-                    "Fabric / Java : dependances requises installees automatiquement.",
+                    if selected
+                        .as_ref()
+                        .is_some_and(|i| i.engine == Engine::Native)
+                    {
+                        "Rusted natif : ressources/donnees sans code Java. Les autres mods exigent Java/Fabric."
+                    } else {
+                        "Fabric / Java : dependances requises installees automatiquement."
+                    },
                     284,
                     614,
                     490,
@@ -1019,7 +1026,7 @@ unsafe fn build(app: &mut App) {
             );
             control(
                 app,
-                0,
+                550,
                 "STATIC",
                 &app.account_notice.clone(),
                 0,
@@ -1502,11 +1509,7 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
             }
             333 => {
                 let i = app.selected_or_error()?;
-                let p = app.store.game(&i)?.join(if i.engine == Engine::Native {
-                    "rusted/native-data/horizon-mods"
-                } else {
-                    "mods"
-                });
+                let p = app.store.game(&i)?.join("mods");
                 std::fs::create_dir_all(&p).map_err(|_| "Dossier des mods inaccessible.")?;
                 open(&p.to_string_lossy());
             }
@@ -1515,13 +1518,13 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
                 if let Some(path) = file_dialog(
                     app.window,
                     false,
-                    "Adapter un mod Fabric sans code (textures / langues)",
-                    "Mods Fabric\0*.jar\0\0",
+                    "Importer des ressources ou donnees sans code Java",
+                    "Modules Fabric, Quilt, Forge, NeoForge\0*.jar\0\0",
                 ) {
                     let store = app.store.clone();
-                    app.start("Adaptation des ressources pour Rusted natif", move |task| {
+                    app.start("Import du module pour Rusted natif", move |task| {
                         compat::import_resources(&store, &i, &path, &task)?;
-                        Ok("Ressources adaptees. Active le pack dans Options > Packs de ressources du jeu.".into())
+                        Ok("Module installe. Ses ressources et donnees compatibles seront chargees au prochain lancement.".into())
                     });
                 }
             }
@@ -1567,7 +1570,7 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
                     .ok_or("Selectionner un resultat Modrinth.")?
                     .clone();
                 let mut i = app.selected_or_error()?;
-                if i.engine!=Engine::Fabric&&MessageBoxW(app.window,wide("Installer ce mod et ses dependances en passant cette instance sur Java / Fabric ? Les mondes natifs restent separes.").as_ptr(),wide("Installation Fabric").as_ptr(),MB_YESNO|MB_ICONQUESTION)!=IDYES{return Ok(())}
+                if i.engine==Engine::Java&&MessageBoxW(app.window,wide("Installer ce mod et ses dependances en passant cette instance sur Java / Fabric ? Les mondes natifs restent separes.").as_ptr(),wide("Installation Fabric").as_ptr(),MB_YESNO|MB_ICONQUESTION)!=IDYES{return Ok(())}
                 let store = app.store.clone();
                 app.start("Installation des mods Fabric", move |task| {
                     mods::install(&store, &mut i, &hit.id, &task)?;
@@ -1825,7 +1828,6 @@ unsafe fn tick(app: &mut App) {
             }
             Event::Failed(s) => {
                 app.pending_play = None;
-                let cancelled = app.job.as_ref().is_some_and(|c| c.load(Ordering::Relaxed));
                 app.job = None;
                 app.running = false;
                 if app.auth_job.is_none() {
@@ -1834,9 +1836,8 @@ unsafe fn tick(app: &mut App) {
                 app.status = s.clone();
                 app.logs.push_back(s.clone());
                 app.log_dirty = true;
-                if !cancelled {
-                    app.message(&s);
-                }
+                // Background preparation errors remain visible in status/console.
+                // A modal dialog here blocks timer delivery and Microsoft sign-in.
                 ShowWindow(app.window, SW_RESTORE);
                 rebuild = true;
             }
@@ -2167,7 +2168,7 @@ unsafe fn draw_selection(app: &App, d: &DRAWITEMSTRUCT) {
             } else if title.ends_with(".hmod") {
                 "Mod natif : options dans le jeu".into()
             } else {
-                "Mod Fabric installe".into()
+                "Archive de mod installee".into()
             },
             if title.ends_with(".disabled") {
                 "INACTIF"
@@ -2388,7 +2389,7 @@ unsafe fn paint(app: &App) {
     line_text(
         dc,
         app.small,
-        "Rusted Launcher 0.2.4",
+        "Rusted Launcher 0.2.5",
         27,
         r.bottom - 90,
         205,

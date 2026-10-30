@@ -64,7 +64,7 @@ def build(target=None):
         raise ValueError("Sources changees pendant la compilation ; relancer avant de distribuer.")
     folder = TARGET / target / "release" if target else TARGET / "release"
     extension = ".exe" if (target and "windows" in target) or (not target and os.name == "nt") else ""
-    receipt = {"schema": 1, "project": "Rusted", "version": "0.3.5", "source_sha256": before,
+    receipt = {"schema": 1, "project": "Rusted", "version": "0.3.6", "source_sha256": before,
                "upstream_revision": LOCK["revision"], "changes": differences(),
                "binaries": {name + extension: hashlib.sha256((folder / (name + extension)).read_bytes()).hexdigest()
                             for name in ["rusted", "horizon-prepare"]}}

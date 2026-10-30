@@ -93,7 +93,7 @@ class BridgeProcessTest(unittest.TestCase):
             archive.writestr("fabric.mod.json", '{"id":"fixture","name":"Test Fixture"}')
         result = self.invoke(["java", "net.minecraft.client.main.Main", *self.params])
         self.assertEqual(result.returncode, 1)
-        self.assertIn("Mods Java", result.stderr)
+        self.assertIn("Modules incompatibles", result.stderr)
         self.assertNotIn("TEST_PEER_NATIVE_OK", result.stdout)
 
     def test_modrinth_native_handover_and_exit_status(self):
@@ -222,7 +222,7 @@ class BridgeProcessTest(unittest.TestCase):
         (self.game / "mods/sodium.jar").write_bytes(b"test fixture, not a mod")
         result = self.invoke(["java", "net.minecraft.client.main.Main", *self.params])
         self.assertEqual(result.returncode, 1)
-        self.assertIn("Mods Java presents", result.stderr)
+        self.assertIn("Modules incompatibles", result.stderr)
         shutil.rmtree(self.game / "mods")
         self.params[self.params.index("--version") + 1] = "1.20.4"
         result = self.invoke(["java", "net.minecraft.client.main.Main", *self.params])

@@ -59,7 +59,8 @@ impl Game<'_> {
         self.reload_datapacks(false);
     }
     pub(super) fn reload_datapacks(&mut self, run_load: bool) {
-        self.fns.packs = datapack::discover(&self.world_root);
+        self.fns.packs = datapack::mod_data(&horizon_client::rusted::mods_directory());
+        self.fns.packs.extend(datapack::discover(&self.world_root));
         let saved: Option<serde_json::Value> = std::fs::read(self.datapack_settings_path())
             .ok()
             .and_then(|b| serde_json::from_slice(&b).ok());

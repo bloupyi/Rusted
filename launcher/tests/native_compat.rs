@@ -38,7 +38,7 @@ fn fixture(path: &Path, extra: Option<(&str, &[u8])>, mixin: bool) {
     zip.finish().unwrap();
 }
 #[test]
-fn resource_only_fabric_archive_becomes_native_pack_without_jvm_or_source_mutation() {
+fn passive_fabric_archive_is_installed_unchanged_without_jvm() {
     let root = tempfile::tempdir().unwrap();
     let store = Store::open(root.path().join("owned")).unwrap();
     let instance = store.create("Native", Engine::Native, "26.3").unwrap();
@@ -48,7 +48,8 @@ fn resource_only_fabric_archive_becomes_native_pack_without_jvm_or_source_mutati
     let output = compat::import_resources(&store, &instance, &source, &task()).unwrap();
     assert_eq!(fs::read(&source).unwrap(), original);
     assert_eq!(store.list().unwrap()[0].engine, Engine::Native);
-    assert!(!store.game(&instance).unwrap().join("mods").exists());
+    assert!(output.starts_with(store.game(&instance).unwrap().join("mods")));
+    assert_eq!(fs::read(&output).unwrap(), original);
     let mut zip = zip::ZipArchive::new(fs::File::open(&output).unwrap()).unwrap();
     assert_eq!(zip.len(), 2);
     let mut body = String::new();
@@ -57,9 +58,23 @@ fn resource_only_fabric_archive_becomes_native_pack_without_jvm_or_source_mutati
         .read_to_string(&mut body)
         .unwrap();
     assert!(body.contains("Solo Rusted test"));
-    assert!(zip.by_name("fabric.mod.json").is_err());
-    assert!(output.with_extension("rusted.json").is_file());
+    assert!(zip.by_name("fabric.mod.json").is_ok());
+    drop(zip);
+
     assert!(compat::import_resources(&store, &instance, &source, &task()).is_err());
+    let files = rusted_launcher::mods::files(&store, &instance).unwrap();
+    assert_eq!(files, ["own_resource_fixture.jar"]);
+    rusted_launcher::mods::toggle(&store, &instance, &files[0]).unwrap();
+    assert!(
+        rusted_launch::platform::scan(&store.game(&instance).unwrap().join("mods"))
+            .mods
+            .is_empty()
+    );
+    rusted_launcher::mods::toggle(&store, &instance, "own_resource_fixture.jar.disabled").unwrap();
+    assert!(
+        rusted_launch::platform::scan(&store.game(&instance).unwrap().join("mods")).mods[0]
+            .native_compatible
+    );
 }
 #[test]
 fn executable_gameplay_or_traversal_mods_are_rejected_before_any_native_install() {
@@ -83,11 +98,7 @@ fn executable_gameplay_or_traversal_mods_are_rejected_before_any_native_install(
         let source = root.path().join(format!("{index}.jar"));
         fixture(&source, extra, mixin);
         assert!(compat::import_resources(&store, &instance, &source, &task()).is_err());
-        assert!(!store
-            .game(&instance)
-            .unwrap()
-            .join("rusted/native-data/resourcepacks")
-            .exists());
+        assert!(!store.game(&instance).unwrap().join("mods").exists());
     }
     assert!(!root.path().join("escape").exists());
 }

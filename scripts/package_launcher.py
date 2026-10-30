@@ -13,7 +13,7 @@ from build_launcher_entry import build as build_entry
 from package_horizon_native import pe_amd64
 from rusted import ROOT, source_hash
 
-VERSION = "0.2.4"
+VERSION = "0.2.5"
 
 
 def digest(body):
@@ -113,7 +113,7 @@ def package(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--runtime", type=Path, default=ROOT / "build/Rusted-Native-Windows-0.3.5.zip")
+    parser.add_argument("--runtime", type=Path, default=ROOT / "build/Rusted-Native-Windows-0.3.6.zip")
     parser.add_argument("--launcher", type=Path, default=ROOT / "target/release/rusted-launcher.exe")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "build")
     parser.add_argument("--source", action="store_true")

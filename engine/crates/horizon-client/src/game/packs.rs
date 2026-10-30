@@ -55,7 +55,8 @@ pub fn startup_root(
     server: &[Pack],
 ) -> std::io::Result<PathBuf> {
     let all = packs::discover(vanilla, &packs_dir());
-    let mut enabled = packs::enabled(&all, selected);
+    let mut enabled = packs::mod_resources(&horizon_client::rusted::mods_directory());
+    enabled.extend(packs::enabled(&all, selected));
     enabled.extend_from_slice(server);
     packs::resource_root(vanilla, &enabled, &cache_dir())
 }
@@ -73,9 +74,9 @@ fn info(p: &Pack) -> PackInfo {
         },
         compat: p.compatibility,
         icon: p.icon_png().as_deref().and_then(pack_screen::load_icon),
-        required: false,
+        required: p.id.starts_with("mod/"),
         position: Position::Top,
-        fixed: false,
+        fixed: p.id.starts_with("mod/"),
     }
 }
 /// The vanilla pack: required, at the bottom (`BuiltInPackSource`), with the
@@ -103,6 +104,11 @@ pub(super) fn pack_infos(vanilla: &Path) -> Vec<PackInfo> {
         .iter()
         .map(info)
         .collect();
+    infos.extend(
+        packs::mod_resources(&horizon_client::rusted::mods_directory())
+            .iter()
+            .map(info),
+    );
     infos.push(vanilla_info(vanilla));
     infos
 }
@@ -274,10 +280,22 @@ pub(super) fn stage_pack(
     japanese: bool,
     progress: &super::Progress,
 ) -> horizon_client::Result<StagedPack> {
+    let mut checkpoint = std::time::Instant::now();
     let root = startup_root(vanilla_root, selected, server)?;
     let root = super::mods::content_root(&root, mods_enabled, dev_mods);
+    log::info!(
+        "Rusted pack reload: overlay {:.3}s",
+        checkpoint.elapsed().as_secs_f64()
+    );
+    checkpoint = std::time::Instant::now();
     progress.set(1);
     let render = Arc::new(assets.reload(&root)?);
+    log::info!(
+        "Rusted pack reload: models/textures {:.3}s",
+        checkpoint.elapsed().as_secs_f64()
+    );
+    checkpoint = std::time::Instant::now();
+    progress.set(2);
     let mut atlas = HudAtlas::build_over(&root, vanilla_root)?;
     atlas.font.uniform = force_unicode;
     atlas.font.japanese = japanese;
@@ -285,7 +303,12 @@ pub(super) fn stage_pack(
         atlas,
         panorama: Arc::new(horizon_client::gfx::panorama::Faces::load(&root)),
     };
-    progress.set(2);
+    log::info!(
+        "Rusted pack reload: GUI/font {:.3}s",
+        checkpoint.elapsed().as_secs_f64()
+    );
+    checkpoint = std::time::Instant::now();
+    progress.set(3);
     let pack = PackResources::load(
         &root,
         assets.clone(),
@@ -294,8 +317,18 @@ pub(super) fn stage_pack(
         context.biomes.clone(),
         context.light.clone(),
     )?;
+    log::info!(
+        "Rusted pack reload: tables/items {:.3}s",
+        checkpoint.elapsed().as_secs_f64()
+    );
+    checkpoint = std::time::Instant::now();
+    progress.set(4);
     let textures = prepare_renderer_textures(&pack);
-    progress.set(3);
+    log::info!(
+        "Rusted pack reload: mipmaps {:.3}s",
+        checkpoint.elapsed().as_secs_f64()
+    );
+    progress.set(5);
     Ok(StagedPack {
         root,
         gui,

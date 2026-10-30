@@ -1490,7 +1490,7 @@ impl OptionsUi {
             Page::JavaMods => {
                 let report = crate::rusted::java_mods();
                 let mut rows = vec![
-                    Row::Header("Java mods require their JVM loader"),
+                    Row::Header("Native resource/data modules and Java mod diagnostics"),
                     Row::Header("Sodium / Iris / Distant Horizons: not supported natively"),
                     Row::Note(report.directory.display().to_string()),
                 ];

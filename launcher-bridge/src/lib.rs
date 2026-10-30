@@ -10,6 +10,7 @@ use std::{
 pub type Result<T> = std::result::Result<T, String>;
 pub const HORIZON_REVISION: &str = "8993772de0bf4b0f92c9f76be64f7a1e6b21cf37";
 pub const MINECRAFT_VERSION: &str = "26.3";
+pub use rusted_platform as platform;
 pub mod bootstrap;
 pub mod installer;
 pub mod launcher_install;
@@ -306,40 +307,24 @@ impl Launch {
         if self.version != MINECRAFT_VERSION {
             return Err("L'instance doit utiliser Minecraft 26.3 vanilla en mode natif ; les autres versions restent en mode Java.".into());
         }
-        let mods = self.game_directory.join("mods");
-        if mods.is_dir() {
-            for entry in
-                fs::read_dir(mods).map_err(|_| "Impossible de verifier le dossier mods.")?
-            {
-                let path = entry.map_err(|_| "Impossible de verifier un mod.")?.path();
-                if bootstrap.is_some_and(|b| fs::canonicalize(&path).is_ok_and(|p| p == b)) {
-                    continue;
-                }
-                if path
-                    .extension()
-                    .is_some_and(|s| s.eq_ignore_ascii_case("jar"))
-                {
-                    let report = rusted_platform::scan(&self.game_directory.join("mods"));
-                    let details = report
-                        .mods
-                        .iter()
-                        .take(5)
-                        .map(|m| {
-                            format!(
-                                "{} [{}]",
-                                m.name,
-                                if m.loaders.is_empty() {
-                                    "Java inconnu".into()
-                                } else {
-                                    m.loaders.join("/")
-                                }
-                            )
-                        })
-                        .collect::<Vec<_>>()
-                        .join(", ");
-                    return Err(format!("Mods Java presents : {details}. Rusted natif ne peut pas les executer. Installer le chargeur requis dans Modifier > Version de Prism et activer le mode auto avec Configurer-Rusted.exe. Ne pas melanger Forge et Fabric."));
-                }
-            }
+        let report = rusted_platform::scan(&self.game_directory.join("mods"));
+        let rejected = report
+            .mods
+            .iter()
+            .filter(|item| {
+                !item.native_compatible
+                    && !bootstrap.is_some_and(|bootstrap| {
+                        fs::canonicalize(self.game_directory.join("mods").join(&item.file))
+                            .is_ok_and(|path| path == bootstrap)
+                    })
+            })
+            .map(|item| format!("{}: {}", item.name, item.diagnostic))
+            .collect::<Vec<_>>();
+        if !rejected.is_empty() {
+            return Err(format!("Modules incompatibles avec Rusted natif : {}. Les mods avec code Java exigent leur chargeur JVM ; les ressources et donnees prises en charge sont chargees automatiquement.", rejected.join("; ")));
+        }
+        if !report.errors.is_empty() && report.mods.is_empty() {
+            return Err(report.errors.join("; "));
         }
         Ok(())
     }

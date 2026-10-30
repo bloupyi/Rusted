@@ -11,16 +11,18 @@ pub fn icon() -> Option<winit::window::Icon> {
 }
 use std::sync::OnceLock;
 
+pub fn mods_directory() -> std::path::PathBuf {
+    std::env::var_os("RUSTED_INSTANCE_DIR")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(crate::logging::game_home)
+        .join("mods")
+}
+
 /// The bridge sets the original launcher instance; saves still use the isolated native home.
 /// Cache the inventory so drawing menus never rereads every mod archive each frame.
 pub fn java_mods() -> &'static rusted_platform::Report {
     static REPORT: OnceLock<rusted_platform::Report> = OnceLock::new();
-    REPORT.get_or_init(|| {
-        let instance = std::env::var_os("RUSTED_INSTANCE_DIR")
-            .map(std::path::PathBuf::from)
-            .unwrap_or_else(crate::logging::game_home);
-        rusted_platform::scan(&instance.join("mods"))
-    })
+    REPORT.get_or_init(|| rusted_platform::scan(&mods_directory()))
 }
 
 pub fn title() -> String {

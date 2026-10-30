@@ -41,35 +41,45 @@ pub fn search(query: &str, version: &str) -> Result<Vec<Hit>> {
         .collect())
 }
 pub fn files(store: &Store, instance: &Instance) -> Result<Vec<String>> {
-    let base = folder(store, instance)?;
-    if !base.exists() {
-        return Ok(vec![]);
+    let mut directories = vec![store.game(instance)?.join("mods")];
+    if instance.engine == Engine::Native {
+        directories.push(folder(store, instance, "file.hmod")?);
     }
-    let mut v = fs::read_dir(base)
-        .map_err(|_| "Dossier des mods inaccessible.")?
-        .flatten()
-        .filter(|e| e.file_type().is_ok_and(|t| t.is_file()))
-        .map(|e| e.file_name().to_string_lossy().into_owned())
-        .filter(|n| {
-            n.ends_with(".jar")
-                || n.ends_with(".jar.disabled")
-                || n.ends_with(".hmod")
-                || n.ends_with(".hmod.disabled")
-        })
-        .collect::<Vec<_>>();
-    v.sort();
-    Ok(v)
+    let mut files = Vec::new();
+    for directory in directories {
+        if !directory.exists() {
+            continue;
+        }
+        for entry in fs::read_dir(directory).map_err(|_| "Dossier des mods inaccessible.")? {
+            let entry = entry.map_err(|_| "Fichier de mod inaccessible.")?;
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if entry.file_type().is_ok_and(|t| t.is_file())
+                && [".jar", ".jar.disabled", ".hmod", ".hmod.disabled"]
+                    .iter()
+                    .any(|ext| name.to_ascii_lowercase().ends_with(ext))
+            {
+                files.push(name);
+            }
+        }
+    }
+    files.sort();
+    files.dedup();
+    Ok(files)
 }
-fn folder(store: &Store, instance: &Instance) -> Result<PathBuf> {
+fn folder(store: &Store, instance: &Instance, name: &str) -> Result<PathBuf> {
     let game = store.game(instance)?;
-    Ok(if instance.engine == Engine::Native {
-        game.join("rusted/native-data/horizon-mods")
-    } else {
-        game.join("mods")
-    })
+    Ok(
+        if instance.engine == Engine::Native
+            && name.trim_end_matches(".disabled").ends_with(".hmod")
+        {
+            game.join("rusted/native-data/horizon-mods")
+        } else {
+            game.join("mods")
+        },
+    )
 }
 pub fn toggle(store: &Store, instance: &Instance, name: &str) -> Result<()> {
-    let base = folder(store, instance)?;
+    let base = folder(store, instance, name)?;
     let src = download::path(&base, name)?;
     if !src.is_file() {
         return Err("Mod introuvable.".into());
@@ -87,7 +97,7 @@ pub fn toggle(store: &Store, instance: &Instance, name: &str) -> Result<()> {
         .map_err(|_| "Le mod ne peut pas etre modifie pendant son utilisation.".into())
 }
 pub fn trash(store: &Store, instance: &Instance, name: &str) -> Result<()> {
-    let src = download::path(&folder(store, instance)?, name)?;
+    let src = download::path(&folder(store, instance, name)?, name)?;
     fs::rename(
         src,
         store
@@ -184,6 +194,8 @@ pub fn install(store: &Store, instance: &mut Instance, project: &str, task: &Tas
     } else {
         serde_json::json!({})
     };
+    // Downloads are staged before the native classifier may approve any install.
+    let staging = tempfile::tempdir_in(&store.root).map_err(|_| "Cache des mods inaccessible.")?;
     let mut jobs = vec![];
     let mut records = vec![];
     for (project, v) in resolved {
@@ -201,7 +213,7 @@ pub fn install(store: &Store, instance: &mut Instance, project: &str, task: &Tas
         }
         let a = Artifact {
             url: f["url"].as_str().ok_or("URL du mod absente.")?.into(),
-            path: download::path(&base, name)?,
+            path: download::path(staging.path(), name)?,
             size: f["size"].as_u64().ok_or("Taille du mod absente.")?,
             hash: f
                 .pointer("/hashes/sha512")
@@ -214,7 +226,25 @@ pub fn install(store: &Store, instance: &mut Instance, project: &str, task: &Tas
         records.push((project, name.to_string(), v["id"].clone(), f.clone()));
     }
     download::queue(jobs, 4, task)?;
+    if instance.engine == Engine::Native {
+        for (_, name, _, _) in &records {
+            rusted_launch::platform::resources::inspect(&staging.path().join(name))
+                .map_err(|error| format!("{name}: {error}. Ce mod exige Java/Fabric ou un portage natif ; le moteur de l'instance reste Rusted."))?;
+        }
+    }
+    task.check()?;
     for (project, name, version, file) in records {
+        let mut installed =
+            tempfile::NamedTempFile::new_in(&base).map_err(|_| "Dossier des mods inaccessible.")?;
+        std::io::copy(
+            &mut fs::File::open(staging.path().join(&name))
+                .map_err(|_| "Mod telecharge inaccessible.")?,
+            installed.as_file_mut(),
+        )
+        .map_err(|_| "Installation du mod impossible.")?;
+        installed
+            .persist(download::path(&base, &name)?)
+            .map_err(|_| "Installation du mod impossible.")?;
         if let Some(old) = index[&project]["filename"].as_str() {
             if old != name {
                 let path = download::path(&base, old)?;
@@ -233,8 +263,14 @@ pub fn install(store: &Store, instance: &mut Instance, project: &str, task: &Tas
         index[project] = serde_json::json!({"filename":name,"version_id":version,"file":file});
     }
     model::atomic_json(&base.join(".rusted-modrinth.json"), &index)?;
-    instance.engine = Engine::Fabric;
+    if instance.engine != Engine::Native {
+        instance.engine = Engine::Fabric;
+    }
     store.save(instance)?;
-    task.status("Mods et dependances installes. Cette instance utilisera Java / Fabric.");
+    task.status(if instance.engine == Engine::Native {
+        "Modules de ressources/donnees installes ; moteur Rusted conserve."
+    } else {
+        "Mods et dependances installes. Cette instance utilisera Java / Fabric."
+    });
     Ok(())
 }

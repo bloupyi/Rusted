@@ -74,19 +74,15 @@ pub fn prepare(mut input: Input, config: &Config, runtime: &Path) -> Result<Opti
     }
     let bootstrap_jar =
         fs::canonicalize(bootstrap_jar).map_err(|_| "Module de demarrage inaccessible.")?;
-    let other_mods = fs::read_dir(game.join("mods"))
-        .map_err(|_| "Dossier mods inaccessible.")?
-        .map(|entry| {
-            entry
-                .map_err(|_| "Dossier mods illisible.".to_owned())
-                .map(|e| e.path())
-        })
-        .collect::<Result<Vec<_>>>()?
-        .into_iter()
-        .any(|p| {
-            p.extension().is_some_and(|s| s.eq_ignore_ascii_case("jar"))
-                && fs::canonicalize(p).map_or(true, |p| p != bootstrap_jar)
-        });
+    let report = rusted_platform::scan(&game.join("mods"));
+    let other_mods = report.mods.iter().any(|item| {
+        !item.native_compatible
+            && fs::canonicalize(game.join("mods").join(&item.file))
+                .map_or(true, |path| path != bootstrap_jar)
+    });
+    if !report.errors.is_empty() && report.mods.is_empty() {
+        return Err(report.errors.join("; "));
+    }
     if config.mode == Mode::Java || (config.mode == Mode::Auto && other_mods) {
         eprintln!(
             "Rusted : poursuite du jeu Java/Fabric pour les mods installes ; moteur natif inactif."
@@ -221,6 +217,34 @@ mod tests {
         input.game_directory = d.path().into();
         assert!(prepare(input, &config, d.path()).is_err());
     }
+    #[test]
+    fn passive_fabric_module_keeps_the_native_import_handover() {
+        use std::io::Write;
+        let directory = tempfile::tempdir().unwrap();
+        let (input, config) = fixture(directory.path(), "auto");
+        let mut archive = zip::ZipWriter::new(
+            fs::File::create(directory.path().join("mods/resources.jar")).unwrap(),
+        );
+        for (name, body) in [
+            (
+                "fabric.mod.json",
+                r#"{"schemaVersion":1,"id":"own_resources","depends":{"minecraft":"26.3"}}"#,
+            ),
+            ("assets/own_resources/lang/fr_fr.json", "{}"),
+        ] {
+            archive
+                .start_file(name, zip::write::SimpleFileOptions::default())
+                .unwrap();
+            archive.write_all(body.as_bytes()).unwrap();
+        }
+        archive.finish().unwrap();
+        let native = prepare(input, &config, directory.path()).unwrap().unwrap();
+        native
+            .launch
+            .validate_native_except(Some(&native.bootstrap_jar))
+            .unwrap();
+    }
+
     #[test]
     fn other_mods_keep_original_jvm_without_native_session_or_data() {
         let d = tempfile::tempdir().unwrap();
