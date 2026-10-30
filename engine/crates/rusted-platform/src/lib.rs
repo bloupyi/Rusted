@@ -1,5 +1,6 @@
 //! Rusted's launcher integration. Reading metadata never executes Java or loads a mod.
 use serde::Serialize;
+pub mod resources;
 use std::{
     fs,
     io::Read,
@@ -14,6 +15,7 @@ const MAX_METADATA: u64 = 256 * 1024;
 
 #[derive(Debug, Serialize)]
 pub struct JavaMod {
+    pub id: Option<String>,
     pub file: String,
     pub name: String,
     pub loaders: Vec<String>,
@@ -82,7 +84,12 @@ fn inspect(path: &Path) -> Result<JavaMod, String> {
             }
         }
     }
+    let compatible = resources::inspect(path);
+    if let Ok(resource_mod) = &compatible {
+        name = resource_mod.name.clone();
+    }
     Ok(JavaMod {
+        id: compatible.as_ref().ok().map(|m| m.id.clone()),
         file: path
             .file_name()
             .unwrap_or_default()
@@ -90,8 +97,17 @@ fn inspect(path: &Path) -> Result<JavaMod, String> {
             .into_owned(),
         name,
         loaders,
-        native_compatible: false,
-        diagnostic: "Java loader required. Native execution unavailable.".into(),
+        native_compatible: compatible.is_ok(),
+        diagnostic: compatible.map_or_else(
+            |error| error,
+            |m| {
+                format!(
+                    "Native resources/data: {} assets, {} data files; no Java executed.",
+                    m.assets.len(),
+                    m.data.len()
+                )
+            },
+        ),
     })
 }
 
@@ -136,6 +152,7 @@ pub fn scan(directory: &Path) -> Report {
             Err(reason) => {
                 report.errors.push(format!("{file}: {reason}"));
                 report.mods.push(JavaMod {
+                    id: None,
                     file: file.clone(),
                     name: file,
                     loaders: Vec::new(),
@@ -146,6 +163,22 @@ pub fn scan(directory: &Path) -> Report {
         }
     }
     report.mods.sort_by(|a, b| a.file.cmp(&b.file));
+    let mut counts = std::collections::BTreeMap::new();
+    for item in &report.mods {
+        if let Some(id) = &item.id {
+            *counts.entry(id.clone()).or_insert(0usize) += 1;
+        }
+    }
+    for item in &mut report.mods {
+        if item.id.as_ref().is_some_and(|id| counts[id] > 1) {
+            item.native_compatible = false;
+            item.diagnostic =
+                "Duplicate native mod identifier; remove one version before starting".into();
+            report
+                .errors
+                .push(format!("{}: {}", item.file, item.diagnostic));
+        }
+    }
     report.errors.sort();
     report
 }

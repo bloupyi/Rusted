@@ -3163,11 +3163,13 @@ dependencies = [
 
 [[package]]
 name = "rusted-platform"
-version = "0.3.0"
+version = "0.3.6"
 dependencies = [
+ "semver",
  "serde",
  "serde_json",
  "tempfile",
+ "toml",
  "zip",
 ]
 

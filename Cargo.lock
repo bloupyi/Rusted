@@ -539,7 +539,7 @@ dependencies = [
 
 [[package]]
 name = "rusted-launch"
-version = "0.3.5"
+version = "0.3.6"
 dependencies = [
  "fs2",
  "libc",
@@ -558,7 +558,7 @@ dependencies = [
 
 [[package]]
 name = "rusted-launcher"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "fs2",
  "rusted-launch",
@@ -576,10 +576,12 @@ dependencies = [
 
 [[package]]
 name = "rusted-platform"
-version = "0.3.0"
+version = "0.3.6"
 dependencies = [
+ "semver",
  "serde",
  "serde_json",
+ "toml",
  "zip",
 ]
 
@@ -693,6 +695,12 @@ dependencies = [
  "core-foundation-sys",
  "libc",
 ]
+
+[[package]]
+name = "semver"
+version = "1.0.28"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a7852d02fc848982e0c167ef163aaff9cd91dc640ba85e263cb1ce46fae51cd"
 
 [[package]]
 name = "serde"
