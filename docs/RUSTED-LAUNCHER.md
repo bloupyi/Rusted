@@ -1,4 +1,4 @@
-# Rusted Launcher 0.2.4 — Windows x64
+# Rusted Launcher 0.2.5 — Windows x64
 
 La connexion Microsoft est fournie automatiquement, avec le même client public
 Live que la bibliothèque utilisée par FaultlineLauncher. Aucun ID d’application
@@ -6,10 +6,29 @@ ni inscription Azure n’est demandé. La connexion ouvre le navigateur Microsof
 copie le code à coller si nécessaire, puis attend la validation. L’intégration est
 écrite en Rust ; Electron n’est pas embarqué. Voir [le fonctionnement](MICROSOFT-SETUP.md).
 
-Extraire **tout** `Rusted-Launcher-Windows-0.2.4.zip`, puis ouvrir
+Extraire **tout** `Rusted-Launcher-Windows-0.2.5.zip`, puis ouvrir
 **Rusted Launcher.exe**. Garder le sous-dossier `rusted` à côté de l'exécutable.
-Il contient le moteur Rusted 0.3.5 et ses outils. Aucun terminal, Prism ni
+Il contient le moteur Rusted 0.3.6 et ses outils. Aucun terminal, Prism ni
 Configurer-Rusted.exe n'est nécessaire pour utiliser ce lanceur.
+
+## Nouveautés 0.2.5 / moteur 0.3.6
+
+Les modèles d'objets imbriqués et les textures déclarées dans des dossiers personnalisés
+sont chargés ; une texture absente affiche un damier. Les noms conservent leurs couleurs
+et leur `italic:false`, y compris après transfert réseau. Les équipes des joueurs distants
+sont résolues par leur nom de profil, pour respecter les règles de collision du serveur.
+Le chargement des packs évite de relire toute la liste de fichiers pour chaque dossier
+et affiche des étapes plus précises.
+
+Les modules de ressources/données sans code Java sont chargés directement depuis `mods`.
+Fabric, Quilt et les modules Forge/NeoForge `lowcodefml` pris en charge restent en natif.
+L'installation d'un JAR incompatible depuis Modrinth conserve le moteur de l'instance et
+explique le portage nécessaire. Une erreur de préparation est affichée dans le statut et
+la console, sans bloquer la connexion Microsoft par une boîte de dialogue.
+
+Les essais locaux et leur portée sont consignés dans
+[le rapport 0.3.6](results/rusted-native-0.3.6.json). Hypixel SkyBlock avec un compte connecté
+reste à vérifier.
 
 ## Nouveautés 0.2.4
 
@@ -106,10 +125,10 @@ démarrage : le lanceur ne les contrôle pas.
 
 ## Mods et mondes
 
-Les JAR Fabric utilisent **Java + Fabric**, pas le moteur Rust. Le bouton d'installation
-Modrinth propose ce passage explicitement. Un import de pack natif contenant des JAR
-supplémentaires choisit Fabric. Avec des JAR ajoutés manuellement, sélectionner Fabric
-dans les réglages ; les autres modes refusent de les ignorer.
+Les JAR comportant du code Java utilisent **Java + Fabric**. Les modules passifs
+compatibles restent sur **Rusted natif** et leurs ressources/données sont chargées au
+prochain lancement. L'installation d'un mod incompatible en mode natif est refusée avec
+un diagnostic ; elle ne change pas le moteur. Voir [la matrice de compatibilité](MOD-COMPATIBILITY.md).
 
 Sodium, Iris et Distant Horizons nécessitent des versions compatibles avec la version
 Minecraft choisie. Leur partie réelle avec ce nouveau lanceur n'est pas encore validée.
@@ -137,7 +156,7 @@ ni mondes ; les packs tiers peuvent redistribuer certains mods sous leurs licenc
 ## Limites connues
 
 Cette version n'a pas encore toutes les fonctions de Prism ou du lanceur officiel.
-Pas encore de Forge/NeoForge/Quilt, mélange universel de loaders, gestion des skins,
+Pas de chargeurs Java Forge/NeoForge/Quilt, mélange universel de loaders, gestion des skins,
 Bedrock, plusieurs jeux simultanés, mise à jour automatique du lanceur ou export
 Modrinth. Les anciennes versions à arguments de lancement legacy sont refusées.
 Les imports conservent la version Minecraft, mais installent Fabric 0.20.1 ; les packs
@@ -172,23 +191,23 @@ python scripts/test_launcher_java_entry.py --java CHEMIN_VERS_JAVA
 python scripts/package_launcher.py --source
 ```
 
-L'assemblage attend `build/Rusted-Native-Windows-0.3.5.zip`, produit par les outils
+L'assemblage attend `build/Rusted-Native-Windows-0.3.6.zip`, produit par les outils
 du moteur décrits dans le README. Il vérifie ses empreintes et refuse des sources
 de moteur différentes de celles du runtime. Les versions du lanceur et du moteur
 évoluent séparément.
 
-## Premier adaptateur de ressources Fabric vers le natif
+## Import de modules passifs en natif
 
-Sur une instance native 26.3, Mods > Mes mods > **Ressources Fabric** peut adapter
-un JAR Fabric strictement limité aux textures vanilla et aux langues. Il produit
-un pack de ressources natif (format 97.1), sans exécuter de Java, sans changer le
-moteur de l'instance et sans modifier le JAR source. Activer ensuite le pack dans
-Options > Packs de ressources du jeu. Le bouton « Voir les packs » ouvre son dossier.
+Sur une instance native 26.3, **Mods > Mes mods > Importer un module** accepte les
+archives Fabric/Quilt et les modules Forge/NeoForge `lowcodefml` pris en charge.
+Le JAR est copié intact dans `mods` ; au prochain lancement, ses ressources et données
+sont chargées automatiquement. Aucun pack généré à activer manuellement.
 
-Cette première étape refuse les classes, entrypoints, mixins, JAR imbriqués,
-données de gameplay, API Java requises et espaces de noms non pris en charge.
-Le mod doit déclarer explicitement 26.3 ou * comme dépendance Minecraft. Il ne
-s'agit pas d'un chargeur Fabric natif complet. **Sodium, Iris et Distant Horizons
-ne sont pas portés par cet adaptateur** ; ils continuent à nécessiter Java/Fabric.
-Les mods .hmod restent pris en charge par l'API WASM héritée et les GLSL Iris
-ne deviennent pas des shaders natifs par cette conversion.
+Données prises en charge : fonctions, tags de fonctions, prédicats et modificateurs
+d'objets. Les classes, hooks Java, mixins, archives imbriquées, dépendances supplémentaires,
+identifiants dupliqués et données non prises en charge sont refusés. Les recettes et
+tables de butin ne font pas encore partie de cet import. **Sodium, Iris et Distant Horizons
+nécessitent encore Java/Fabric ou un portage natif.**
+
+Les `.hmod` utilisent l'API WASM héritée. Pour les shaderpacks, voir
+[le parcours natif GLSL/WGSL](NATIVE-SHADERPACKS.md).

@@ -1,4 +1,4 @@
-# Compatibilité de Rusted 0.3.5
+# Compatibilité de Rusted 0.3.6
 
 Le moteur natif reste dérivé de Horizon MIT. Notre démarrage automatique, protocole
 de session et adaptation aux imports sont des composants originaux Rusted, pas une
@@ -8,13 +8,14 @@ réécriture du renderer ni une implémentation des API Java de Minecraft/Fabric
 |---|---|
 | Import complet Prism | Fabric et bootstrap inclus, Wrapper vide ; importer puis Jouer |
 | Import local Modrinth | dépendance Fabric et bootstrap inclus dans overrides ; aucun Wrapper |
-| Démarrage natif | bootstrap seul, session par pipe, données natives séparées |
-| Mods Fabric supplémentaires | le bootstrap rend la main au jeu Java d'origine en mode auto |
+| Démarrage natif | bootstrap et modules passifs compatibles, session par pipe, données séparées |
+| Modules passifs Fabric/Quilt/lowcode | ressources et données prises en charge chargées directement depuis les JAR |
+| Mods Fabric avec code | le bootstrap rend la main au jeu Java d'origine en mode auto |
 | Sodium/Iris/Distant Horizons dans Rust | aucun JAR exécuté par le moteur natif |
-| Forge/NeoForge/Quilt simultanés | non pris en charge ; ces packs ciblent Fabric |
+| API Java Forge/NeoForge/Quilt | non prises en charge ; les modules passifs restent un cas distinct |
 | Mods natifs .hmod | système hérité disponible ; Far View n'est pas Distant Horizons |
 | Shader WGSL Rusted Soft Light | original, optionnel, API de stages héritée |
-| Packs Iris/GLSL dans le moteur natif | non certifiés |
+| Format GLSL natif | lecteur partiel ; test original à trois passes vérifié, packs tiers à valider |
 
 Le bootstrap ne transforme pas les Mixins des mods en code Rust. Le mode Java
 conserve les classes Minecraft et leur chargeur d'origine ; le moteur Rust est
@@ -36,3 +37,5 @@ Aucun code source de Sodium, Iris, Distant Horizons ou d'un autre shader n'a ét
 copié ou traduit. Les binaires des trois mods ont uniquement servi à l'essai Java
 isolé précédent et ne sont pas redistribués. Les licences et crédits MIT du moteur
 Horizon restent conservés. Voir KNOWN-ISSUES.md pour le travail restant.
+
+Voir [les résultats natifs 0.3.6](results/rusted-native-0.3.6.json) et [les shaderpacks](NATIVE-SHADERPACKS.md).

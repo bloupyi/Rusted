@@ -1,8 +1,8 @@
-# Rusted 0.3.5 — packs complets Windows x64
+# Rusted 0.3.6 — packs complets Windows x64
 
 ## Prism : importer puis Jouer
 
-1. Télécharger **Rusted-Native-Prism-0.3.5.zip**, le pack complet.
+1. Télécharger **Rusted-Native-Prism-0.3.6.zip**, le pack complet.
 2. Dans Prism, choisir Ajouter une instance → Importer et sélectionner ce ZIP.
 3. Choisir son compte Microsoft autorisé puis cliquer **Jouer**.
 
@@ -15,7 +15,7 @@ nécessite pas de réécrire un chemin absolu.
 
 ## Modrinth App : importer puis Jouer
 
-1. Télécharger **Rusted-Native-Modrinth-0.3.5.mrpack**, le pack complet.
+1. Télécharger **Rusted-Native-Modrinth-0.3.6.mrpack**, le pack complet.
 2. Dans Modrinth App, importer ce fichier comme une nouvelle instance.
 3. Choisir son compte connecté puis cliquer **Jouer**.
 
@@ -45,10 +45,10 @@ sont mises en cache pour les lancements suivants.
 
 ## Mods
 
-Le mode **auto** démarre le moteur Rust lorsqu'il n'y a que le module de démarrage
-Rusted dans mods. Si d'autres JAR sont installés, il rend la main à **la JVM Fabric
-d'origine**. Le moteur natif est alors inactif ; les mods et leurs Mixins sont ceux
-du jeu Java. Le bootstrap seul ne force donc plus le parcours Java.
+Le mode **auto** conserve le moteur Rust avec le bootstrap et les modules passifs
+compatibles de ressources/données. Les JAR avec code Java rendent la main à la JVM
+Fabric d'origine ; le moteur natif est alors inactif. La matrice
+[MOD-COMPATIBILITY.md](MOD-COMPATIBILITY.md) précise les formats et limites.
 
 Installer Sodium, Iris ou Distant Horizons par le gestionnaire de mods du lanceur,
 avec des versions et dépendances compatibles avec **la même version Minecraft**.
@@ -56,8 +56,8 @@ Le test de référence 26.3 a chargé Sodium 0.9.2, Iris 1.11.7 et DH 3.3.4, pui
 sur le backend graphique logiciel Linux. Une partie avec ces trois mods n'est pas
 certifiée ici. Leurs JAR ne s'exécutent pas dans le moteur Rust.
 
-Ce pack utilise Fabric. Ajouter Forge/NeoForge en même temps ne crée pas une
-compatibilité entre chargeurs. Les anciens adaptateurs Java restent dans les
+Ce pack utilise Fabric pour le démarrage. Les modules passifs Forge/NeoForge lowcode
+peuvent fournir des ressources/données au natif ; les API Java de ces chargeurs restent absentes. Les anciens adaptateurs Java restent dans les
 sources, mais les autres familles ne sont pas certifiées pour ce pack d'import.
 Les mods natifs .hmod sont gérés séparément par le moteur et restent désactivés
 par défaut. Far View est celui d'Horizon, pas un port de Distant Horizons.
@@ -69,13 +69,14 @@ rusted/native-data/shaderpacks. Il applique une légère correction de couleur W
 sur l'image du monde, en conservant l'alpha et la plage HDR. Le choisir dans les
 options natives de Shader Packs pour l'activer. Il réutilise l'API de stages
 héritée d'Horizon ; le code du shader Rusted est original. Il n'ajoute ni ombres,
-ni bloom, ni prise en charge des packs Iris/GLSL. Voir SHADERS.md.
+ni bloom. Le moteur possède aussi un lecteur GLSL distinct : voir
+[NATIVE-SHADERPACKS.md](NATIVE-SHADERPACKS.md). Le JAR Iris reste à porter. Voir aussi SHADERS.md.
 
 ## Sauvegardes, provenance et limites
 
 Les sauvegardes natives sont dans **rusted/native-data/saves**, distinctes des
 sauvegardes Java. Le passage au mode Java ne transfère pas un monde automatiquement.
-Importer la 0.3.5 crée une nouvelle instance et ne modifie pas l'ancienne ; garder son
+Importer la 0.3.6 crée une nouvelle instance et ne modifie pas l'ancienne ; garder son
 dossier de données si l'on souhaite conserver ses mondes. Aucun correctif séparé
 n'est nécessaire pour installer les nouveaux packs.
 

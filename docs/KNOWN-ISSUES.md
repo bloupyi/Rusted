@@ -1,3 +1,21 @@
+# État actuel — moteur 0.3.6 / lanceur 0.2.5
+
+Corrigés et vérifiés localement : découverte des modèles d'objets imbriqués, textures
+d'atlas hors des dossiers standard, damier de remplacement, styles des noms conservés
+sur le réseau et règles d'équipe des joueurs distants. Un pack original de 16 387 fichiers
+est chargé depuis un serveur vanilla local en environ 4,5 s sur le banc de test.
+Le test à deux clients respecte `collisionRule never` et rétablit la poussée avec `always`.
+Ces mesures ne décrivent pas le pack Hypixel ou les performances du PC du joueur.
+
+Les modules passifs de ressources/données sont chargés automatiquement, dans les limites
+[documentées](MOD-COMPATIBILITY.md). Les JAR Java de Sodium, Iris et Distant Horizons,
+les API Java des autres loaders et le mélange universel de leurs injections restent à porter.
+Le lecteur GLSL natif existant passe le test original à trois passes ; chaque pack tiers
+reste à vérifier. Hypixel SkyBlock avec une session authentifiée reste à valider.
+
+[Résultats et portée des tests](results/rusted-native-0.3.6.json).
+Les sections suivantes conservent l'historique des versions précédentes.
+
 # Connexion Microsoft — Rusted Launcher 0.2.3
 
 Le blocage d’enregistrement imposé dans 0.2.2 est levé : comme la bibliothèque msmc
