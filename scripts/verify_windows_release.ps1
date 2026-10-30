@@ -22,6 +22,8 @@ $report = [ordered]@{
     limitations = @('Startup observation only; no account, gameplay or full preparation validation.',
         'A clean result does not establish that the reported detection is a false positive.')
     error = $null
+    error_location = $null
+    stage = 'initialization'
 }
 $ownedRoot = $null
 $process = $null
@@ -70,9 +72,26 @@ try {
     $archive = (Resolve-Path -LiteralPath $ArchivePath).Path
     $report.archive_sha256 = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
     $report.defender = Read-ProtectionState
-    # An update failure stops validation rather than labelling an unverified release clean.
-    Update-MpSignature
+    $platform = Join-Path $env:ProgramData 'Microsoft\Windows Defender\Platform'
+    $scanners = @(Get-ChildItem -LiteralPath $platform -Directory -ErrorAction SilentlyContinue |
+        Sort-Object Name -Descending | ForEach-Object { Join-Path $_.FullName 'MpCmdRun.exe' })
+    $scanners += Join-Path $env:ProgramFiles 'Windows Defender\MpCmdRun.exe'
+    $scanner = $scanners | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+    if (-not $scanner) { throw 'Official Microsoft Defender command-line scanner unavailable.' }
+    $scannerSignature = Get-AuthenticodeSignature -LiteralPath $scanner
+    if ($scannerSignature.Status -ne 'Valid' -or $scannerSignature.SignerCertificate.Subject -notmatch 'Microsoft') {
+        throw 'Microsoft Defender scanner signature could not be verified.'
+    }
+    # Use the signed Defender console for signature updates as well as scans.
+    # Update-MpSignature's CIM provider returned RPC failures on hosted Windows.
+    # Any console failure or inactive protection still stops validation.
+    $report.stage = 'signature_update'
+    $signatureLog = [IO.Path]::ChangeExtension($reportFile, 'signature-update.log')
+    New-Item -ItemType Directory -Force -Path ([IO.Path]::GetDirectoryName($signatureLog)) | Out-Null
+    & $scanner -SignatureUpdate *> $signatureLog
+    if ($LASTEXITCODE -ne 0) { throw ('Defender signature update failed; exit code ' + $LASTEXITCODE) }
     $report.defender = Read-ProtectionState
+    $report.stage = 'archive_integrity'
     $ownedRoot = Join-Path ([IO.Path]::GetTempPath()) ('Rusted-validation-' + [Guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $ownedRoot | Out-Null
     Expand-Archive -LiteralPath $archive -DestinationPath $ownedRoot
@@ -95,16 +114,7 @@ try {
             authenticode = [string]$signature.Status
         }
     }
-    $platform = Join-Path $env:ProgramData 'Microsoft\Windows Defender\Platform'
-    $scanners = @(Get-ChildItem -LiteralPath $platform -Directory -ErrorAction SilentlyContinue |
-        Sort-Object Name -Descending | ForEach-Object { Join-Path $_.FullName 'MpCmdRun.exe' })
-    $scanners += Join-Path $env:ProgramFiles 'Windows Defender\MpCmdRun.exe'
-    $scanner = $scanners | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
-    if (-not $scanner) { throw 'Official Microsoft Defender command-line scanner unavailable.' }
-    $scannerSignature = Get-AuthenticodeSignature -LiteralPath $scanner
-    if ($scannerSignature.Status -ne 'Valid' -or $scannerSignature.SignerCertificate.Subject -notmatch 'Microsoft') {
-        throw 'Microsoft Defender scanner signature could not be verified.'
-    }
+    $report.stage = 'static_scan'
     $scanLog = [IO.Path]::ChangeExtension($reportFile, 'scan.log')
     New-Item -ItemType Directory -Force -Path ([IO.Path]::GetDirectoryName($scanLog)) | Out-Null
     # Normal scan/remediation: no exclusions, suppression, or restoration of blocked executables.
@@ -118,6 +128,7 @@ try {
         }
     }
     $report.static_scan = 'passed'
+    $report.stage = 'gui_smoke'
     $launcher = Join-Path $product 'Rusted Launcher.exe'
     if (-not (Test-Path -LiteralPath $launcher -PathType Leaf)) { throw 'The launcher is missing, possibly quarantined.' }
     $data = Join-Path $ownedRoot 'smoke-data'
@@ -211,10 +222,12 @@ public static class RustedGuiSmoke {
     }
     $report.startup_smoke = 'passed'
     $report.status = 'passed'
+    $report.stage = 'complete'
 }
 catch {
     $failure = $_.Exception.Message
     $report.error = $failure
+    $report.error_location = $_.InvocationInfo.PositionMessage
     if ($null -ne $ownedRoot) {
         try { $report.detections = @(Read-RelatedDetections $ownedRoot $archive) }
         catch { $report.error += ' Defender detection history could not be read.' }
