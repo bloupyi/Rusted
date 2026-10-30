@@ -25,4 +25,4 @@ if __name__ == '__main__':
     harness.differential('custom-name-parity', 'VanillaCustomNameOracle', 'custom_name_fixture', cases,
         'Custom/item names: default italics, explicit false, nested spans, colours and decoration',
         sources=[lab.ROOT/'crates/horizon-client/src/item_tooltip.rs',
-                 lab.ROOT/'crates/horizon-items/src/item_data.rs'], expected_lines=12)
+                 lab.ROOT/'crates/horizon-items/src/item_data.rs'], expected_lines=12, oracle_source=lab.ROOT/'mods/horizon-lab/src/test/java/dev/horizonlab/parity/VanillaCustomNameOracle.java')

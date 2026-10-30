@@ -22,8 +22,8 @@ def run_logged(command, build, name, timeout=900, **kwargs):
                        stdout=log, stderr=subprocess.STDOUT, **kwargs)
 
 
-def compile_oracle(build, oracle_name, jars, libraries, java_major):
-    oracle = lab.ROOT / 'mods/horizon/src/test/java/dev/horizonlab/parity' / (oracle_name + '.java')
+def compile_oracle(build, oracle_name, jars, libraries, java_major, oracle_source=None):
+    oracle = oracle_source or lab.ROOT / 'mods/horizon/src/test/java/dev/horizonlab/parity' / (oracle_name + '.java')
     classes = build / 'classes'
     classes.mkdir(parents=True, exist_ok=True)
     dependencies = os.pathsep.join(map(str, [jars['client'], *libraries]))
@@ -55,7 +55,7 @@ def compare(client_out, rust_out, expected_lines):
     return matched
 
 
-def differential(name, oracle, probe, make_input, scope, sources=(), expected_lines=None):
+def differential(name, oracle, probe, make_input, scope, sources=(), expected_lines=None, oracle_source=None):
     """Compile the oracle and probe, run both on one input and require identical output."""
     import platform
     lock, jars, libraries = base.verify_artifacts()
@@ -64,7 +64,7 @@ def differential(name, oracle, probe, make_input, scope, sources=(), expected_li
     build.mkdir(exist_ok=True)
     report = build / 'report.json'
     report.unlink(missing_ok=True)
-    oracle_path = lab.ROOT / 'mods/horizon/src/test/java/dev/horizonlab/parity' / (oracle + '.java')
+    oracle_path = oracle_source or lab.ROOT / 'mods/horizon/src/test/java/dev/horizonlab/parity' / (oracle + '.java')
     all_sources = [Path(__file__).resolve(), lab.ROOT / 'tools/oracle_harness.py', lab.ROOT / 'tools/test_rust_parity.py',
                    lab.ROOT / 'tools/lab.py', oracle_path, lab.ROOT / 'Cargo.toml', lab.ROOT / 'Cargo.lock',
                    lab.ROOT / 'crates/horizon-client/Cargo.toml', lab.ROOT / 'crates/horizon-client/src/lib.rs',
@@ -72,7 +72,7 @@ def differential(name, oracle, probe, make_input, scope, sources=(), expected_li
     tested = base.source_hashes(all_sources)
     input_path, units = make_input(build)
     input_hash = lab.digest(input_path, 'sha256') if input_path.is_file() else None
-    classes, dependencies, _ = compile_oracle(build, oracle, jars, libraries, lock['minecraft']['java_major'])
+    classes, dependencies, _ = compile_oracle(build, oracle, jars, libraries, lock['minecraft']['java_major'], oracle_path)
     command = build_probe(build, probe)
     run_logged([*command, input_path, build / 'rust.txt'], build, 'rust')
     java_run(build, classes, dependencies, oracle, [input_path, build / 'client.txt'], 'client')

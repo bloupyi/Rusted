@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "project": "Rusted",
+  "engine_version": "0.3.6",
+  "launcher_version": "0.2.5",
+  "code_commit": "2379be1227cab61c9113071034d22b191e4b1d73",
+  "local_runtime": {
+    "platform": "Linux",
+    "renderer": "llvmpipe Vulkan, Mesa 25.0.7",
+    "profile": "fast",
+    "binary_sha256": "93f1191297438ac0442706f9ec746ac75c9346b2e60d0cb77de87152394f0edc"
+  },
+  "custom_names": {
+    "vanilla_version": "26.3",
+    "vanilla_jar_sha256": "4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d",
+    "differential_cases_matched": 12,
+    "network_roundtrip_test": true,
+    "server_thread_and_in_frame_colour_and_italic_false": true
+  },
+  "teams": {
+    "vanilla_rule_cases_matched": 6000,
+    "live_two_client_local_vanilla_test": true,
+    "never_position": [
+      0.0,
+      -60.0,
+      0.0
+    ],
+    "always_position": [
+      -0.07272693330305192,
+      -60.0,
+      0.0
+    ],
+    "only_remote_player_in_team": true
+  },
+  "server_pack": {
+    "passed": true,
+    "original_fixture": true,
+    "entries": 16387,
+    "bytes": 3754628,
+    "connection_to_ready_seconds": 4.52,
+    "timings": [
+      "Rusted pack reload: overlay 0.496s",
+      "Rusted pack reload: models/textures 0.490s",
+      "Rusted pack reload: GUI/font 0.401s",
+      "Rusted pack reload: tables/items 0.291s",
+      "Rusted pack reload: mipmaps 0.077s"
+    ],
+    "custom_model_and_texture_visible": true,
+    "screenshot": "docs/screenshots/rusted-native-0.3.6-server-pack.png"
+  },
+  "passive_modules": {
+    "archive_formats_unit_tested": [
+      "Fabric",
+      "Quilt",
+      "Forge lowcodefml",
+      "NeoForge lowcodefml"
+    ],
+    "automatic_resource_and_load_function_live_tests": [
+      {
+        "server_thread": true,
+        "passed": true,
+        "marker": "minecraft:copper_block"
+      },
+      {
+        "server_thread": false,
+        "passed": true,
+        "marker": "minecraft:copper_block"
+      }
+    ]
+  },
+  "regressions": [
+    "nested item definition discovers its own geometry",
+    "missing textures draw a checkerboard",
+    "atlas-declared minecraft:custom texture has expected texels",
+    "remote player scoreboard profile survives tab-list removal",
+    "Java hooks/code/dependencies and duplicate passive IDs rejected",
+    "passive module toggles retain native engine and original JAR bytes"
+  ],
+  "launcher_local_qa": {
+    "wine": true,
+    "resize_storm": 180,
+    "changed_pixels_after_forced_redraw": 0,
+    "real_microsoft_device_code_requested": true,
+    "code_popup_displayed_and_cancelled": true,
+    "account_stored": false,
+    "automatic_preparation_failure_does_not_block_login": true
+  },
+  "windows_release_validation": {
+    "status": "pending",
+    "run_id": 41030464922
+  },
+  "limitations": [
+    "No authenticated Hypixel SkyBlock gameplay test.",
+    "The pack timings refer to an original local fixture, not the Hypixel pack or the user computer.",
+    "Java code mods such as Sodium, Iris and Distant Horizons still require their JVM loader or a native port."
+  ]
+}

@@ -17,6 +17,7 @@ BASELINE = ROOT / "horizon/source-baseline.json"
 def source_files():
     # Engine files only: never prepare or distribute a player's resources as source.
     return sorted((p for p in SOURCE.rglob("*") if p.is_file() and
+                  p.relative_to(SOURCE).parts[0] != "logs" and
                   not any(part in {".local", "target", ".git", "__pycache__"} for part in p.relative_to(SOURCE).parts)),
                   key=lambda p: p.relative_to(SOURCE).as_posix())
 
