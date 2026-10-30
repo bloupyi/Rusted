@@ -386,13 +386,25 @@ pub fn run() -> Result<()> {
         let mut msg: MSG = std::mem::zeroed();
         while GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) > 0 {
             let popup = (*raw).login_popup;
-            if !popup.is_null() && IsDialogMessageW(popup, &msg) != 0 {
-                continue;
+            // Dialog navigation is for keyboard input in that window's control
+            // tree. Sending every message through the popup's dialog manager
+            // can consume/re-route WM_COMMAND meant for its owner (including
+            // copy/open/cancel), or timer messages that deliver worker results.
+            if (WM_KEYFIRST..=WM_KEYLAST).contains(&msg.message) {
+                let dialog =
+                    if !popup.is_null() && (msg.hwnd == popup || IsChild(popup, msg.hwnd) != 0) {
+                        popup
+                    } else if msg.hwnd == hwnd || IsChild(hwnd, msg.hwnd) != 0 {
+                        hwnd
+                    } else {
+                        std::ptr::null_mut()
+                    };
+                if !dialog.is_null() && IsDialogMessageW(dialog, &msg) != 0 {
+                    continue;
+                }
             }
-            if IsDialogMessageW(hwnd, &msg) == 0 {
-                TranslateMessage(&msg);
-                DispatchMessageW(&msg);
-            }
+            TranslateMessage(&msg);
+            DispatchMessageW(&msg);
         }
         let a = Box::from_raw(raw);
         if let Some(c) = &a.job {
