@@ -87,11 +87,22 @@
   },
   "windows_release_validation": {
     "status": "pending",
-    "run_id": 41030464922
+    "run_id": 41034823879
   },
   "limitations": [
     "No authenticated Hypixel SkyBlock gameplay test.",
     "The pack timings refer to an original local fixture, not the Hypixel pack or the user computer.",
     "Java code mods such as Sodium, Iris and Distant Horizons still require their JVM loader or a native port."
-  ]
+  ],
+  "release_code_commit": "b99ee611abb415f5d667da175a467c08ac85a920",
+  "native_glsl": {
+    "existing_engine_reader": true,
+    "original_engine_fixture": "post-test",
+    "passed": true,
+    "loaded_line": [
+      "shader pack original-post-test.zip: folder ``, 3 programs (composite composite1 final) in 63 ms"
+    ],
+    "iris_jar_executed": false,
+    "screenshot": "docs/screenshots/rusted-native-0.3.6-glsl-test.png"
+  }
 }

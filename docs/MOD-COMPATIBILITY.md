@@ -29,3 +29,5 @@ Cette compatibilité ne fournit pas l'API Fabric ni les injections Java/OpenGL. 
 les JAR de Sodium, Iris et Distant Horizons dans Rusted demande encore des interfaces natives
 et un travail sur leurs contrats de rendu, de monde et de threads. Aucun code source de ces
 projets n'a été lu ou réutilisé.
+
+Pour les fichiers de shaderpacks, voir [le parcours natif GLSL/WGSL](NATIVE-SHADERPACKS.md).
