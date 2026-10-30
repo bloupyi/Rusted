@@ -1773,10 +1773,10 @@ unsafe fn tick(app: &mut App) {
                 rebuild = true;
             }
             Event::DeviceCode { uri, code } => {
-                if !app
+                if app
                     .auth_job
                     .as_ref()
-                    .is_some_and(|cancel| !cancel.load(Ordering::Relaxed))
+                    .is_none_or(|cancel| cancel.load(Ordering::Relaxed))
                 {
                     continue;
                 }
