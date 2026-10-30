@@ -154,7 +154,10 @@ using System.Text;
 public static class RustedGuiSmoke {
     [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int w, int height, uint flags);
     [DllImport("user32.dll")] public static extern IntPtr GetDlgItem(IntPtr h, int id);
-    [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern IntPtr FindWindow(string cls, string title);
+    [DllImport("user32.dll", CharSet=CharSet.Unicode)] private static extern IntPtr FindWindow(string cls, string title);
+    // PowerShell converts $null to an empty .NET string. Construct the native
+    // null title here so FindWindow does not search only for untitled windows.
+    public static IntPtr MicrosoftPopup() { return FindWindow("RustedMicrosoftCodePopup", null); }
     [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
     [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder text, int max);
@@ -210,7 +213,7 @@ public static class RustedGuiSmoke {
     $popup = [IntPtr]::Zero
     $popupReady = $false
     for ($attempt = 0; $attempt -lt 240; $attempt++) {
-        $popup = [RustedGuiSmoke]::FindWindow('RustedMicrosoftCodePopup', $null)
+        $popup = [RustedGuiSmoke]::MicrosoftPopup()
         $codeLength = 0
         if ($popup -ne [IntPtr]::Zero) {
             $codeLength = [RustedGuiSmoke]::SendMessage([RustedGuiSmoke]::GetDlgItem($popup, 6001), 0xE, [IntPtr]::Zero, [IntPtr]::Zero).ToInt64()
