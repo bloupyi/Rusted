@@ -200,10 +200,14 @@ public static class RustedGuiSmoke {
         if ($process.HasExited) { throw 'Launcher exited while requesting Microsoft sign-in.' }
         Start-Sleep -Milliseconds 250
     }
+    if (-not $popupReady) {
+        [void][RustedGuiSmoke]::PostMessage([RustedGuiSmoke]::GetDlgItem($mainWindow, 104), 0xF5, [IntPtr]::Zero, [IntPtr]::Zero)
+        Start-Sleep -Milliseconds 500
+    }
     $notice = New-Object Text.StringBuilder 500
     [void][RustedGuiSmoke]::GetWindowText([RustedGuiSmoke]::GetDlgItem($mainWindow, 550), $notice, 500)
     # Only lengths/flags and the generic account status: never save the device code.
-    $report.popup_diagnostics = [ordered]@{ window_found = ($popup -ne [IntPtr]::Zero); code_present = ($codeLength -gt 0); home_visible = $homeVisible; account_notice = $notice.ToString() }
+    $report.popup_diagnostics = [ordered]@{ window_found = ($popup -ne [IntPtr]::Zero); code_present = ($codeLength -gt 0); home_visible = $homeVisible; account_notice = $notice.ToString(); account_code_controls = ([RustedGuiSmoke]::GetDlgItem($mainWindow, 509) -ne [IntPtr]::Zero) }
     if (-not $popupReady) { throw ('Microsoft code popup was not ready above the home page. Account status: ' + $notice.ToString()) }
     [void][RustedGuiSmoke]::PostMessage($popup, 0x10, [IntPtr]::Zero, [IntPtr]::Zero)
     for ($attempt = 0; $attempt -lt 40 -and [RustedGuiSmoke]::IsWindow($popup); $attempt++) {

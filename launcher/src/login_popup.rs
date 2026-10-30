@@ -13,9 +13,21 @@ struct State {
     bold: HFONT,
     code_font: HFONT,
     code: String,
+    owned_by_window: bool,
 }
 
-pub(super) unsafe fn show(owner: HWND, code: &str, font: HFONT, bold: HFONT) -> HWND {
+impl Drop for State {
+    fn drop(&mut self) {
+        unsafe { DeleteObject(self.code_font) };
+    }
+}
+
+pub(super) unsafe fn show(
+    owner: HWND,
+    code: &str,
+    font: HFONT,
+    bold: HFONT,
+) -> Result<HWND, String> {
     let class = wide("RustedMicrosoftCodePopup");
     let instance = GetModuleHandleW(std::ptr::null());
     let wc = WNDCLASSW {
@@ -26,7 +38,14 @@ pub(super) unsafe fn show(owner: HWND, code: &str, font: HFONT, bold: HFONT) -> 
         lpszClassName: class.as_ptr(),
         ..std::mem::zeroed()
     };
-    RegisterClassW(&wc);
+    if RegisterClassW(&wc) == 0 {
+        let error = GetLastError();
+        if error != ERROR_CLASS_ALREADY_EXISTS {
+            return Err(format!(
+                "Fenetre Microsoft indisponible (classe Windows : {error})."
+            ));
+        }
+    }
     let code_font = CreateFontW(
         36,
         0,
@@ -43,13 +62,14 @@ pub(super) unsafe fn show(owner: HWND, code: &str, font: HFONT, bold: HFONT) -> 
         DEFAULT_PITCH as _,
         wide("Consolas").as_ptr(),
     );
-    let state = Box::into_raw(Box::new(State {
+    let mut state = Box::new(State {
         owner,
         font,
         bold,
         code_font,
         code: code.into(),
-    }));
+        owned_by_window: false,
+    });
     let mut owner_rect: RECT = std::mem::zeroed();
     GetWindowRect(owner, &mut owner_rect);
     let window = CreateWindowExW(
@@ -64,24 +84,30 @@ pub(super) unsafe fn show(owner: HWND, code: &str, font: HFONT, bold: HFONT) -> 
         owner,
         std::ptr::null_mut(),
         instance,
-        state.cast(),
+        (&mut *state as *mut State).cast(),
     );
     if window.is_null() {
-        let state = Box::from_raw(state);
-        DeleteObject(state.code_font);
-        return window;
+        return Err(format!(
+            "Fenetre Microsoft indisponible (creation Windows : {}).",
+            GetLastError()
+        ));
     }
+    // Until creation succeeds, the caller owns State, even if Windows sends
+    // WM_NCDESTROY during a failed CreateWindowExW. Transfer ownership only once.
+    state.owned_by_window = true;
+    let _ = Box::into_raw(state);
     let dark = 1i32;
     DwmSetWindowAttribute(window, 20, (&dark as *const i32).cast(), 4);
     ShowWindow(window, SW_SHOW);
     UpdateWindow(window);
-    window
+    Ok(window)
 }
 
 unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     if msg == WM_NCCREATE {
         let create = &*(l as *const CREATESTRUCTW);
         SetWindowLongPtrW(hwnd, GWLP_USERDATA, create.lpCreateParams as _);
+        return 1;
     }
     let ptr = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut State;
     if ptr.is_null() {
@@ -89,8 +115,9 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
     }
     if msg == WM_NCDESTROY {
         SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
-        let state = Box::from_raw(ptr);
-        DeleteObject(state.code_font);
+        if (*ptr).owned_by_window {
+            drop(Box::from_raw(ptr));
+        }
         return DefWindowProcW(hwnd, msg, w, l);
     }
     if msg == WM_ERASEBKGND {

@@ -1752,6 +1752,7 @@ unsafe fn tick(app: &mut App) {
                 app.auth_job = None;
                 app.device = None;
                 app.account_notice = error;
+                app.page = 4;
                 rebuild = true;
             }
             Event::DeviceCode { uri, code } => {
@@ -1897,10 +1898,19 @@ unsafe fn tick(app: &mut App) {
     if let Some(uri) = verification_to_open {
         close_login_popup(app);
         if let Some((_, code)) = &app.device {
-            app.login_popup = login_popup::show(app.window, code, app.font, app.bold);
+            match login_popup::show(app.window, code, app.font, app.bold) {
+                Ok(window) => app.login_popup = window,
+                Err(error) => {
+                    // Keep the active code and copy/open/cancel controls available
+                    // on Accounts if Windows cannot create the separate window.
+                    app.account_notice = error;
+                    app.page = 4;
+                    build(app);
+                }
+            }
+            redraw(app.window);
+            open(&uri);
         }
-        redraw(app.window);
-        open(&uri);
     }
 }
 unsafe fn open(path: &str) {
