@@ -1755,12 +1755,17 @@ impl Game<'_> {
         let display = horizon_client::item_tooltip::TooltipDisplay::for_stack(stack);
         let mut lines = Vec::new();
         if !nested && display.name_visible(self.screen == Screen::Creative) {
-            // `getStyledHoverName`: a custom name is italic.
-            let name = self.stack_hover_name(stack);
-            let name = if stack.custom_name().is_some() {
-                horizon_client::text::Text::literal(name).italic()
+            // Parent defaults must not override a component's explicit italic:false/colour.
+            let name = if stack.custom_name().is_some()
+                || stack
+                    .data()
+                    .is_some_and(|data| data.other("minecraft:item_name").is_some())
+            {
+                horizon_client::item_tooltip::name_text(stack, &|key| {
+                    self.pack.names.display_get(key)
+                })
             } else {
-                horizon_client::text::Text::legacy(&name)
+                horizon_client::text::Text::legacy(&self.stack_hover_name(stack))
             };
             lines.push((name, color));
         }

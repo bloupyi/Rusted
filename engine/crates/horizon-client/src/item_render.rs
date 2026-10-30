@@ -461,20 +461,41 @@ fn load_definitions(root: &Path) -> BTreeMap<String, ClientItem> {
     };
     for ns in namespaces.flatten() {
         let namespace = ns.file_name().to_string_lossy().into_owned();
-        let Ok(files) = fs::read_dir(ns.path().join("items")) else {
-            continue;
-        };
-        for f in files.flatten() {
-            let path = f.path();
-            if path.extension().is_none_or(|e| e != "json") {
+        let base = ns.path().join("items");
+        let mut pending = vec![base.clone()];
+        let mut visited = std::collections::BTreeSet::new();
+        while let Some(directory) = pending.pop() {
+            // Content roots may link directories into the base resources.
+            let Ok(canonical) = directory.canonicalize() else {
+                continue;
+            };
+            if !visited.insert(canonical) {
                 continue;
             }
-            let name = path.file_stem().unwrap_or_default().to_string_lossy();
-            if let Some(item) = fs::read_to_string(&path)
-                .ok()
-                .and_then(|t| ClientItem::from_json(&t).ok())
-            {
-                out.insert(format!("{namespace}:{name}"), item);
+            let Ok(files) = fs::read_dir(&directory) else {
+                continue;
+            };
+            for file in files.flatten() {
+                let path = file.path();
+                if path.is_dir() {
+                    pending.push(path);
+                } else if path.extension().is_some_and(|e| e == "json") {
+                    let name = path
+                        .strip_prefix(&base)
+                        .unwrap()
+                        .with_extension("")
+                        .to_string_lossy()
+                        .replace('\\', "/");
+                    match fs::read_to_string(&path)
+                        .ok()
+                        .and_then(|t| ClientItem::from_json(&t).ok())
+                    {
+                        Some(item) => {
+                            out.insert(format!("{namespace}:{name}"), item);
+                        }
+                        None => log::warn!("Rusted: invalid item definition {namespace}:{name}"),
+                    }
+                }
             }
         }
     }
@@ -852,6 +873,60 @@ pub fn cluster_poses(state: &ItemRenderState, pose: Mat4, amount: u32, seed: i64
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn nested_pack_item_resolves_geometry_and_missing_textures_remain_visible() -> crate::Result<()>
+    {
+        let root = std::env::temp_dir().join(format!("rusted-nested-item-{}", std::process::id()));
+        let definition = root.join("assets/custom/items/weapons/copper_blade.json");
+        let model = root.join("assets/custom/models/weapons/copper_blade.json");
+        fs::create_dir_all(definition.parent().unwrap())?;
+        fs::create_dir_all(model.parent().unwrap())?;
+        fs::write(
+            &definition,
+            r#"{"model":{"type":"minecraft:model","model":"custom:weapons/copper_blade"}}"#,
+        )?;
+        // One face makes a missing-definition fallback (six faces) distinguishable.
+        fs::write(
+            &model,
+            r##"{"textures":{"side":"custom:weapons/absent"},"elements":[{"from":[0,0,0],"to":[16,8,16],"faces":{"up":{"texture":"#side"}}}]}"##,
+        )?;
+        fs::write(
+            root.join("items.json"),
+            r#"{"minecraft:stick":{"minecraft:item_model":"minecraft:stick"}}"#,
+        )?;
+        let renderer = ItemRenderer::load(&root)?;
+        let mut stack = StackView::new("minecraft:stick", 1);
+        stack.patch.insert(
+            "minecraft:item_model".into(),
+            Some(Value::String("custom:weapons/copper_blade".into())),
+        );
+        struct Env;
+        impl ItemEnv for Env {}
+        let state = renderer.resolve(&stack, DisplayContext::Gui, None, None, 0, &Env);
+        assert_eq!(state.layers.len(), 1);
+        let LayerGeometry::Quads(model) = &state.layers[0].geometry else {
+            panic!("cuboid model expected")
+        };
+        assert_eq!(model.quads.len(), 1);
+        let atlas = crate::hud::HudAtlas::build(&root)?;
+        assert!(atlas.sprites.contains_key("horizon/missingno"));
+        let mut quads = Vec::new();
+        state.submit(
+            &renderer,
+            &atlas.sprites,
+            &NoHost,
+            Mat4::IDENTITY,
+            &mut quads,
+        );
+        assert_eq!(
+            quads.len(),
+            1,
+            "a missing texture must show the checkerboard, not disappear"
+        );
+        fs::remove_dir_all(root)?;
+        Ok(())
+    }
 
     /// A bad item model surfaces only once items.json has loaded, so a broken
     /// items.json still reports itself first.

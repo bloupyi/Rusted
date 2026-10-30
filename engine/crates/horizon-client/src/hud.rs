@@ -503,6 +503,21 @@ impl HudAtlas {
         }
         images.push(("horizon/white".into(), 4, 4, vec![255; 64]));
         if full {
+            // Model resolution uses this built-in sprite when a pack references
+            // an absent texture. Without it submit_quads discarded the faces.
+            let pixels = (0..16)
+                .flat_map(|y| {
+                    (0..16).flat_map(move |x| {
+                        if (x / 8 + y / 8) % 2 == 0 {
+                            [0, 0, 0, 255]
+                        } else {
+                            [255, 0, 255, 255]
+                        }
+                    })
+                })
+                .collect();
+            images.retain(|image| image.0 != "horizon/missingno");
+            images.push(("horizon/missingno".into(), 16, 16, pixels));
             Self::slots(&mut images, crate::trims::slot_size(root));
         }
         // Blurred sprites are sampled linearly in the atlas (screen.wgsl): a

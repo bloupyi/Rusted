@@ -453,8 +453,11 @@ impl Game<'_> {
 
     // ---- teams in gameplay -----------------------------------------------------
 
-    /// `Entity.getTeam` of a mob (a mob joins a team by its UUID).
+    /// `Entity.getTeam`: remote players use their profile name; mobs use UUIDs.
     pub(super) fn mob_team(&self, id: u32) -> Option<&sb::Team> {
+        if let Some(name) = self.remote.as_ref().and_then(|r| r.player_score_holder(id)) {
+            return self.score.board.players_team(name);
+        }
         let uuid = self.persist.uuids.get(&id)?;
         self.score.board.players_team(&uuid_text(*uuid))
     }
@@ -472,8 +475,8 @@ impl Game<'_> {
             mobs: self
                 .persist
                 .uuids
-                .iter()
-                .filter_map(|(id, uuid)| Some((*id, board.players_team(&uuid_text(*uuid))?)))
+                .keys()
+                .filter_map(|id| Some((*id, self.mob_team(*id)?)))
                 .collect(),
         }
     }
@@ -485,7 +488,7 @@ impl Game<'_> {
         self.persist
             .uuids
             .iter()
-            .filter(|(_, uuid)| team.players.contains(&uuid_text(**uuid)))
+            .filter(|(id, _)| self.mob_team(**id).is_some_and(|t| t.name == team.name))
             .map(|(id, _)| *id)
             .collect()
     }

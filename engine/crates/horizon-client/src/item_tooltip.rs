@@ -207,6 +207,25 @@ fn is_potion_item(item: &str) -> bool {
 
 /// The name line of `stack`, as the item's translation or, for potions and
 /// smithing templates, its name component gives it.
+pub fn name_text(
+    stack: &ItemStack,
+    translate: &dyn Fn(&str) -> Option<String>,
+) -> crate::text::Text {
+    if let Some(name) = stack.styled_custom_name() {
+        return name.resolve_legacy().with_style(&crate::text::Style {
+            italic: Some(true),
+            ..Default::default()
+        });
+    }
+    if let Some(component) = stack
+        .data()
+        .and_then(|data| data.other("minecraft:item_name"))
+    {
+        return crate::entity_nbt::name_text(component).resolve_legacy();
+    }
+    crate::text::Text::legacy(&name_line(stack, translate))
+}
+
 pub fn name_line(stack: &ItemStack, translate: &dyn Fn(&str) -> Option<String>) -> String {
     let path = stack.item.trim_start_matches("minecraft:");
     if let Some(name) = stack.custom_name() {
@@ -754,6 +773,60 @@ pub fn lore_texts(stack: &ItemStack) -> Vec<crate::text::Text> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn custom_name_style_survives_stack_roundtrip_and_italic_defaults() {
+        let name = Tag::compound([
+            ("text", Tag::String("Copper".into())),
+            ("color", Tag::String("gold".into())),
+            ("italic", Tag::Byte(0)),
+            (
+                "extra",
+                Tag::List(vec![Tag::compound([
+                    ("text", Tag::String(" blade".into())),
+                    ("bold", Tag::Byte(1)),
+                    ("italic", Tag::Byte(1)),
+                ])]),
+            ),
+        ]);
+        let mut stack = ItemStack::new("minecraft:stick", 1);
+        stack.data_mut().set_loot_name(
+            "minecraft:custom_name",
+            &crate::scoreboard::tag_to_json(&name),
+        );
+        let tag = crate::item_data::encode_components(&stack).unwrap();
+        assert_eq!(tag.get("minecraft:custom_name"), Some(&name));
+        let (_, extra) = crate::item_data::decode_components(Some(&tag));
+        stack.extra = extra;
+        let text = name_text(&stack, &|_| None);
+        assert_eq!(text.plain(), "Copper blade");
+        let spans: Vec<_> = text.spans.iter().filter(|s| !s.text.is_empty()).collect();
+        assert!(!spans[0].style.is_italic());
+        assert_eq!(spans[0].style.color, Some(crate::text::GOLD));
+        assert!(spans[1].style.is_italic());
+        assert!(spans[1].style.is_bold());
+        stack
+            .data_mut()
+            .set_custom_name(Some("Anvil rename".into()));
+        assert!(
+            name_text(&stack, &|_| None)
+                .spans
+                .iter()
+                .filter(|s| !s.text.is_empty())
+                .all(|s| s.style.is_italic())
+        );
+        assert_eq!(
+            crate::item_data::encode_components(&stack)
+                .unwrap()
+                .get("minecraft:custom_name"),
+            Some(&Tag::String("Anvil rename".into()))
+        );
+        stack.data_mut().set_custom_name(None);
+        stack
+            .data_mut()
+            .set_other("minecraft:item_name", Some(name));
+        assert!(!name_text(&stack, &|_| None).spans[0].style.is_italic());
+    }
 
     #[test]
     fn lore_keeps_component_colours_under_dark_purple_italic() {

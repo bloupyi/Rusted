@@ -18,6 +18,8 @@ pub struct StackData {
     pub repair_cost: u32,
     /// `minecraft:custom_name` as plain text.
     pub custom_name: Option<String>,
+    /// Original structured custom-name component; explicit styles must survive networking/saves.
+    pub custom_name_component: Option<Tag>,
     /// `minecraft:potion_contents.potion`.
     pub potion: Option<Arc<str>>,
     /// `minecraft:trim`: (material, pattern).
@@ -112,9 +114,15 @@ impl StackData {
         let tag = horizon_client_core::scoreboard::json_to_tag(text);
         if id == "minecraft:custom_name" {
             self.custom_name = read_text(&tag);
+            self.custom_name_component = (!matches!(tag, Tag::String(_))).then_some(tag);
         } else {
             self.set_other(id, Some(tag));
         }
+    }
+    /// Anvil/plain-text renaming replaces the previous structured name too.
+    pub fn set_custom_name(&mut self, name: Option<String>) {
+        self.custom_name = name;
+        self.custom_name_component = None;
     }
     /// Set (or with None remove) an unmodelled component.
     pub fn set_other(&mut self, id: &str, value: Option<Tag>) {
@@ -245,6 +253,15 @@ impl ItemStack {
     }
     pub fn custom_name(&self) -> Option<&str> {
         self.data().and_then(|d| d.custom_name.as_deref())
+    }
+    pub fn styled_custom_name(&self) -> Option<horizon_client_core::text::Text> {
+        let name = self.custom_name()?;
+        if let Some(component) = self.data()?.custom_name_component.as_ref()
+            && read_text(component).as_deref() == Some(name)
+        {
+            return Some(horizon_client_core::component::name_text(component));
+        }
+        Some(horizon_client_core::text::Text::legacy(name))
     }
     /// `minecraft:item_name` in the current language (`getItemName`'s
     /// component). It stays in the patch as loaded, so a translatable name
@@ -545,7 +562,13 @@ pub fn components_tag(damage: u32, data: Option<&StackData>) -> Option<Tag> {
             entries.push(("minecraft:repair_cost", Tag::Int(d.repair_cost as i32)));
         }
         if let Some(name) = &d.custom_name {
-            entries.push(("minecraft:custom_name", Tag::String(name.as_str().into())));
+            let component = d
+                .custom_name_component
+                .as_ref()
+                .filter(|component| read_text(component).as_ref() == Some(name))
+                .cloned()
+                .unwrap_or_else(|| Tag::String(name.as_str().into()));
+            entries.push(("minecraft:custom_name", component));
         }
         if let Some(potion) = &d.potion {
             entries.push((
@@ -752,6 +775,10 @@ pub fn decode_components(components: Option<&Tag>) -> (u32, Option<Box<StackData
             .unwrap_or(0)
             .max(0) as u32,
         custom_name: c.get("minecraft:custom_name").and_then(read_text),
+        custom_name_component: c
+            .get("minecraft:custom_name")
+            .filter(|tag| !matches!(tag, Tag::String(_)))
+            .cloned(),
         potion,
         map_id: c.get("minecraft:map_id").and_then(int).map(|v| v as i32),
         banner_patterns: crate::banner_layer::layers_from_nbt(c.get("minecraft:banner_patterns")),

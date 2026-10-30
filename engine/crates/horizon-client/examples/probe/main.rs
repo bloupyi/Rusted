@@ -30,6 +30,7 @@ mod container_screen_probe;
 mod creative_mining_probe;
 mod creative_search_fixture;
 mod cushion_placement_probe;
+mod custom_name_fixture;
 mod emitter_particles_probe;
 mod enchanting_fixture;
 mod entity_anim_fixture;
@@ -141,6 +142,7 @@ probes! {
     lan_probe,
     light_parity,
     lore_tooltip_fixture,
+    custom_name_fixture,
     marker_particles_probe,
     menu_fixture,
     mipmap_probe,

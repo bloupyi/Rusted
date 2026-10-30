@@ -189,6 +189,8 @@ pub(super) struct Remote {
     online_mode: bool,
     /// Player entities in the level: entity id to profile UUID.
     level_players: HashMap<i32, u128>,
+    /// Spawned player profiles survive removal from the tab list.
+    level_player_names: HashMap<i32, String>,
     /// Entities with shared flag 6 (`Entity.isCurrentlyGlowing` on a client); mobs keep
     /// theirs in `Mob::glowing`.
     glowing: std::collections::HashSet<i32>,
@@ -497,6 +499,7 @@ impl Game<'_> {
             listed: Default::default(),
             online_mode: false,
             level_players: HashMap::new(),
+            level_player_names: HashMap::new(),
             glowing: Default::default(),
             profile: 0,
             profile_name: String::new(),
@@ -1082,6 +1085,7 @@ impl Game<'_> {
                 // The entity ids are the old world's; the new dimension's
                 // player entities re-map to their profiles on AddEntity.
                 r.level_players.clear();
+                r.level_player_names.clear();
                 // A new ClientLevel: a new chunk storage, centred on 0, 0.
                 r.chunk_center = (0, 0);
             }
@@ -1884,8 +1888,12 @@ impl Game<'_> {
                 let rotation =
                     [p.yaw, p.pitch, p.head_yaw].map(horizon_protocol::buf::unpack_degrees);
                 if let Some(r) = self.remote.as_mut() {
+                    r.level_player_names.remove(&p.id);
                     if kind == "minecraft:player" {
                         r.level_players.insert(p.id, p.uuid);
+                        if let Some(player) = r.tab_players.get(&p.uuid) {
+                            r.level_player_names.insert(p.id, player.name.clone());
+                        }
                     } else {
                         r.level_players.remove(&p.id);
                     }
@@ -1914,6 +1922,7 @@ impl Game<'_> {
                 for id in p.ids {
                     if let Some(r) = self.remote.as_mut() {
                         r.level_players.remove(&id);
+                        r.level_player_names.remove(&id);
                     }
                     self.remove_entity(id);
                 }
@@ -2809,6 +2818,11 @@ impl Game<'_> {
                             }
                         }
                         if let Some(name) = e.name {
+                            for (&id, &uuid) in &r.level_players {
+                                if uuid == e.uuid {
+                                    r.level_player_names.insert(id, name.clone());
+                                }
+                            }
                             r.players.insert(e.uuid, name);
                         }
                     }
@@ -6361,7 +6375,33 @@ impl horizon_client::interaction_input::InteractionWorld for RemoteInputWorld<'_
     }
 }
 
+fn player_score_holder<'a>(
+    entity: u32,
+    retained: &'a HashMap<i32, String>,
+    level_players: &HashMap<i32, u128>,
+    tab_players: &'a HashMap<u128, horizon_client::tab_list::TabPlayer>,
+) -> Option<&'a str> {
+    retained
+        .get(&(entity as i32))
+        .map(String::as_str)
+        .or_else(|| {
+            tab_players
+                .get(level_players.get(&(entity as i32))?)
+                .map(|player| player.name.as_str())
+        })
+}
+
 impl Remote {
+    /// Players join scoreboard teams by their profile name, never their UUID
+    /// or their styled display name in the player list.
+    pub(super) fn player_score_holder(&self, entity: u32) -> Option<&str> {
+        player_score_holder(
+            entity,
+            &self.level_player_names,
+            &self.level_players,
+            &self.tab_players,
+        )
+    }
     /// Players in the server's player list, this one included.
     pub(super) fn player_count(&self) -> usize {
         self.players.len()
@@ -6382,6 +6422,41 @@ impl Remote {
 #[cfg(test)]
 mod tests {
     use super::Game;
+
+    #[test]
+    fn remote_player_profile_resolves_server_collision_teams_and_live_updates() {
+        use horizon_client::{
+            scoreboard::{CollisionRule, Scoreboard, pushable_by},
+            tab_list::TabPlayer,
+        };
+        use std::collections::HashMap;
+        let level = HashMap::from([(42, 123u128)]);
+        let mut player = TabPlayer::new(123, "RemoteProfile");
+        player.display_name = Some(horizon_client::scoreboard::literal("Decorated name"));
+        let profiles = HashMap::from([(123, player)]);
+        let retained = HashMap::from([(42, "RemoteProfile".to_owned())]);
+        let name = super::player_score_holder(42, &retained, &level, &profiles).unwrap();
+        assert_eq!(
+            super::player_score_holder(42, &retained, &level, &HashMap::new()),
+            Some(name)
+        );
+        assert_eq!(name, "RemoteProfile");
+        let mut board = Scoreboard::default();
+        board.add_team("no_collision").collision_rule = CollisionRule::Never;
+        assert!(board.add_to_team(name, "no_collision"));
+        assert!(!pushable_by(board.players_team(name), None, true));
+        assert!(
+            board
+                .players_team("00000000-0000-0000-0000-00000000007b")
+                .is_none()
+        );
+        board.team_mut("no_collision").unwrap().collision_rule = CollisionRule::Always;
+        assert!(pushable_by(board.players_team(name), None, true));
+        assert!(board.remove_from_team(name));
+        assert!(pushable_by(board.players_team(name), None, true));
+        assert!(super::player_score_holder(99, &retained, &level, &profiles).is_none());
+        assert!(super::player_score_holder(42, &HashMap::new(), &level, &HashMap::new()).is_none());
+    }
 
     #[test]
     fn placement_preview_checks_obstruction_without_changing_the_level() {
