@@ -160,6 +160,7 @@ public static class RustedGuiSmoke {
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder text, int max);
     [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
     [DllImport("user32.dll")] public static extern bool IsWindowEnabled(IntPtr h);
+    [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
 }
 '@
     $process.Refresh()
@@ -197,7 +198,10 @@ public static class RustedGuiSmoke {
             $codeLength = [RustedGuiSmoke]::SendMessage([RustedGuiSmoke]::GetDlgItem($popup, 6001), 0xE, [IntPtr]::Zero, [IntPtr]::Zero).ToInt64()
         }
         $homeVisible = [RustedGuiSmoke]::GetDlgItem($mainWindow, 1010) -ne [IntPtr]::Zero
-        if ($codeLength -gt 0 -and $homeVisible) { $popupReady = $true; break }
+        $popupTitle = New-Object Text.StringBuilder 100
+        [void][RustedGuiSmoke]::GetWindowText($popup, $popupTitle, 100)
+        $popupVisible = [RustedGuiSmoke]::IsWindowVisible($popup)
+        if ($codeLength -gt 0 -and $homeVisible -and $popupVisible -and $popupTitle.ToString() -eq 'Connexion Microsoft - Rusted') { $popupReady = $true; break }
         if ($process.HasExited) { throw 'Launcher exited while requesting Microsoft sign-in.' }
         Start-Sleep -Milliseconds 250
     }
@@ -208,7 +212,7 @@ public static class RustedGuiSmoke {
     $notice = New-Object Text.StringBuilder 500
     [void][RustedGuiSmoke]::GetWindowText([RustedGuiSmoke]::GetDlgItem($mainWindow, 550), $notice, 500)
     # Only lengths/flags and the generic account status: never save the device code.
-    $report.popup_diagnostics = [ordered]@{ window_found = ($popup -ne [IntPtr]::Zero); code_present = ($codeLength -gt 0); home_visible = $homeVisible; account_notice = $notice.ToString(); account_code_controls = ([RustedGuiSmoke]::GetDlgItem($mainWindow, 509) -ne [IntPtr]::Zero) }
+    $report.popup_diagnostics = [ordered]@{ window_found = ($popup -ne [IntPtr]::Zero); visible = $popupVisible; title = $popupTitle.ToString(); code_present = ($codeLength -gt 0); home_visible = $homeVisible; account_notice = $notice.ToString(); account_code_controls = ([RustedGuiSmoke]::GetDlgItem($mainWindow, 509) -ne [IntPtr]::Zero) }
     if (-not $popupReady) { throw ('Microsoft code popup was not ready above the home page. Account status: ' + $notice.ToString()) }
     [void][RustedGuiSmoke]::PostMessage($popup, 0x10, [IntPtr]::Zero, [IntPtr]::Zero)
     for ($attempt = 0; $attempt -lt 40 -and [RustedGuiSmoke]::IsWindow($popup); $attempt++) {

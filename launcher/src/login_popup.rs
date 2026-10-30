@@ -107,7 +107,8 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
     if msg == WM_NCCREATE {
         let create = &*(l as *const CREATESTRUCTW);
         SetWindowLongPtrW(hwnd, GWLP_USERDATA, create.lpCreateParams as _);
-        return 1;
+        // Default non-client creation initializes the caption and system menu.
+        return DefWindowProcW(hwnd, msg, w, l);
     }
     let ptr = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut State;
     if ptr.is_null() {
