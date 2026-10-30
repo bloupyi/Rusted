@@ -1630,6 +1630,11 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
                 if let Some(c) = &app.auth_job {
                     c.store(true, Ordering::Relaxed);
                 }
+                close_login_popup(app);
+                app.device = None;
+                app.account_notice = "Connexion Microsoft annulee.".into();
+                app.page = 4;
+                build(app);
             }
             502 => {
                 let a = app
@@ -1657,7 +1662,7 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
             }
             507 => {
                 if let Some((uri, _)) = &app.device {
-                    open(uri);
+                    open_browser(uri.clone());
                 }
             }
             508 => {
@@ -1768,6 +1773,13 @@ unsafe fn tick(app: &mut App) {
                 rebuild = true;
             }
             Event::DeviceCode { uri, code } => {
+                if !app
+                    .auth_job
+                    .as_ref()
+                    .is_some_and(|cancel| !cancel.load(Ordering::Relaxed))
+                {
+                    continue;
+                }
                 // Open the trusted Microsoft verification page as soon as the device flow is ready.
                 let _ = clipboard(app.window, &code);
                 app.account_notice =
@@ -1921,9 +1933,21 @@ unsafe fn tick(app: &mut App) {
                 }
             }
             redraw(app.window);
-            open(&uri);
+            open_browser(uri);
         }
     }
+}
+fn open_browser(uri: String) {
+    // Shell activation can wait for the browser's first-run/DDE/COM work on
+    // Windows. Never hold the UI's dispatch guard while it opens: the popup
+    // must still paint, copy and cancel, and worker results must keep arriving.
+    std::thread::spawn(move || unsafe {
+        let initialized = CoInitializeEx(std::ptr::null(), COINIT_APARTMENTTHREADED as u32);
+        open(&uri);
+        if initialized >= 0 {
+            CoUninitialize();
+        }
+    });
 }
 unsafe fn open(path: &str) {
     ShellExecuteW(

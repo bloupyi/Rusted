@@ -159,6 +159,7 @@ public static class RustedGuiSmoke {
     [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder text, int max);
     [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
+    [DllImport("user32.dll")] public static extern bool IsWindowEnabled(IntPtr h);
 }
 '@
     $process.Refresh()
@@ -213,7 +214,16 @@ public static class RustedGuiSmoke {
     for ($attempt = 0; $attempt -lt 40 -and [RustedGuiSmoke]::IsWindow($popup); $attempt++) {
         Start-Sleep -Milliseconds 100
     }
-    if ([RustedGuiSmoke]::IsWindow($popup) -or @(Get-ChildItem -LiteralPath (Join-Path $data 'accounts') -File).Count -ne 0) {
+    $signInAvailable = $false
+    for ($attempt = 0; $attempt -lt 100; $attempt++) {
+        $button = [RustedGuiSmoke]::GetDlgItem($mainWindow, 501)
+        if ($button -ne [IntPtr]::Zero -and [RustedGuiSmoke]::IsWindowEnabled($button)) { $signInAvailable = $true; break }
+        Start-Sleep -Milliseconds 100
+    }
+    $report.popup_diagnostics['closed_after_cancel'] = -not [RustedGuiSmoke]::IsWindow($popup)
+    $report.popup_diagnostics['sign_in_available_after_cancel'] = $signInAvailable
+    $report.popup_diagnostics['account_files_after_cancel'] = @(Get-ChildItem -LiteralPath (Join-Path $data 'accounts') -File).Count
+    if ([RustedGuiSmoke]::IsWindow($popup) -or -not $signInAvailable -or $report.popup_diagnostics['account_files_after_cancel'] -ne 0) {
         throw 'Microsoft popup did not cancel cleanly without storing an account.'
     }
     $report.microsoft_code_popup = 'passed; real device request, code displayed, cancelled without account'
