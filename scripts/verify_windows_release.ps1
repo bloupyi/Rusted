@@ -176,9 +176,17 @@ public static class RustedGuiSmoke {
     }
     $report.resize_smoke = 'passed'
     # Request a genuine Microsoft code, but never enter a user account or log the code.
-    [void][RustedGuiSmoke]::PostMessage($mainWindow, 0x111, [IntPtr]104, [IntPtr]::Zero)
-    Start-Sleep -Milliseconds 300
-    [void][RustedGuiSmoke]::PostMessage($mainWindow, 0x111, [IntPtr]501, [IntPtr]::Zero)
+    # Exercise actual button notifications (BM_CLICK), not synthetic menu commands.
+    # The dialog message manager can consume queued WM_COMMAND messages on Windows.
+    $loginButton = [IntPtr]::Zero
+    for ($attempt = 0; $attempt -lt 40; $attempt++) {
+        [void][RustedGuiSmoke]::PostMessage([RustedGuiSmoke]::GetDlgItem($mainWindow, 104), 0xF5, [IntPtr]::Zero, [IntPtr]::Zero)
+        Start-Sleep -Milliseconds 250
+        $loginButton = [RustedGuiSmoke]::GetDlgItem($mainWindow, 501)
+        if ($loginButton -ne [IntPtr]::Zero) { break }
+    }
+    if ($loginButton -eq [IntPtr]::Zero) { throw 'Accounts navigation did not display the Microsoft sign-in button.' }
+    [void][RustedGuiSmoke]::PostMessage($loginButton, 0xF5, [IntPtr]::Zero, [IntPtr]::Zero)
     $popup = [IntPtr]::Zero
     $popupReady = $false
     for ($attempt = 0; $attempt -lt 240; $attempt++) {
