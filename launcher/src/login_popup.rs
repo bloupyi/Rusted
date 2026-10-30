@@ -96,6 +96,7 @@ pub(super) unsafe fn show(
     // WM_NCDESTROY during a failed CreateWindowExW. Transfer ownership only once.
     state.owned_by_window = true;
     let _ = Box::into_raw(state);
+    SetWindowTextW(window, wide("Connexion Microsoft - Rusted").as_ptr());
     let dark = 1i32;
     DwmSetWindowAttribute(window, 20, (&dark as *const i32).cast(), 4);
     ShowWindow(window, SW_SHOW);
@@ -107,8 +108,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
     if msg == WM_NCCREATE {
         let create = &*(l as *const CREATESTRUCTW);
         SetWindowLongPtrW(hwnd, GWLP_USERDATA, create.lpCreateParams as _);
-        // Default non-client creation initializes the caption and system menu.
-        return DefWindowProcW(hwnd, msg, w, l);
+        return 1;
     }
     let ptr = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut State;
     if ptr.is_null() {
