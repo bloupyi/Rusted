@@ -206,14 +206,9 @@ fn atlas_sprites(root: &Path, packed: &[PackedImage]) -> Vec<PackedImage> {
             if have.contains(name.as_str()) {
                 continue;
             }
-            // A vanilla file is packed under its own name already: only a
-            // renamed one is new. Other namespaces' files (content mods) are
-            // never in the walked directories.
-            if let SpriteOrigin::File(texture) = &origin
-                && texture.strip_prefix("minecraft:") == Some(name.as_str())
-            {
-                continue;
-            }
+            // The initial walk covers standard folders only. A server atlas
+            // may also declare minecraft:custom/... (or any other folder);
+            // `have` above, rather than its namespace, tells us it was packed.
             let slot = *slots.entry(name.clone()).or_insert_with(|| {
                 names.push((name, Vec::new()));
                 names.len() - 1
@@ -1603,6 +1598,28 @@ impl HudRenderer {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn server_atlas_loads_minecraft_textures_outside_standard_folders() {
+        let root = std::env::temp_dir().join(format!("rusted-custom-atlas-{}", std::process::id()));
+        let png = root.join("assets/minecraft/textures/custom/weapons/copper.png");
+        fs::create_dir_all(png.parent().unwrap()).unwrap();
+        write_strip(&png, 16, 16, &[[213, 104, 75, 255]], None);
+        let atlas_file = root.join("assets/minecraft/atlases/items.json");
+        fs::create_dir_all(atlas_file.parent().unwrap()).unwrap();
+        fs::write(
+            atlas_file,
+            r#"{"sources":[{"type":"minecraft:directory","source":"custom","prefix":"custom/"}]}"#,
+        )
+        .unwrap();
+        let atlas = HudAtlas::build(&root).unwrap();
+        let rect = *atlas
+            .sprites
+            .get("custom/weapons/copper")
+            .expect("atlas-declared custom folder sprite");
+        assert_eq!(texel_at(&atlas, rect, 0, 0), [213, 104, 75, 255]);
+        fs::remove_dir_all(root).unwrap();
+    }
 
     /// Write a PNG `width x height` whose `frames` stacked rows are solid
     /// colours, then its mcmeta beside it.
