@@ -169,7 +169,12 @@ public static class RustedGuiSmoke {
     public static IntPtr MicrosoftPopup() { return FindWindow("RustedMicrosoftCodePopup", null); }
     [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
     [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
-    [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern bool SetWindowText(IntPtr h, string text);
+    // GetWindowText/SetWindowText are not suitable for EDIT controls in another
+    // process. Use the system-marshalled WM_GETTEXT/WM_SETTEXT messages instead.
+    [DllImport("user32.dll", CharSet=CharSet.Unicode, EntryPoint="SendMessageW")]
+    public static extern IntPtr WriteControlText(IntPtr h, uint msg, IntPtr w, string text);
+    [DllImport("user32.dll", CharSet=CharSet.Unicode, EntryPoint="SendMessageW")]
+    public static extern IntPtr ReadControlText(IntPtr h, uint msg, IntPtr capacity, StringBuilder text);
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder text, int max);
     [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
     [DllImport("user32.dll")] public static extern bool IsWindowEnabled(IntPtr h);
@@ -235,11 +240,16 @@ public static class RustedGuiSmoke {
     foreach ($Id in @(210, 212, 213, 800, 1)) {
         if (-not [RustedGuiSmoke]::ControlFits($mainWindow, $Id)) { throw "Creation control $Id clipped in the compact window." }
     }
-    [void][RustedGuiSmoke]::SetWindowText([RustedGuiSmoke]::GetDlgItem($mainWindow, 210), 'Navigation test draft')
+    if ([RustedGuiSmoke]::WriteControlText([RustedGuiSmoke]::GetDlgItem($mainWindow, 210), 0xC, [IntPtr]::Zero, 'Navigation test draft') -eq [IntPtr]::Zero) {
+        throw 'Could not enter the instance creation draft.'
+    }
+    $enteredDraft = New-Object Text.StringBuilder 100
+    [void][RustedGuiSmoke]::ReadControlText([RustedGuiSmoke]::GetDlgItem($mainWindow, 210), 0xD, [IntPtr]100, $enteredDraft)
+    if ($enteredDraft.ToString() -ne 'Navigation test draft') { throw 'Draft entry could not be verified before navigation.' }
     Invoke-LauncherButton 1010 200
     Invoke-LauncherButton 1070 210
     $draft = New-Object Text.StringBuilder 100
-    [void][RustedGuiSmoke]::GetWindowText([RustedGuiSmoke]::GetDlgItem($mainWindow, 210), $draft, 100)
+    [void][RustedGuiSmoke]::ReadControlText([RustedGuiSmoke]::GetDlgItem($mainWindow, 210), 0xD, [IntPtr]100, $draft)
     if ($draft.ToString() -ne 'Navigation test draft') { throw 'Instance creation draft was lost during navigation.' }
     Invoke-LauncherButton 102 321
     Invoke-LauncherButton 321 351
