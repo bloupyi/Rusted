@@ -1007,7 +1007,7 @@ unsafe fn build(app: &mut App) {
             if app.mod_tab == 0 {
                 if let Some(i) = &selected {
                     if i.engine == Engine::Native {
-                        button(app, 334, "Importer un JAR de ressources", 284, 606, 240, 36);
+                        button(app, 334, "Importer des ressources", 284, 606, 240, 36);
                         button(app, 335, "Voir les packs", 540, 606, 200, 36);
                     }
                     let files = mods::files(&app.store, i).unwrap_or_default();
