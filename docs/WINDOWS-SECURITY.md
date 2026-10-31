@@ -1,3 +1,22 @@
+# Validation Windows de Rusted Launcher 0.2.6
+
+Le ZIP complet a passé le scan Defender avec les protections en temps réel et
+comportementale actives (signatures 1.463.56.0), puis les essais sur Windows réel :
+démarrage de 20 secondes, 40 redimensionnements, contrôles dans la fenêtre compacte,
+formulaire séparé, conservation du brouillon et actions indisponibles désactivées.
+La demande d'un vrai code Microsoft depuis l'accueil, son affichage et son annulation
+sans compte enregistré passent également.
+
+- [Exécution CI : cinq jobs réussis](https://github.com/bloupyi/Rusted/actions/runs/41195621144).
+- [Rapport Windows exact](results/rusted-launcher-0.2.6-windows.json).
+- [Vérification du contenu et essais de design](results/rusted-launcher-0.2.6-design.json).
+- ZIP SHA-256 : `e0038f730b92a90efeed2ab391b560eebd0d11843c681e57daa31ee0004844b9`.
+
+Les 1527 empreintes de fichiers et les 47 empreintes des sources du lanceur
+correspondent à l'archive récupérée ; le logo original est inchangé.
+Les exécutables restent non signés. Ces essais ne couvrent pas une connexion
+complète avec un compte, une préparation entière ou une partie.
+
 # Validation Windows de Rusted Launcher 0.2.5
 
 Le ZIP complet 0.2.5 a passé le scan Defender, un premier démarrage de 20 secondes,

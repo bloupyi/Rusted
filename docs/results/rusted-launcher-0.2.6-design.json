@@ -35,5 +35,19 @@
     "play_and_microsoft_signin_reachable": true,
     "informational_labels_skipped": true,
     "activation_warmup": true
+  },
+  "windows_validation": {
+    "run": "https://github.com/bloupyi/Rusted/actions/runs/41195621144",
+    "commit": "b258a9819ec73d1e2388dd0f10cadf491aae9c67",
+    "all_five_jobs": "passed",
+    "report": "rusted-launcher-0.2.6-windows.json"
+  },
+  "delivery": {
+    "archive": "Rusted-Launcher-Windows-0.2.6.zip",
+    "sha256": "e0038f730b92a90efeed2ab391b560eebd0d11843c681e57daa31ee0004844b9",
+    "payload_files_verified": 1527,
+    "launcher_sources_verified": 47,
+    "original_icon_unchanged": true,
+    "windows_report_matches_archive": true
   }
 }

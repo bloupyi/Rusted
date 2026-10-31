@@ -179,11 +179,12 @@ exigeant une autre révision du loader peuvent nécessiter Prism.
 Le client public Live est fourni par défaut ; aucune inscription d'application
 personnelle n'est requise. Une connexion complète n'a pas encore été validée avec
 un compte réel ici ; elle nécessite l'accès Minecraft Java et un profil Xbox valide.
-L'interface a été essayée sous Wine ; 40 redimensionnements, le code Microsoft visible
+L'interface a été essayée sous Wine ; la conservation du brouillon, les commandes
+désactivées sans sélection, la disposition compacte, 40 redimensionnements, le code Microsoft visible
 et son annulation sans compte passent aussi sur Windows réel. La compilation MSVC, les
 tests unitaires et de communication, un scan Defender et un premier démarrage de
 20 secondes réussissent sur Windows réel, protections en temps réel et comportementale
-actives (signatures 1.463.36.0 ; [rapport](results/rusted-launcher-0.2.5-windows.json)).
+actives (signatures 1.463.56.0 ; [rapport](results/rusted-launcher-0.2.6-windows.json)).
 Ce contrôle ne couvre pas une préparation entière, un compte réel ou une partie.
 Le jeu sur un vrai PC Windows, le GPU et le multijoueur authentifié restent à confirmer.
 Le ZIP n'est pas signé avec un certificat de publication Windows.
