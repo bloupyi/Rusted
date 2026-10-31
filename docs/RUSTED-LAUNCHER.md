@@ -21,7 +21,7 @@ prépare les fichiers automatiquement. Le nom saisi est conservé si tu changes 
 Sans compte connecté, le bouton Microsoft est accessible en haut de chaque page.
 Les actions indisponibles sont désactivées : installer un mod sans résultat, utiliser
 ou retirer un compte absent. Les commandes de ressources natives sont séparées des
-onglets de découverte. Les boutons indiquent aussi le focus au clavier.
+onglets de découverte. Les boutons indiquent aussi le focus au clavier ; Tab ignore les textes d’information.
 La disposition se compacte jusqu’à 1120 × 720 ; les contrôles suivent le
 redimensionnement, y compris lorsque Windows transmet la taille dans un événement imbriqué.
 

@@ -173,6 +173,7 @@ public static class RustedGuiSmoke {
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder text, int max);
     [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
     [DllImport("user32.dll")] public static extern bool IsWindowEnabled(IntPtr h);
+    [DllImport("user32.dll", EntryPoint="GetWindowLongW")] public static extern int GetWindowStyle(IntPtr h, int index);
     [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
     public delegate bool WindowEnumerator(IntPtr window, IntPtr parameter);
     [DllImport("user32.dll")] public static extern bool EnumWindows(WindowEnumerator callback, IntPtr parameter);
@@ -213,6 +214,11 @@ public static class RustedGuiSmoke {
         if (-not [RustedGuiSmoke]::ControlFits($mainWindow, $Id)) { throw "Home control $Id clipped in the compact window." }
     }
     $report.resize_smoke = 'passed; compact controls remain inside window'
+    foreach ($Id in @(800, 801, 802)) {
+        if (([RustedGuiSmoke]::GetWindowStyle([RustedGuiSmoke]::GetDlgItem($mainWindow, $Id), -16) -band 0x10000) -ne 0) {
+            throw "Informational text $Id must not interrupt keyboard navigation."
+        }
+    }
     function Invoke-LauncherButton([int]$Id, [int]$ExpectedControl) {
         $handle = [RustedGuiSmoke]::GetDlgItem($mainWindow, $Id)
         if ($handle -eq [IntPtr]::Zero) { throw "Missing launcher action $Id" }

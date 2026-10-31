@@ -579,7 +579,11 @@ unsafe fn control(
         0,
         wide(class).as_ptr(),
         wide(text).as_ptr(),
-        WS_CHILD | WS_VISIBLE | WS_TABSTOP | style | if class == "EDIT" { WS_BORDER } else { 0 },
+        WS_CHILD
+            | WS_VISIBLE
+            | style
+            | if class == "STATIC" { 0 } else { WS_TABSTOP }
+            | if class == "EDIT" { WS_BORDER } else { 0 },
         rect[0],
         rect[1],
         rect[2],

@@ -29,5 +29,11 @@
       720
     ]
   },
-  "original_icon_unchanged": true
+  "original_icon_unchanged": true,
+  "keyboard": {
+    "real_tab_key_events": true,
+    "play_and_microsoft_signin_reachable": true,
+    "informational_labels_skipped": true,
+    "activation_warmup": true
+  }
 }
