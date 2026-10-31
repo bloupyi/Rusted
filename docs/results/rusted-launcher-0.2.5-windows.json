@@ -1,0 +1,70 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "verified_at": "2026-10-30T11:28:18.1603364Z",
+  "archive_sha256": "bc74e6297902dcbe2fb62ce519f15363f2af0577d30dab4096df99cb5bc00002",
+  "defender": {
+    "service_enabled": true,
+    "antivirus_enabled": true,
+    "realtime_enabled": true,
+    "behavior_enabled": true,
+    "engine_version": "1.1.26100.4",
+    "signature_version": "1.463.36.0",
+    "signature_updated": "2026-10-30T03:46:20.0000000+00:00"
+  },
+  "executables": [
+    {
+      "file": "Rusted Launcher.exe",
+      "sha256": "8117fb659616646d361448758790428747c4a9c763a5484ac4ca73fdb9626610",
+      "authenticode": "NotSigned"
+    },
+    {
+      "file": "rusted\\rusted-launch.exe",
+      "sha256": "c4728ad3625b24af05f07f189a075969d67a3bf6bbee144e0adfb7b4d6b5e2f8",
+      "authenticode": "NotSigned"
+    },
+    {
+      "file": "rusted\\runtime\\rusted-prepare.exe",
+      "sha256": "0490f52e1f62808784e42994ca85341f2d5fe2236e918e612ee19e5627a298da",
+      "authenticode": "NotSigned"
+    },
+    {
+      "file": "rusted\\runtime\\rusted.exe",
+      "sha256": "0b711b00bc1724378590d76deb70ef474da771ff434c68b2fba8f35c2bd38e7a",
+      "authenticode": "NotSigned"
+    }
+  ],
+  "static_scan": "passed",
+  "startup_smoke": "passed",
+  "resize_smoke": "passed",
+  "microsoft_code_popup": "passed; real device request, code displayed, cancelled without account",
+  "popup_diagnostics": {
+    "window_found": true,
+    "visible": true,
+    "title": "Connexion Microsoft - Rusted",
+    "code_present": true,
+    "home_visible": true,
+    "account_notice": "",
+    "account_code_controls": false,
+    "process_windows": [
+      "RustedMicrosoftCodePopup:visible=True",
+      "RustedLauncherOriginal:visible=True",
+      "ComboLBox:visible=False",
+      "ComboLBox:visible=False",
+      "MSCTFIME UI:visible=False",
+      "IME:visible=False"
+    ],
+    "closed_after_cancel": true,
+    "sign_in_available_after_cancel": true,
+    "account_files_after_cancel": 0
+  },
+  "startup_observation_seconds": 20,
+  "detections": [],
+  "limitations": [
+    "Startup observation only; no account, gameplay or full preparation validation.",
+    "A clean result does not establish that the reported detection is a false positive."
+  ],
+  "error": null,
+  "error_location": null,
+  "stage": "complete"
+}

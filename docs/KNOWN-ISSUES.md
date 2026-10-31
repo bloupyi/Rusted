@@ -7,11 +7,23 @@ est chargé depuis un serveur vanilla local en environ 4,5 s sur le banc de test
 Le test à deux clients respecte `collisionRule never` et rétablit la poussée avec `always`.
 Ces mesures ne décrivent pas le pack Hypixel ou les performances du PC du joueur.
 
+Le catalogue public SkyBlock confirme 1 247 objets avec un modèle dans un chemin
+imbriqué `hypixel_skyblock:…`. Un deuxième pack obligatoire original reprend ses
+1 195 identifiants distincts, avec nos propres modèles et textures : 17 582 fichiers,
+environ 5 s sur le banc Linux, objet visible dans la barre et en main. Ce test ne
+contient pas le pack Hypixel et ne valide pas une connexion au serveur Hypixel.
+
 Les modules passifs de ressources/données sont chargés automatiquement, dans les limites
 [documentées](MOD-COMPATIBILITY.md). Les JAR Java de Sodium, Iris et Distant Horizons,
 les API Java des autres loaders et le mélange universel de leurs injections restent à porter.
 Le lecteur GLSL natif existant passe le test original à trois passes ; chaque pack tiers
 reste à vérifier. Hypixel SkyBlock avec une session authentifiée reste à valider.
+
+La compilation MSVC, les cinq jobs CI, le scan Defender actif, 40 redimensionnements,
+le code Microsoft visible et son annulation sans compte passent sur Windows réel.
+Une nouvelle connexion est disponible après annulation. Les contrôles portent sur
+le ZIP exact de [ce rapport](results/rusted-launcher-0.2.5-windows.json) ; une préparation
+entière et une partie avec un compte réel restent à vérifier.
 
 [Résultats et portée des tests](results/rusted-native-0.3.6.json).
 Les sections suivantes conservent l'historique des versions précédentes.

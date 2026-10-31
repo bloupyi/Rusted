@@ -15,24 +15,29 @@ vers le registre Horizon sont désactivés pour ce produit dérivé.
 
 ## Rusted Launcher — Windows
 
-Les sources **0.2.3** fournissent la connexion Microsoft sans configuration, avec
-le client public Live utilisé par msmc/FaultlineLauncher et une implémentation Rust.
-Aucun ID ni inscription Azure n’est demandé au joueur. Les points d’entrée Microsoft
-ont accepté la demande de code ; une connexion complète avec un vrai compte reste
-à valider. Voir [la comparaison](docs/MICROSOFT-SETUP.md).
+Les sources **0.2.5** affichent le code Microsoft dans une fenêtre au-dessus de
+l’accueil, avec Copier, Ouvrir Microsoft et Annuler. Aucun ID ni inscription Azure
+n’est demandé au joueur. La connexion complète avec un vrai compte reste à valider.
+Voir [le fonctionnement](docs/MICROSOFT-SETUP.md).
 
-**[Archives Windows validées — Rusted Launcher 0.2.3](https://github.com/bloupyi/Rusted/actions/runs/40953795188/artifacts/12933766247)**
+**[Archives Windows validées — Rusted Launcher 0.2.5](https://github.com/bloupyi/Rusted/actions/runs/41047322706/artifacts/12972654898)**
 (téléchargement Actions avec connexion GitHub). L’artefact contient le ZIP complet
-`Rusted-Launcher-Windows-0.2.3.zip`, les packs Prism/Modrinth, les sources et leurs
-empreintes. Extraire tout le ZIP du lanceur, puis ouvrir `Rusted Launcher.exe`.
-Le moteur est inclus. Le [rapport Defender](docs/results/rusted-launcher-0.2.3-windows.json)
+`Rusted-Launcher-Windows-0.2.5.zip`, le moteur **0.3.6**, les packs Prism/Modrinth,
+les sources et leurs empreintes. Extraire tout le ZIP du lanceur, puis ouvrir
+`Rusted Launcher.exe`. Le [rapport Windows](docs/results/rusted-launcher-0.2.5-windows.json)
 est conservé dans le dépôt. Il s’agit d’une version de développement.
 
-Tests Windows/Linux, demande Microsoft réelle sans compte, scan Defender et premier
-démarrage de 20 secondes réussis sur Windows réel, protections en temps réel et
-comportementale actives. Les exécutables restent non signés. Une connexion complète
-avec un vrai compte et une partie restent à confirmer. Les anciens ZIP 0.2.1 ne
-contiennent pas le nouveau parcours Microsoft.
+Les cinq jobs CI passent. Sur Windows réel, le scan Defender, le démarrage de
+20 secondes, 40 redimensionnements et la demande d’un vrai code Microsoft avec
+annulation sans compte réussissent, protections en temps réel et comportementale
+actives. Ces contrôles ne couvrent pas une connexion complète, une préparation
+entière ou une partie. Les exécutables restent non signés.
+
+Le moteur corrige les modèles d’objets imbriqués, les textures personnalisées,
+les styles des noms transmis sur le réseau et les règles de collision des équipes
+distantes. Un pack obligatoire original utilisant 1 195 chemins du catalogue
+SkyBlock s’affiche sur le banc Linux ; le pack réel et une session Hypixel restent
+à confirmer. Voir [les résultats et limites](docs/results/rusted-native-0.3.6.json).
 
 La distribution Windows **Rusted Launcher 0.2.0 est en attente de validation antivirus** :
 Microsoft Defender a signalé `Behavior:Win32/DefenseEvasion.A!ml` sur
@@ -48,7 +53,7 @@ et l'export Prism. Aucun configurateur séparé ni terminal n'est requis.
 Depuis 0.2.1, l'accueil présente un unique bouton **Jouer**. La préparation reste
 automatique à la création ou à l'import de l'instance ; Jouer attend sa fin si
 nécessaire. Les vérifications Windows sont suivies dans
-[GitHub Actions](https://github.com/bloupyi/Rusted/actions/runs/40953795188).
+[GitHub Actions](https://github.com/bloupyi/Rusted/actions/runs/41047322706).
 
 La connexion utilise par défaut un client public Microsoft Live partagé ; une identité
 Entra personnalisée reste facultative : [guide Microsoft](docs/MICROSOFT-SETUP.md). Les préparations se font
@@ -58,10 +63,10 @@ de Horizon, tandis que l'interface et le contrôleur de ce lanceur sont originau
 
 ## Windows : importer puis Jouer
 
-Les **packs complets 0.3.5** se trouvent dans build/ :
+Les **packs complets 0.3.6** se trouvent dans build/ :
 
-- **Rusted-Native-Prism-0.3.5.zip** : importer dans Prism, puis Jouer.
-- **Rusted-Native-Modrinth-0.3.5.mrpack** : importer dans Modrinth App, puis Jouer.
+- **Rusted-Native-Prism-0.3.6.zip** : importer dans Prism, puis Jouer.
+- **Rusted-Native-Modrinth-0.3.6.mrpack** : importer dans Modrinth App, puis Jouer.
 
 Aucun Configurer-Rusted.exe, aucune commande Wrapper et aucun terminal ne sont
 nécessaires après l'import. Le pack déclare Fabric Loader 0.20.1 et contient notre
@@ -73,16 +78,16 @@ Lire [le guide](docs/NATIVE-WINDOWS.md).
 
 ## Mods, shaders et travail restant
 
-Le mode auto lance le moteur natif si seul le bootstrap Rusted est présent. Avec des
-mods Java supplémentaires, il poursuit dans la JVM Fabric d'origine ; le moteur Rust
-est alors inactif. **Les JAR Sodium/Iris/Distant Horizons ne fonctionnent pas dans le
+Le mode auto conserve le moteur natif avec le bootstrap Rusted et les modules passifs
+de ressources/données compatibles. Avec des mods Java exécutables, il poursuit dans
+la JVM Fabric d'origine ; le moteur Rust est alors inactif. **Les JAR Sodium/Iris/Distant Horizons ne fonctionnent pas dans le
 moteur natif.** Leur partie en jeu n'est pas validée ici. Plusieurs familles de chargeurs
-ne sont pas combinées. Les mods natifs .hmod hérités de Horizon restent séparés.
+ne sont pas combinées. Les mods natifs .hmod hérités de Horizon restent séparés. Voir [la matrice des mods](docs/MOD-COMPATIBILITY.md).
 
 Un premier shader original **Rusted Soft Light**, optionnel et désactivé par défaut,
 est inclus au format natif WGSL. Il réutilise l'API de stages héritée, avec notre propre
-correction de couleur. Il ne prend pas en charge les packs Iris. La liste des problèmes
-est corrigée pour distinguer cette API native des anciens packs retirés.
+correction de couleur. Le lecteur GLSL natif distinct passe un test original à trois passes ; chaque pack
+tiers reste à vérifier. Voir [les formats et limites](docs/NATIVE-SHADERPACKS.md).
 
 Les journaux renderer portent désormais l'identité Rusted et n'annoncent le GPU
 qu'une fois à l'ouverture du périphérique. Le renderer lui-même reste celui de la

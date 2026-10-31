@@ -1,25 +1,31 @@
-# Validation Windows de Rusted Launcher 0.2.3
+# Validation Windows de Rusted Launcher 0.2.5
 
-Le ZIP complet 0.2.3 a passé le scan Defender et un premier démarrage de 20 secondes
-sur Windows réel, protection en temps réel et comportementale active, sans détection.
-Moteur Defender 1.1.26100.4, signatures 1.463.30.0.
+Le ZIP complet 0.2.5 a passé le scan Defender, un premier démarrage de 20 secondes,
+40 redimensionnements et l'affichage d'un vrai code Microsoft sur Windows réel.
+L'annulation ferme la fenêtre et rend une nouvelle connexion disponible sans compte
+ni session enregistrés. Les protections en temps réel et comportementale restent actives.
+Moteur Defender 1.1.26100.4, signatures 1.463.36.0.
 
-- [Exécution CI](https://github.com/bloupyi/Rusted/actions/runs/40953795188).
-- [Rapport exact](results/rusted-launcher-0.2.3-windows.json).
-- SHA-256 de l’archive : `a896b80580219af25fc38ef5d39fc65c232d37175e5fdaa0ccae1d8a2cf992d5`.
-- SHA-256 du lanceur : `70840abebba6f9464f70bf3333bb1c79a923d590b46f90b2f6f127c24cc96fa2`.
+- [Exécution CI](https://github.com/bloupyi/Rusted/actions/runs/41047322706).
+- [Rapport exact](results/rusted-launcher-0.2.5-windows.json).
+- SHA-256 de l'archive : `bc74e6297902dcbe2fb62ce519f15363f2af0577d30dab4096df99cb5bc00002`.
+- SHA-256 du lanceur : `8117fb659616646d361448758790428747c4a9c763a5484ac4ca73fdb9626610`.
 
 Le lanceur et les wrappers sont compilés sur Windows avec MSVC. Les deux binaires
-moteur inchangés sont repris de la compilation MSVC déjà validée de 0.2.1, après
-contrôle de l’archive épinglée, de l’empreinte des sources moteur et du reçu binaire.
-Les packs complets sont réassemblés, puis leur contenu final est à nouveau scanné.
-Les 1 525 empreintes du contenu et les 46 empreintes des sources du lanceur
-correspondent à la distribution récupérée et aux sources actuelles.
+moteur 0.3.6 sont repris d'une compilation MSVC des mêmes sources, après contrôle
+de l'archive épinglée, de l'empreinte des sources et du reçu binaire. Le ZIP final
+est réassemblé et à nouveau scanné. Les 1527 empreintes du contenu,
+les 47 empreintes des sources du lanceur et l'empreinte de l'ensemble
+des sources moteur correspondent aux archives récupérées. Le logo original est inchangé.
 
-Un test indépendant du code Rust sous Windows a obtenu un code Microsoft puis
-annulé sans compte enregistré. Le scan/démarrage ne valide ni une connexion complète,
-ni une préparation entière, ni une partie. Les exécutables restent non signés et
-ces résultats ne déterminent pas la cause de l’alerte historique 0.2.0.
+Le changement des messages de commits conserve chaque arbre de sources :
+[correspondance des empreintes Git](results/commit-message-rewrite.json). Le rapport
+reste lié au commit réellement exécuté et au ZIP exact ; il n'est pas réattribué
+à une autre exécution CI.
+
+Le contrôle ne valide ni une connexion complète, ni une préparation entière, ni une
+partie. Les exécutables restent non signés et ces résultats ne déterminent pas la
+cause de l'alerte historique 0.2.0. Aucun réglage de protection n'est diminué.
 
 # Rusted Launcher 0.2.0 : détection Defender en cours d'analyse
 

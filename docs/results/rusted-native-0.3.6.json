@@ -83,18 +83,36 @@
     "real_microsoft_device_code_requested": true,
     "code_popup_displayed_and_cancelled": true,
     "account_stored": false,
-    "automatic_preparation_failure_does_not_block_login": true
+    "automatic_preparation_failure_does_not_block_login": true,
+    "popup_cancel_button_clicked": true,
+    "browser_activation_off_ui_thread": true,
+    "visible_popup_visual_review": true,
+    "popup_screenshot_uses_test_placeholder": true
   },
   "windows_release_validation": {
-    "status": "pending",
-    "run_id": 41034823879
+    "status": "passed",
+    "run_id": 41047322706,
+    "run_url": "https://github.com/bloupyi/Rusted/actions/runs/41047322706",
+    "artifact_url": "https://github.com/bloupyi/Rusted/actions/runs/41047322706/artifacts/12972654898",
+    "report": "docs/results/rusted-launcher-0.2.5-windows.json",
+    "archive_sha256": "bc74e6297902dcbe2fb62ce519f15363f2af0577d30dab4096df99cb5bc00002",
+    "tested_commit": "d88760b7719b881e49422a5b80c62cbe77e65e73",
+    "equivalent_source_commit": "2e4aad0cad275489e556622e3a4b2888c07346dd",
+    "all_five_jobs_passed": true,
+    "defender_realtime_and_behavior_enabled": true,
+    "defender_signature": "1.463.36.0",
+    "resize_passed": true,
+    "real_microsoft_code_popup_visible_and_cancelled": true,
+    "sign_in_available_after_cancel": true,
+    "account_files_after_cancel": 0,
+    "retrieved_archives_match_report_and_source_receipts": true
   },
   "limitations": [
     "No authenticated Hypixel SkyBlock gameplay test.",
     "The pack timings refer to an original local fixture, not the Hypixel pack or the user computer.",
     "Java code mods such as Sodium, Iris and Distant Horizons still require their JVM loader or a native port."
   ],
-  "release_code_commit": "b99ee611abb415f5d667da175a467c08ac85a920",
+  "release_code_commit": "d88760b7719b881e49422a5b80c62cbe77e65e73",
   "native_glsl": {
     "existing_engine_reader": true,
     "original_engine_fixture": "post-test",
@@ -104,5 +122,26 @@
     ],
     "iris_jar_executed": false,
     "screenshot": "docs/screenshots/rusted-native-0.3.6-glsl-test.png"
-  }
+  },
+  "skyblock_path_fixture": {
+    "passed": true,
+    "catalogue_url": "https://api.hypixel.net/v2/resources/skyblock/items",
+    "catalogue_observed_on": "2026-10-30",
+    "catalogue_items": 5682,
+    "catalogue_entries_with_nested_hypixel_models": 1247,
+    "distinct_model_identifiers_in_fixture": 1195,
+    "required_server_pack": true,
+    "entries": 17582,
+    "bytes": 4096321,
+    "connect_to_ready_seconds": 5.054,
+    "geometry_and_textures": "Original Rusted test fixtures, not Hypixel assets",
+    "actual_hypixel_pack_tested": false,
+    "authenticated_hypixel_gameplay_tested": false,
+    "drawn_item_model": "hypixel_skyblock:item/power_stones/mandraa",
+    "drawn_item_visible": true,
+    "custom_name_colour_and_explicit_nonitalic_preserved": true,
+    "screenshot": "docs/screenshots/rusted-native-0.3.6-skyblock-paths.png",
+    "screenshot_sha256": "88e226b2b1e11e7d23772bd57fc45db6e47bd11127c521a17e5ab279b9552fa2"
+  },
+  "equivalent_commit_after_message_rewrite": "2e4aad0cad275489e556622e3a4b2888c07346dd"
 }
