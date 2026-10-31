@@ -496,8 +496,18 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
         WM_GETMINMAXINFO => {
             let m = &mut *(l as *mut MINMAXINFO);
             m.ptMinTrackSize.x = 1120;
-            m.ptMinTrackSize.y = 760;
+            m.ptMinTrackSize.y = 720;
             0
+        }
+        WM_WINDOWPOSCHANGED => {
+            // DefWindowProc sends WM_SIZE synchronously. The dispatch guard skips
+            // that nested callback, so apply layout after the default handler returns.
+            let result = DefWindowProcW(hwnd, msg, w, l);
+            if IsIconic(hwnd) == 0 {
+                layout(app);
+                redraw(app.window);
+            }
+            result
         }
         WM_SIZE => {
             if w as u32 != SIZE_MINIMIZED {
@@ -717,9 +727,9 @@ unsafe fn build(app: &mut App) {
     }
     for (i, title) in [
         "Accueil",
-        "Instances",
-        "Mods",
-        "Console",
+        "Mes instances",
+        "Mods et packs",
+        "Journaux",
         "Comptes",
         "Parametres",
         "Importer / Exporter",
@@ -727,7 +737,19 @@ unsafe fn build(app: &mut App) {
     .iter()
     .enumerate()
     {
-        button(app, 100 + i as u32, title, 20, 164 + i as i32 * 48, 208, 40);
+        button(
+            app,
+            100 + i as u32,
+            title,
+            20,
+            if i < 3 {
+                164 + i as i32 * 48
+            } else {
+                364 + (i as i32 - 3) * 48
+            },
+            208,
+            40,
+        );
     }
     let names = app
         .instances
@@ -753,26 +775,48 @@ unsafe fn build(app: &mut App) {
         .iter()
         .position(|a| a.id == app.settings.selected_account)
         .unwrap_or(0);
-    combo(
-        app,
-        191,
-        &accounts.iter().map(String::as_str).collect::<Vec<_>>(),
-        account,
-        820,
-        52,
-        320,
-    );
+    if accounts.is_empty() {
+        button(
+            app,
+            1041,
+            if app.auth_job.is_some() {
+                "Connexion en cours..."
+            } else {
+                "Se connecter avec Microsoft"
+            },
+            820,
+            52,
+            320,
+            36,
+        );
+        EnableWindow(
+            GetDlgItem(app.window, 1041),
+            (!app.microsoft_client_id.is_empty() && app.auth_job.is_none()) as _,
+        );
+    } else {
+        combo(
+            app,
+            191,
+            &accounts.iter().map(String::as_str).collect::<Vec<_>>(),
+            account,
+            820,
+            52,
+            320,
+        );
+    }
     let selected = app.selected();
     match app.page {
         0 => {
-            label(app, "TA PROCHAINE PARTIE COMMENCE ICI", 284, 116, 700);
+            label(app, "PRET POUR TA PROCHAINE PARTIE ?", 284, 116, 700);
             button(
                 app,
-                1,
+                if selected.is_some() { 1 } else { 1070 },
                 if app.running {
-                    "ARRETER LE JEU"
+                    "Arreter le jeu"
                 } else if app.pending_play.is_some() {
-                    "JOUER DES QUE PRET"
+                    "Lancement en attente..."
+                } else if selected.is_none() {
+                    "Creer ma premiere instance"
                 } else {
                     "JOUER"
                 },
@@ -781,30 +825,60 @@ unsafe fn build(app: &mut App) {
                 320,
                 48,
             );
-            label(app, "CREE TON INSTANCE, PUIS JOUE", 284, 402, 760);
-            label(
-                app,
-                "Les fichiers se preparent automatiquement a la creation ou a l'import de l'instance.",
-                284,
-                438,
-                830,
-            );
-            label(
-                app,
-                "Clique sur Jouer : le lancement attend la fin des telechargements si necessaire.",
-                284,
-                470,
-                830,
-            );
-            label(
-                app,
-                "Java / Fabric reste disponible pour les mods Java.",
-                284,
-                502,
-                830,
-            );
-            button(app, 1010, "Mes instances", 284, 558, 350, 40);
-            button(app, 1040, "Mon compte Microsoft", 650, 558, 350, 40);
+            if let Some(instance) = &selected {
+                let title = control(
+                    app,
+                    802,
+                    "STATIC",
+                    &instance.name,
+                    windows_sys::Win32::System::SystemServices::SS_ENDELLIPSIS,
+                    [284, 402, 850, 28],
+                    false,
+                );
+                SendMessageW(title, WM_SETFONT, app.bold as _, 1);
+                label(
+                    app,
+                    &format!(
+                        "Minecraft {}  /  {}",
+                        instance.minecraft,
+                        match instance.engine {
+                            Engine::Native => "Rusted natif",
+                            Engine::Java => "Java",
+                            Engine::Fabric => "Fabric",
+                        }
+                    ),
+                    284,
+                    434,
+                    850,
+                );
+                label(
+                    app,
+                    "Les fichiers se preparent automatiquement. Tu peux deja cliquer sur Jouer.",
+                    284,
+                    474,
+                    850,
+                );
+                button(app, 1010, "Gerer mes instances", 284, 520, 268, 84);
+                button(app, 1020, "Ajouter des mods", 572, 520, 268, 84);
+                button(app, 1060, "Importer un modpack", 860, 520, 274, 84);
+            } else {
+                label(app, "TON MINECRAFT, A TA FACON", 284, 412, 850);
+                label(
+                    app,
+                    "Une instance regroupe une version de Minecraft, tes mods et tes mondes.",
+                    284,
+                    450,
+                    850,
+                );
+                label(
+                    app,
+                    "Cree la tienne ou importe un pack : les telechargements demarrent tout seuls.",
+                    284,
+                    482,
+                    850,
+                );
+                button(app, 1060, "Importer un modpack existant", 284, 546, 400, 48);
+            }
         }
         1 => {
             label(app, "TES INSTANCES", 284, 116, 400);
@@ -813,14 +887,38 @@ unsafe fn build(app: &mut App) {
                 .iter()
                 .map(|i| format!("{}   /   {}", i.name, i.minecraft))
                 .collect::<Vec<_>>();
-            list(app, 200, &names, app.selected, [284, 155, 390, 340]);
-            button(app, 224, "Dupliquer", 284, 512, 185, 38);
-            button(app, 225, "Corbeille", 485, 512, 189, 38);
-            button(app, 226, "Ouvrir le dossier", 284, 566, 390, 38);
-            label(app, "CREER UNE INSTANCE", 712, 152, 400);
-            label(app, "Nom", 712, 198, 400);
-            edit(app, 210, &app.draft_name.clone(), 712, 226, 400);
-            label(app, "Moteur", 712, 269, 400);
+            button(app, 1070, "+ Nouvelle instance", 714, 110, 240, 40);
+            button(app, 1060, "Importer un pack", 970, 110, 164, 40);
+            if names.is_empty() {
+                label(
+                    app,
+                    "Ta bibliotheque est vide. Cree ta premiere instance pour commencer.",
+                    304,
+                    250,
+                    800,
+                );
+                button(app, 1071, "Creer ma premiere instance", 304, 302, 360, 48);
+            } else {
+                list(app, 200, &names, app.selected, [284, 174, 850, 340]);
+                button(app, 1020, "Gerer les mods", 284, 538, 200, 40);
+                button(app, 226, "Ouvrir le dossier", 500, 538, 200, 40);
+                button(app, 224, "Dupliquer", 716, 538, 200, 40);
+                button(app, 225, "Mettre a la corbeille", 932, 538, 202, 40);
+                label(
+                    app,
+                    "Selectionne une instance, puis clique sur Jouer en bas a droite.",
+                    284,
+                    612,
+                    850,
+                );
+            }
+        }
+        7 => {
+            button(app, 1010, "< Mes instances", 284, 112, 220, 36);
+            label(app, "CREER UNE INSTANCE", 520, 152, 400);
+            label(app, "Nom", 520, 198, 400);
+            edit(app, 210, &app.draft_name.clone(), 520, 226, 400);
+            label(app, "Comment veux-tu jouer ?", 520, 269, 400);
             combo(
                 app,
                 211,
@@ -830,11 +928,11 @@ unsafe fn build(app: &mut App) {
                     Engine::Java => 1,
                     Engine::Fabric => 2,
                 },
-                712,
+                520,
                 297,
                 400,
             );
-            label(app, "Version Minecraft sans obfuscation", 712, 343, 400);
+            label(app, "Version de Minecraft", 520, 343, 400);
             let versions = if app.draft_engine == Engine::Native {
                 vec!["26.3".to_owned()]
             } else {
@@ -852,7 +950,7 @@ unsafe fn build(app: &mut App) {
                 212,
                 &versions.iter().map(String::as_str).collect::<Vec<_>>(),
                 selected_version,
-                712,
+                520,
                 372,
                 400,
             );
@@ -861,7 +959,7 @@ unsafe fn build(app: &mut App) {
                 217,
                 "Snapshots, preversions et candidates",
                 app.settings.show_snapshots,
-                712,
+                520,
                 419,
                 400,
             );
@@ -873,7 +971,7 @@ unsafe fn build(app: &mut App) {
                 } else {
                     "Actualiser depuis Mojang"
                 },
-                712,
+                520,
                 458,
                 400,
                 36,
@@ -881,15 +979,23 @@ unsafe fn build(app: &mut App) {
             label(
                 app,
                 "Rusted natif : 26.3. Autres versions : Java / Fabric.",
-                712,
+                520,
                 516,
                 405,
             );
-            button(app, 213, "Creer l'instance", 712, 558, 400, 44);
+            button(
+                app,
+                213,
+                "Creer et preparer automatiquement",
+                520,
+                558,
+                400,
+                44,
+            );
             label(
                 app,
                 &format!("{} versions. {}", versions.len(), app.catalog_notice),
-                712,
+                520,
                 620,
                 410,
             );
@@ -901,8 +1007,8 @@ unsafe fn build(app: &mut App) {
             if app.mod_tab == 0 {
                 if let Some(i) = &selected {
                     if i.engine == Engine::Native {
-                        button(app, 334, "Importer un module", 756, 154, 224, 36);
-                        button(app, 335, "Voir les packs", 996, 154, 138, 36);
+                        button(app, 334, "Importer un JAR de ressources", 284, 606, 240, 36);
+                        button(app, 335, "Voir les packs", 540, 606, 200, 36);
                     }
                     let files = mods::files(&app.store, i).unwrap_or_default();
                     if files.is_empty() {
@@ -919,7 +1025,11 @@ unsafe fn build(app: &mut App) {
                         button(app, 331, "Activer / desactiver", 284, 566, 250, 40);
                         button(app, 332, "Retirer le mod", 550, 566, 250, 40);
                     }
-                    button(app, 333, "Ouvrir le dossier", 816, 566, 318, 40);
+                    if i.engine == Engine::Native {
+                        button(app, 333, "Ouvrir le dossier", 756, 606, 378, 36);
+                    } else {
+                        button(app, 333, "Ouvrir le dossier", 816, 566, 318, 40);
+                    }
                     label(
                         app,
                         if i.engine == Engine::Native {
@@ -928,9 +1038,18 @@ unsafe fn build(app: &mut App) {
                             "Les fichiers desactives restent dans l'instance et peuvent etre reactives."
                         },
                         284,
-                        624,
+                        650,
                         850,
                     );
+                } else {
+                    label(
+                        app,
+                        "Cree une instance pour choisir les mods de ta version de Minecraft.",
+                        304,
+                        250,
+                        800,
+                    );
+                    button(app, 1071, "Creer une instance", 304, 304, 320, 44);
                 }
             } else {
                 edit(app, 340, &app.mod_query.clone(), 284, 214, 650);
@@ -967,15 +1086,19 @@ unsafe fn build(app: &mut App) {
                     list(app, 350, &hits, 0, [284, 310, 850, 264]);
                 }
                 button(app, 351, "Installer le mod selectionne", 784, 596, 350, 44);
+                EnableWindow(
+                    GetDlgItem(app.window, 351),
+                    (!hits.is_empty() && !app.mod_searching && app.job.is_none()) as _,
+                );
                 label(
                     app,
                     if selected
                         .as_ref()
                         .is_some_and(|i| i.engine == Engine::Native)
                     {
-                        "Rusted natif : ressources/donnees sans code Java. Les autres mods exigent Java/Fabric."
+                        "Rusted : packs sans code Java uniquement."
                     } else {
-                        "Fabric / Java : dependances requises installees automatiquement."
+                        "Les dependances requises sont installees avec le mod."
                     },
                     284,
                     614,
@@ -1009,6 +1132,12 @@ unsafe fn build(app: &mut App) {
             list(app, 500, &names, account, [284, 160, 360, 225]);
             button(app, 502, "Utiliser ce compte", 284, 402, 360, 38);
             button(app, 503, "Deconnecter de Rusted", 284, 454, 360, 38);
+            for id in [502, 503] {
+                EnableWindow(GetDlgItem(app.window, id), (!accounts.is_empty()) as _);
+            }
+            if accounts.is_empty() {
+                label(app, "Aucun compte connecte pour le moment.", 300, 210, 330);
+            }
             label(app, "AJOUTER UN COMPTE", 680, 154, 450);
             label(
                 app,
@@ -1244,6 +1373,13 @@ unsafe fn redraw(window: HWND) {
         RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN,
     );
 }
+// Keep the footer reachable on laptop displays; compact only the content area.
+fn content_x(client: &RECT, x: i32) -> i32 {
+    248 + (x - 248) * (client.right - 248).min(936) / 936
+}
+fn content_y(client: &RECT, y: i32) -> i32 {
+    98 + (y - 98) * (client.bottom - 206).min(575) / 575
+}
 unsafe fn layout(app: &App) {
     let mut r: RECT = std::mem::zeroed();
     GetClientRect(app.window, &mut r);
@@ -1256,6 +1392,16 @@ unsafe fn layout(app: &App) {
                 v[1] += r.bottom - 91;
                 if v[0] >= 734 {
                     v[0] += r.right - 1184;
+                } else {
+                    v[2] = content_x(&r, v[0] + v[2]) - content_x(&r, v[0]);
+                    v[0] = content_x(&r, v[0]);
+                }
+            } else if v[0] >= 248 {
+                v[2] = content_x(&r, v[0] + v[2]) - content_x(&r, v[0]);
+                v[0] = content_x(&r, v[0]);
+                if v[1] >= 98 {
+                    v[3] = content_y(&r, v[1] + v[3]) - content_y(&r, v[1]);
+                    v[1] = content_y(&r, v[1]);
                 }
             }
             (c.window, v)
@@ -1294,7 +1440,7 @@ unsafe fn close_login_popup(app: &mut App) {
     app.login_popup = std::ptr::null_mut();
 }
 unsafe fn remember_draft(app: &mut App) {
-    if app.page == 1 && !GetDlgItem(app.window, 210).is_null() {
+    if app.page == 7 && !GetDlgItem(app.window, 210).is_null() {
         app.draft_name = text(app, 210);
         app.draft_version = text(app, 212);
         app.draft_engine = match chosen(app, 211) {
@@ -1338,6 +1484,15 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
     }
     if id == 1010 {
         app.page = 1;
+        build(app);
+        return;
+    }
+    if matches!(id, 1070 | 1071 | 1020 | 1060) {
+        app.page = match id {
+            1020 => 2,
+            1060 => 6,
+            _ => 7,
+        };
         build(app);
         return;
     }
@@ -1435,6 +1590,7 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
                 app.settings.selected = i.id.clone();
                 app.store.save_settings(&app.settings)?;
                 app.refresh();
+                app.page = 0;
                 let store = app.store.clone();
                 let runtime = app.runtime.clone();
                 app.start(
@@ -1599,7 +1755,7 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
                 app.logs.clear();
                 SetWindowTextW(GetDlgItem(app.window, 400), wide("").as_ptr());
             }
-            501 => {
+            501 | 1041 => {
                 if app.microsoft_client_id.is_empty() {
                     app.account_notice = auth::UNAVAILABLE.into();
                     build(app);
@@ -1794,7 +1950,7 @@ unsafe fn tick(app: &mut App) {
                 app.version_catalog = catalogue;
                 app.catalog_busy = false;
                 app.catalog_notice = "Catalogue Mojang a jour".into();
-                rebuild |= app.page == 1;
+                rebuild |= app.page == 7;
             }
             Event::VersionCatalogFailed(error) => {
                 app.catalog_busy = false;
@@ -1803,7 +1959,7 @@ unsafe fn tick(app: &mut App) {
                     "[Rusted] {error} Le catalogue existant reste disponible."
                 ));
                 app.log_dirty = true;
-                rebuild |= app.page == 1;
+                rebuild |= app.page == 7;
             }
             Event::SearchResults { request, hits } => {
                 if request == app.search_generation {
@@ -2091,7 +2247,11 @@ unsafe extern "system" fn choice_paint(
             dc,
             font,
             if title.is_empty() {
-                "Choisir..."
+                if GetDlgCtrlID(hwnd) == 190 {
+                    "Aucune instance"
+                } else {
+                    "Choisir..."
+                }
             } else {
                 &title
             },
@@ -2288,9 +2448,12 @@ unsafe fn draw_selection(app: &App, d: &DRAWITEMSTRUCT) {
 unsafe fn draw_button(app: &App, d: &DRAWITEMSTRUCT) {
     let id = d.CtlID;
     let active = ((100..=106).contains(&id) && app.page == id - 100)
+        || (id == 101 && app.page == 7)
         || (id == 320 && app.mod_tab == 0)
         || (id == 321 && app.mod_tab == 1);
-    let primary = id == 1 || id == 213 || id == 351 || id == 501;
+    let primary = matches!(id, 1 | 213 | 351 | 501 | 1070 | 1071);
+    let navigation = (100..=106).contains(&id);
+    let shortcut = app.page == 0 && matches!(id, 1010 | 1020 | 1060);
     let disabled = d.itemState & ODS_DISABLED != 0;
     let pressed = d.itemState & ODS_SELECTED != 0;
     let r = d.rcItem;
@@ -2298,46 +2461,95 @@ unsafe fn draw_button(app: &App, d: &DRAWITEMSTRUCT) {
     let h = r.bottom - r.top;
     let base = if disabled {
         rgb(53, 55, 55)
+    } else if navigation {
+        if active {
+            rgb(65, 44, 33)
+        } else {
+            rgb(20, 23, 25)
+        }
     } else if primary || active {
         rgb(165, 91, 59)
     } else {
         rgb(54, 61, 64)
     };
     fill(d.hDC, r, if pressed { rgb(121, 67, 44) } else { base });
-    rectangle(
-        d.hDC,
-        0,
-        0,
-        w,
-        2,
-        if disabled {
-            rgb(73, 75, 75)
-        } else if primary || active {
-            rgb(221, 153, 105)
-        } else {
-            rgb(87, 95, 96)
-        },
-    );
-    rectangle(d.hDC, 0, h - 4, w, 4, rgb(25, 29, 31));
+    if !navigation {
+        rectangle(
+            d.hDC,
+            0,
+            0,
+            w,
+            2,
+            if disabled {
+                rgb(73, 75, 75)
+            } else if primary || active {
+                rgb(221, 153, 105)
+            } else {
+                rgb(87, 95, 96)
+            },
+        );
+        rectangle(d.hDC, 0, h - 4, w, 4, rgb(25, 29, 31));
+    }
     if active {
         rectangle(d.hDC, 0, 0, 4, h, rgb(239, 184, 124));
     }
     let s = text(app, id);
     line_text(
         d.hDC,
-        if primary { app.bold } else { app.font },
+        if primary || shortcut {
+            app.bold
+        } else {
+            app.font
+        },
         &s,
-        10,
-        if pressed { 2 } else { 0 },
-        w - 20,
-        h - 3,
+        if navigation { 22 } else { 16 },
+        if shortcut {
+            12
+        } else if pressed {
+            2
+        } else {
+            0
+        },
+        w - 32,
+        if shortcut { 30 } else { h - 3 },
         if disabled {
             rgb(155, 155, 150)
         } else {
             rgb(248, 236, 214)
         },
-        DT_CENTER | DT_VCENTER | DT_SINGLELINE,
+        (if navigation || shortcut {
+            DT_LEFT
+        } else {
+            DT_CENTER
+        }) | DT_VCENTER
+            | DT_SINGLELINE,
     );
+    if shortcut {
+        line_text(
+            d.hDC,
+            app.small,
+            match id {
+                1010 => "Versions, reglages et mondes",
+                1020 => "Decouvrir et gerer mes mods",
+                _ => "Packs Prism ou Modrinth",
+            },
+            16,
+            h - 32,
+            w - 32,
+            24,
+            rgb(188, 182, 166),
+            DT_LEFT | DT_SINGLELINE,
+        );
+    }
+    if d.itemState & ODS_FOCUS != 0 {
+        let focus = RECT {
+            left: 5,
+            top: 5,
+            right: w - 5,
+            bottom: h - 7,
+        };
+        DrawFocusRect(d.hDC, &focus);
+    }
 }
 unsafe fn pixel(dc: HDC, text: &str, x: i32, y: i32, scale: i32, color: u32) {
     let mut px = x;
@@ -2413,8 +2625,30 @@ unsafe fn paint(app: &App) {
     line_text(
         dc,
         app.small,
+        "JOUER",
+        42,
+        139,
+        180,
+        20,
+        rgb(150, 132, 112),
+        DT_LEFT,
+    );
+    line_text(
+        dc,
+        app.small,
+        "GERER",
+        42,
+        334,
+        180,
+        20,
+        rgb(150, 132, 112),
+        DT_LEFT,
+    );
+    line_text(
+        dc,
+        app.small,
         "INSTANCE ACTIVE",
-        284,
+        content_x(&r, 284),
         25,
         350,
         24,
@@ -2425,7 +2659,7 @@ unsafe fn paint(app: &App) {
         dc,
         app.small,
         "COMPTE MINECRAFT",
-        820,
+        content_x(&r, 820),
         25,
         320,
         24,
@@ -2435,7 +2669,7 @@ unsafe fn paint(app: &App) {
     line_text(
         dc,
         app.small,
-        "Rusted Launcher 0.2.5",
+        concat!("Rusted Launcher ", env!("CARGO_PKG_VERSION")),
         27,
         r.bottom - 90,
         205,
@@ -2446,7 +2680,7 @@ unsafe fn paint(app: &App) {
     line_text(
         dc,
         app.small,
-        "Moteur natif 0.3.5",
+        "Moteur natif 0.3.6",
         27,
         r.bottom - 65,
         205,
@@ -2455,9 +2689,20 @@ unsafe fn paint(app: &App) {
         DT_LEFT,
     );
     if app.page == 0 {
+        let saved = SaveDC(dc);
+        SetMapMode(dc, MM_ANISOTROPIC);
+        SetWindowExtEx(dc, 936, 575, std::ptr::null_mut());
+        SetViewportExtEx(
+            dc,
+            (r.right - 248).min(936),
+            (r.bottom - 206).min(575),
+            std::ptr::null_mut(),
+        );
+        SetWindowOrgEx(dc, 248, 98, std::ptr::null_mut());
+        SetViewportOrgEx(dc, 248, 98, std::ptr::null_mut());
         let x = 284;
         let y = 150;
-        let w = r.right - 330;
+        let w = r.right.max(1184) - 330;
         rectangle(dc, x, y, w, 227, rgb(58, 46, 39));
         for col in 0..(w / 8) {
             let height = 32 + ((col * 17 + col * col * 3) % 63);
@@ -2493,6 +2738,7 @@ unsafe fn paint(app: &App) {
         pixel(dc, "RUSTED", 308, 179, 7, rgb(28, 23, 20));
         pixel(dc, "RUSTED", 306, 174, 7, rgb(229, 224, 208));
         pixel(dc, "LAUNCHER", 310, 238, 3, rgb(216, 143, 93));
+        RestoreDC(dc, saved);
     }
     if app.progress.1 > 0 && app.job.is_some() {
         let width = r.right - 248;

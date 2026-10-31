@@ -16,6 +16,7 @@ $report = [ordered]@{
     static_scan = 'not_run'
     startup_smoke = 'not_run'
     resize_smoke = 'not_run'
+    navigation_smoke = 'not_run'
     microsoft_code_popup = 'not_run'
     popup_diagnostics = $null
     startup_observation_seconds = 20
@@ -154,12 +155,21 @@ using System.Text;
 public static class RustedGuiSmoke {
     [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int w, int height, uint flags);
     [DllImport("user32.dll")] public static extern IntPtr GetDlgItem(IntPtr h, int id);
+    [StructLayout(LayoutKind.Sequential)] public struct Rect { public int Left, Top, Right, Bottom; }
+    [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out Rect rect);
+    public static bool ControlFits(IntPtr parent, int id) {
+        Rect outer, child;
+        var control = GetDlgItem(parent, id);
+        return control != IntPtr.Zero && GetWindowRect(parent, out outer) && GetWindowRect(control, out child)
+            && child.Left >= outer.Left && child.Top >= outer.Top && child.Right <= outer.Right && child.Bottom <= outer.Bottom;
+    }
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] private static extern IntPtr FindWindow(string cls, string title);
     // PowerShell converts $null to an empty .NET string. Construct the native
     // null title here so FindWindow does not search only for untitled windows.
     public static IntPtr MicrosoftPopup() { return FindWindow("RustedMicrosoftCodePopup", null); }
     [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
     [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
+    [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern bool SetWindowText(IntPtr h, string text);
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder text, int max);
     [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
     [DllImport("user32.dll")] public static extern bool IsWindowEnabled(IntPtr h);
@@ -197,18 +207,48 @@ public static class RustedGuiSmoke {
     if (-not $process.Responding -or [RustedGuiSmoke]::GetDlgItem($mainWindow, 1) -eq [IntPtr]::Zero) {
         throw 'Launcher did not remain responsive with its Play action after resizing.'
     }
-    $report.resize_smoke = 'passed'
-    # Request a genuine Microsoft code, but never enter a user account or log the code.
-    # Exercise actual button notifications (BM_CLICK), not synthetic menu commands.
-    # The dialog message manager can consume queued WM_COMMAND messages on Windows.
-    $loginButton = [IntPtr]::Zero
-    for ($attempt = 0; $attempt -lt 40; $attempt++) {
-        [void][RustedGuiSmoke]::PostMessage([RustedGuiSmoke]::GetDlgItem($mainWindow, 104), 0xF5, [IntPtr]::Zero, [IntPtr]::Zero)
-        Start-Sleep -Milliseconds 250
-        $loginButton = [RustedGuiSmoke]::GetDlgItem($mainWindow, 501)
-        if ($loginButton -ne [IntPtr]::Zero) { break }
+    [void][RustedGuiSmoke]::SetWindowPos($mainWindow, [IntPtr]::Zero, 0, 0, 1120, 720, 0x16)
+    Start-Sleep -Milliseconds 300
+    foreach ($Id in @(1, 800, 1010, 1020, 1060, 1041)) {
+        if (-not [RustedGuiSmoke]::ControlFits($mainWindow, $Id)) { throw "Home control $Id clipped in the compact window." }
     }
-    if ($loginButton -eq [IntPtr]::Zero) { throw 'Accounts navigation did not display the Microsoft sign-in button.' }
+    $report.resize_smoke = 'passed; compact controls remain inside window'
+    function Invoke-LauncherButton([int]$Id, [int]$ExpectedControl) {
+        $handle = [RustedGuiSmoke]::GetDlgItem($mainWindow, $Id)
+        if ($handle -eq [IntPtr]::Zero) { throw "Missing launcher action $Id" }
+        [void][RustedGuiSmoke]::PostMessage($handle, 0xF5, [IntPtr]::Zero, [IntPtr]::Zero)
+        for ($attempt = 0; $attempt -lt 40; $attempt++) {
+            Start-Sleep -Milliseconds 100
+            if ([RustedGuiSmoke]::GetDlgItem($mainWindow, $ExpectedControl) -ne [IntPtr]::Zero) { return }
+        }
+        throw "Launcher action $Id did not display control $ExpectedControl"
+    }
+    Invoke-LauncherButton 101 200
+    if ([RustedGuiSmoke]::GetDlgItem($mainWindow, 210) -ne [IntPtr]::Zero) { throw 'Creation form still crowds the instance library.' }
+    Invoke-LauncherButton 1070 210
+    foreach ($Id in @(210, 212, 213, 800, 1)) {
+        if (-not [RustedGuiSmoke]::ControlFits($mainWindow, $Id)) { throw "Creation control $Id clipped in the compact window." }
+    }
+    [void][RustedGuiSmoke]::SetWindowText([RustedGuiSmoke]::GetDlgItem($mainWindow, 210), 'Navigation test draft')
+    Invoke-LauncherButton 1010 200
+    Invoke-LauncherButton 1070 210
+    $draft = New-Object Text.StringBuilder 100
+    [void][RustedGuiSmoke]::GetWindowText([RustedGuiSmoke]::GetDlgItem($mainWindow, 210), $draft, 100)
+    if ($draft.ToString() -ne 'Navigation test draft') { throw 'Instance creation draft was lost during navigation.' }
+    Invoke-LauncherButton 102 321
+    Invoke-LauncherButton 321 351
+    if ([RustedGuiSmoke]::IsWindowEnabled([RustedGuiSmoke]::GetDlgItem($mainWindow, 351))) { throw 'Install action enabled without a mod result.' }
+    Invoke-LauncherButton 104 501
+    foreach ($Id in @(502, 503)) {
+        if ([RustedGuiSmoke]::IsWindowEnabled([RustedGuiSmoke]::GetDlgItem($mainWindow, $Id))) { throw 'Account action enabled without an account.' }
+    }
+    Invoke-LauncherButton 100 1010
+    $report.navigation_smoke = 'passed; separate creation, preserved draft, unavailable actions disabled'
+    [void][RustedGuiSmoke]::SetWindowPos($mainWindow, [IntPtr]::Zero, 0, 0, 1200, 820, 0x16)
+    # Request a genuine Microsoft code directly from Home, without an account.
+    # Actual button notifications exercise the same route as a player click.
+    $loginButton = [RustedGuiSmoke]::GetDlgItem($mainWindow, 1041)
+    if ($loginButton -eq [IntPtr]::Zero -or -not [RustedGuiSmoke]::IsWindowEnabled($loginButton)) { throw 'Home Microsoft sign-in action unavailable.' }
     [void][RustedGuiSmoke]::PostMessage($loginButton, 0xF5, [IntPtr]::Zero, [IntPtr]::Zero)
     $popup = [IntPtr]::Zero
     $popupReady = $false

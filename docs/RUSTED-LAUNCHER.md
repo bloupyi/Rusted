@@ -1,4 +1,4 @@
-# Rusted Launcher 0.2.5 — Windows x64
+# Rusted Launcher 0.2.6 — Windows x64
 
 La connexion Microsoft est fournie automatiquement, avec le même client public
 Live que la bibliothèque utilisée par FaultlineLauncher. Aucun ID d’application
@@ -6,10 +6,24 @@ ni inscription Azure n’est demandé. La connexion ouvre le navigateur Microsof
 copie le code à coller si nécessaire, puis attend la validation. L’intégration est
 écrite en Rust ; Electron n’est pas embarqué. Voir [le fonctionnement](MICROSOFT-SETUP.md).
 
-Extraire **tout** `Rusted-Launcher-Windows-0.2.5.zip`, puis ouvrir
+Extraire **tout** `Rusted-Launcher-Windows-0.2.6.zip`, puis ouvrir
 **Rusted Launcher.exe**. Garder le sous-dossier `rusted` à côté de l'exécutable.
 Il contient le moteur Rusted 0.3.6 et ses outils. Aucun terminal, Prism ni
 Configurer-Rusted.exe n'est nécessaire pour utiliser ce lanceur.
+
+## Nouveautés 0.2.6 : navigation simplifiée
+
+L'accueil présente l'instance active et trois accès directs : les instances, les mods
+et l'import de packs. « Mes instances » est une bibliothèque ; « Nouvelle instance »
+ouvre un formulaire séparé. Après la création, le lanceur revient à l'accueil et
+prépare les fichiers automatiquement. Le nom saisi est conservé si tu changes de page.
+
+Sans compte connecté, le bouton Microsoft est accessible en haut de chaque page.
+Les actions indisponibles sont désactivées : installer un mod sans résultat, utiliser
+ou retirer un compte absent. Les commandes de ressources natives sont séparées des
+onglets de découverte. Les boutons indiquent aussi le focus au clavier.
+La disposition se compacte jusqu’à 1120 × 720 ; les contrôles suivent le
+redimensionnement, y compris lorsque Windows transmet la taille dans un événement imbriqué.
 
 ## Nouveautés 0.2.5 / moteur 0.3.6
 

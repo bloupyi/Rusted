@@ -1,0 +1,33 @@
+{
+  "version": "0.2.6",
+  "environment": "Windows GNU build under Wine; not a substitute for real Windows validation",
+  "workspace_tests_passed": 40,
+  "workspace_tests_ignored": 1,
+  "windows_target_clippy": "passed",
+  "visual_review": [
+    "home",
+    "instances",
+    "create",
+    "mods",
+    "discover",
+    "accounts",
+    "compact home",
+    "compact create",
+    "compact mods"
+  ],
+  "navigation": {
+    "separate_creation_form": true,
+    "draft_preserved": true,
+    "empty_mod_install_disabled": true,
+    "empty_account_actions_disabled": true
+  },
+  "resize": {
+    "iterations": 180,
+    "pixels_changed_after_forced_redraw": 0,
+    "compact_window": [
+      1120,
+      720
+    ]
+  },
+  "original_icon_unchanged": true
+}

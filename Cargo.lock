@@ -558,7 +558,7 @@ dependencies = [
 
 [[package]]
 name = "rusted-launcher"
-version = "0.2.5"
+version = "0.2.6"
 dependencies = [
  "fs2",
  "rusted-launch",

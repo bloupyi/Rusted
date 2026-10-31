@@ -13,7 +13,7 @@ from build_launcher_entry import build as build_entry
 from package_horizon_native import pe_amd64
 from rusted import ROOT, source_hash
 
-VERSION = "0.2.5"
+VERSION = "0.2.6"
 
 
 def digest(body):
