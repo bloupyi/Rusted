@@ -77,3 +77,17 @@ pub fn title_logo() -> Option<(u32, u32, Vec<u8>)> {
     }
     Some((right - left, bottom - top, cropped))
 }
+
+/// Native packages, including explicit ports carried by Java loader archives.
+/// Only the current JAR inventory participates; disabling/removing a JAR removes its port.
+pub fn native_mod_paths(directory: &std::path::Path) -> Vec<std::path::PathBuf> {
+    let mut paths = horizon_mods::find(directory);
+    match rusted_platform::native::discover(&mods_directory(), &logging_cache()) {
+        Ok(ports) => paths.extend(ports),
+        Err(error) => log::warn!("Rusted: native companions not loaded: {error}"),
+    }
+    paths
+}
+fn logging_cache() -> std::path::PathBuf {
+    crate::logging::game_home().join(".rusted-cache/native-ports")
+}

@@ -2,6 +2,7 @@
 
 | Type | Rusted natif | Java / Fabric |
 | --- | --- | --- |
+| JAR avec port natif Rust/WASM explicite | Expérimental : code du port chargé par le runtime natif ; activation dans Options > Mods | Code Java du loader original |
 | Mods natifs `.hmod` | API WASM ; activation et options dans le jeu | Sans objet |
 | Fabric et Quilt sans code | Ressources et données prises en charge, chargées directement depuis `mods/*.jar` | Chargeur Java classique |
 | Forge et NeoForge `lowcodefml` sans dépendances | Même chargement natif des ressources et données prises en charge | Chargeurs non intégrés au lanceur |
@@ -31,3 +32,7 @@ et un travail sur leurs contrats de rendu, de monde et de threads. Aucun code so
 projets n'a été lu ou réutilisé.
 
 Pour les fichiers de shaderpacks, voir [le parcours natif GLSL/WGSL](NATIVE-SHADERPACKS.md).
+
+Le mécanisme expérimental des ports associés aux JAR est décrit dans
+[NATIVE-MOD-PORTS.md](NATIVE-MOD-PORTS.md). Il ne fournit pas l’exécution des JAR
+Java existants sans port. Sodium, Iris et Distant Horizons restent à porter.

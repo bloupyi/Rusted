@@ -228,7 +228,7 @@ pub fn install(store: &Store, instance: &mut Instance, project: &str, task: &Tas
     download::queue(jobs, 4, task)?;
     if instance.engine == Engine::Native {
         for (_, name, _, _) in &records {
-            rusted_launch::platform::resources::inspect(&staging.path().join(name))
+            rusted_launch::platform::native_id(&staging.path().join(name))
                 .map_err(|error| format!("{name}: {error}. Ce mod exige Java/Fabric ou un portage natif ; le moteur de l'instance reste Rusted."))?;
         }
     }

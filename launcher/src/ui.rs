@@ -1011,7 +1011,7 @@ unsafe fn build(app: &mut App) {
             if app.mod_tab == 0 {
                 if let Some(i) = &selected {
                     if i.engine == Engine::Native {
-                        button(app, 334, "Importer des ressources", 284, 606, 240, 36);
+                        button(app, 334, "Importer un mod natif", 284, 606, 240, 36);
                         button(app, 335, "Voir les packs", 540, 606, 200, 36);
                     }
                     let files = mods::files(&app.store, i).unwrap_or_default();
@@ -1690,7 +1690,7 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
                 if let Some(path) = file_dialog(
                     app.window,
                     false,
-                    "Importer des ressources ou donnees sans code Java",
+                    "Importer un mod compatible Rusted",
                     "Modules Fabric, Quilt, Forge, NeoForge\0*.jar\0\0",
                 ) {
                     let store = app.store.clone();

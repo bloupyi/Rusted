@@ -1,6 +1,15 @@
 //! Rusted's launcher integration. Reading metadata never executes Java or loads a mod.
 use serde::Serialize;
+pub mod native;
 pub mod resources;
+
+/// The native replacement, when supplied, supersedes Java entrypoints and dependencies.
+pub fn native_id(path: &std::path::Path) -> Result<String, String> {
+    match native::inspect(path)? {
+        Some(port) => Ok(port.id),
+        None => resources::inspect(path).map(|m| m.id),
+    }
+}
 use std::{
     fs,
     io::Read,
@@ -83,6 +92,22 @@ fn inspect(path: &Path) -> Result<JavaMod, String> {
                     .collect();
             }
         }
+    }
+    if let Some(port) = native::inspect(path)? {
+        return Ok(JavaMod {
+            id: Some(port.id),
+            file: path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .into(),
+            name: port.name,
+            loaders,
+            native_compatible: true,
+            diagnostic:
+                "Native WASM companion supplied; enable in Options > Mods. Java is not executed."
+                    .into(),
+        });
     }
     let compatible = resources::inspect(path);
     if let Ok(resource_mod) = &compatible {
