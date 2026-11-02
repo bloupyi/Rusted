@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "verified_at": "2026-11-02T09:54:06.4806217Z",
+  "archive_sha256": "f5b3e86964b80487d488c09d0c0ab4fe38baab5526247aa739f9fdb2f9dd99bd",
+  "defender": {
+    "service_enabled": true,
+    "antivirus_enabled": true,
+    "realtime_enabled": true,
+    "behavior_enabled": true,
+    "engine_version": "1.1.26100.4",
+    "signature_version": "1.463.84.0",
+    "signature_updated": "2026-11-01T22:25:03.0000000+00:00"
+  },
+  "executables": [
+    {
+      "file": "Rusted Launcher.exe",
+      "sha256": "ee2d2a5c650bc0648022e61b9bef41423f0c3da5aa1b4fcbabd643c020280de2",
+      "authenticode": "NotSigned"
+    },
+    {
+      "file": "rusted\\rusted-launch.exe",
+      "sha256": "29ddfc851d3f210fbaa554e868bdc9724ecf27414118df95eee55193602be3ce",
+      "authenticode": "NotSigned"
+    },
+    {
+      "file": "rusted\\runtime\\rusted-prepare.exe",
+      "sha256": "0490f52e1f62808784e42994ca85341f2d5fe2236e918e612ee19e5627a298da",
+      "authenticode": "NotSigned"
+    },
+    {
+      "file": "rusted\\runtime\\rusted.exe",
+      "sha256": "0b711b00bc1724378590d76deb70ef474da771ff434c68b2fba8f35c2bd38e7a",
+      "authenticode": "NotSigned"
+    }
+  ],
+  "static_scan": "passed",
+  "startup_smoke": "passed",
+  "startup_journal": "passed; process and window recorded",
+  "resize_smoke": "passed; compact controls remain inside window",
+  "navigation_smoke": "passed; separate creation, preserved draft, unavailable actions disabled",
+  "microsoft_code_popup": "passed; real device request, code displayed, cancelled without account",
+  "popup_diagnostics": {
+    "window_found": true,
+    "visible": true,
+    "title": "Connexion Microsoft - Rusted",
+    "code_present": true,
+    "home_visible": true,
+    "account_notice": "",
+    "account_code_controls": false,
+    "process_windows": [
+      "RustedMicrosoftCodePopup:visible=True",
+      "RustedLauncherOriginal:visible=True",
+      "ComboLBox:visible=False",
+      "MSCTFIME UI:visible=False",
+      "IME:visible=False"
+    ],
+    "closed_after_cancel": true,
+    "sign_in_available_after_cancel": true,
+    "account_files_after_cancel": 0
+  },
+  "startup_observation_seconds": 20,
+  "detections": [],
+  "limitations": [
+    "Startup observation only; no account, gameplay or full preparation validation.",
+    "A clean result does not establish that the reported detection is a false positive."
+  ],
+  "error": null,
+  "error_location": null,
+  "stage": "complete"
+}

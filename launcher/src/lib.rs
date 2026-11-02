@@ -8,6 +8,7 @@ pub mod launch;
 pub mod model;
 pub mod mods;
 pub mod packs;
+pub mod startup;
 pub type Result<T> = std::result::Result<T, String>;
 use std::sync::{
     atomic::{AtomicBool, Ordering},

@@ -15,7 +15,11 @@ vers le registre Horizon sont désactivés pour ce produit dérivé.
 
 ## Rusted Launcher — Windows
 
-La version **0.2.6** simplifie l'interface cuivre : accueil avec accès directs,
+La version **0.2.7** retire la dépendance du launcher à Visual C++ installé
+séparément et ajoute un journal de démarrage dans `logs/startup.log` du profil.
+L'avertissement d'éditeur inconnu reste présent : l'exécutable n'est pas signé.
+
+L'interface simplifie l'interface cuivre : accueil avec accès directs,
 bibliothèque d'instances séparée du formulaire de création, brouillon conservé,
 commandes indisponibles désactivées et navigation clavier sans arrêt sur les textes.
 La disposition se compacte jusqu'à 1120 × 720 et les contrôles suivent les
@@ -26,11 +30,11 @@ l’accueil, avec Copier, Ouvrir Microsoft et Annuler. Aucun ID ni inscription A
 n’est demandé au joueur. La connexion complète avec un vrai compte reste à valider.
 Voir [le fonctionnement](docs/MICROSOFT-SETUP.md).
 
-**[Archives Windows validées — Rusted Launcher 0.2.6](https://github.com/bloupyi/Rusted/actions/runs/41195621144/artifacts/13040817089)**
+**[Archives Windows validées — Rusted Launcher 0.2.7](https://github.com/bloupyi/Rusted/actions/runs/41423349311/artifacts/13132045319)**
 (téléchargement Actions avec connexion GitHub). L’artefact contient le ZIP complet
-`Rusted-Launcher-Windows-0.2.6.zip`, le moteur **0.3.6**, les packs Prism/Modrinth,
+`Rusted-Launcher-Windows-0.2.7.zip`, le moteur **0.3.6**, les packs Prism/Modrinth,
 les sources et leurs empreintes. Extraire tout le ZIP du lanceur, puis ouvrir
-`Rusted Launcher.exe`. Le [rapport Windows](docs/results/rusted-launcher-0.2.6-windows.json)
+`Rusted Launcher.exe`. Le [rapport Windows](docs/results/rusted-launcher-0.2.7-windows.json)
 est conservé dans le dépôt. Il s’agit d’une version de développement.
 
 Les cinq jobs CI passent. Sur Windows réel, le scan Defender, le démarrage de
@@ -59,7 +63,7 @@ et l'export Prism. Aucun configurateur séparé ni terminal n'est requis.
 Depuis 0.2.1, l'accueil présente un unique bouton **Jouer**. La préparation reste
 automatique à la création ou à l'import de l'instance ; Jouer attend sa fin si
 nécessaire. Les vérifications Windows sont suivies dans
-[GitHub Actions](https://github.com/bloupyi/Rusted/actions/runs/41195621144).
+[GitHub Actions](https://github.com/bloupyi/Rusted/actions/runs/41423349311).
 
 La connexion utilise par défaut un client public Microsoft Live partagé ; une identité
 Entra personnalisée reste facultative : [guide Microsoft](docs/MICROSOFT-SETUP.md). Les préparations se font

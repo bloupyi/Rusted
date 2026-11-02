@@ -1,3 +1,21 @@
+# Validation Windows de Rusted Launcher 0.2.7
+
+Le launcher est compilé avec le runtime C intégré. La vérification des imports
+PE confirme l'absence de dépendance à `VCRUNTIME140.dll` ou à un autre runtime
+Visual C++ externe. Le ZIP complet a passé le scan Defender, le démarrage,
+le journal de fenêtre visible, les redimensionnements, les tests de navigation
+et l'affichage/annulation du code Microsoft.
+
+- [CI validée](https://github.com/bloupyi/Rusted/actions/runs/41423349311).
+- [Rapport exact](results/rusted-launcher-0.2.7-windows.json).
+- Archive SHA-256 : `f5b3e86964b80487d488c09d0c0ab4fe38baab5526247aa739f9fdb2f9dd99bd`.
+
+Les 1527 empreintes des fichiers et les 48 empreintes des sources du lanceur
+correspondent à l'archive récupérée. Ce correctif ne prouve pas la cause du
+problème sur le PC signalé. L'exécutable reste non signé : l'avertissement
+Windows d'éditeur inconnu est distinct du démarrage et n'est pas supprimé.
+Le contrôle ne couvre pas une connexion complète ou une partie.
+
 # Validation Windows de Rusted Launcher 0.2.6
 
 Le ZIP complet a passé le scan Defender avec les protections en temps réel et

@@ -15,6 +15,7 @@ $report = [ordered]@{
     executables = @()
     static_scan = 'not_run'
     startup_smoke = 'not_run'
+    startup_journal = 'not_run'
     resize_smoke = 'not_run'
     navigation_smoke = 'not_run'
     microsoft_code_popup = 'not_run'
@@ -148,6 +149,12 @@ try {
     $start.EnvironmentVariables.Remove('HORIZON_SESSION_FILE')
     $process = [Diagnostics.Process]::Start($start)
     if (-not $process.WaitForInputIdle(15000)) { throw 'The launcher did not reach an idle GUI.' }
+    $journal = Join-Path $data 'logs/startup.log'
+    if (-not (Test-Path -LiteralPath $journal) -or (Get-Content -LiteralPath $journal -Raw) -notmatch 'Fenetre principale affichee') {
+        throw 'Startup journal did not confirm a visible main window.'
+    }
+    $report.startup_journal = 'passed; process and window recorded'
+
     Add-Type -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;

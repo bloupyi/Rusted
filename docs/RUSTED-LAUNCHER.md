@@ -1,4 +1,4 @@
-# Rusted Launcher 0.2.6 — Windows x64
+# Rusted Launcher 0.2.7 — Windows x64
 
 La connexion Microsoft est fournie automatiquement, avec le même client public
 Live que la bibliothèque utilisée par FaultlineLauncher. Aucun ID d’application
@@ -6,10 +6,25 @@ ni inscription Azure n’est demandé. La connexion ouvre le navigateur Microsof
 copie le code à coller si nécessaire, puis attend la validation. L’intégration est
 écrite en Rust ; Electron n’est pas embarqué. Voir [le fonctionnement](MICROSOFT-SETUP.md).
 
-Extraire **tout** `Rusted-Launcher-Windows-0.2.6.zip`, puis ouvrir
+Extraire **tout** `Rusted-Launcher-Windows-0.2.7.zip`, puis ouvrir
 **Rusted Launcher.exe**. Garder le sous-dossier `rusted` à côté de l'exécutable.
 Il contient le moteur Rusted 0.3.6 et ses outils. Aucun terminal, Prism ni
 Configurer-Rusted.exe n'est nécessaire pour utiliser ce lanceur.
+
+## Nouveautés 0.2.7 : démarrage Windows
+
+Le launcher est compilé avec le runtime C intégré : il ne dépend plus de
+`VCRUNTIME140.dll` installé séparément. Les imports DLL sont vérifiés avant
+l'assemblage du ZIP. Cette modification concerne le launcher.
+
+Le journal `%APPDATA%\RustedLauncher\logs\startup.log` indique si le processus
+et la fenêtre ont démarré. Le démarrage précédent est conservé dans
+`startup.previous.log`. Un profil portable écrit ces journaux dans son propre
+dossier. Les journaux ne contiennent ni compte ni session. Une erreur de
+démarrage affiche le chemin du journal et renvoie un code d'échec.
+
+L'exécutable reste non signé : l'avertissement d'éditeur inconnu est distinct
+d'un échec de démarrage. Cette version ne contourne aucune protection Windows.
 
 ## Nouveautés 0.2.6 : navigation simplifiée
 
