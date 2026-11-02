@@ -171,23 +171,7 @@ pub fn error_box(s: &str) {
     }
 }
 pub fn run() -> Result<()> {
-    let mut args = std::env::args_os().skip(1);
-    let mut home = None;
-    while let Some(a) = args.next() {
-        if a == "--data-dir" {
-            home = args.next().map(PathBuf::from)
-        } else {
-            return Err(
-                "Argument inconnu. Utiliser --data-dir DOSSIER pour un profil portable.".into(),
-            );
-        }
-    }
-    let root = home
-        .or_else(|| std::env::var_os("RUSTED_LAUNCHER_HOME").map(PathBuf::from))
-        .unwrap_or_else(|| {
-            PathBuf::from(std::env::var_os("APPDATA").unwrap_or_else(|| OsString::from(".")))
-                .join("RustedLauncher")
-        });
+    let root = rusted_launcher::startup::data_root(std::env::args_os().skip(1))?;
     let store = Store::open(root)?;
     use fs2::FileExt;
     let _single_instance = std::fs::OpenOptions::new()
@@ -383,6 +367,7 @@ pub fn run() -> Result<()> {
         DwmSetWindowAttribute(hwnd, 20, (&dark as *const i32).cast(), 4);
         ShowWindow(hwnd, SW_SHOW);
         UpdateWindow(hwnd);
+        rusted_launcher::startup::record("Fenetre principale affichee.");
         let mut msg: MSG = std::mem::zeroed();
         while GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) > 0 {
             let popup = (*raw).login_popup;

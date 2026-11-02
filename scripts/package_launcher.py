@@ -10,10 +10,11 @@ import zipfile
 import uuid
 
 from build_launcher_entry import build as build_entry
+from check_launcher_runtime import verify as verify_launcher_runtime
 from package_horizon_native import pe_amd64
 from rusted import ROOT, source_hash
 
-VERSION = "0.2.6"
+VERSION = "0.2.7"
 
 
 def digest(body):
@@ -69,6 +70,7 @@ def package(args):
             raise ValueError("Private runtime member: " + name)
         if name.endswith(".jar") and name != "bootstrap/rusted-bootstrap.jar":
             raise ValueError("Third-party Java archive in runtime: " + name)
+    verify_launcher_runtime(args.launcher)
     launcher = pe_amd64(args.launcher)
     pe = int.from_bytes(launcher[60:64], "little")
     if int.from_bytes(launcher[pe + 24 + 68:pe + 24 + 70], "little") != 2:
