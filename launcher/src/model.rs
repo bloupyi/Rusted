@@ -35,6 +35,7 @@ pub struct Instance {
     pub graphics_api: String,
     pub render_distance: u32,
     pub auto_prepare: bool,
+    pub experimental_java_mods: bool,
     pub last_played: u64,
     pub play_seconds: u64,
 }
@@ -57,6 +58,7 @@ impl Default for Instance {
             graphics_api: "auto".into(),
             render_distance: 8,
             auto_prepare: true,
+            experimental_java_mods: false,
             last_played: 0,
             play_seconds: 0,
         }

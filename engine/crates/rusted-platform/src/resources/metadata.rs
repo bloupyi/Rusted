@@ -2,7 +2,7 @@ use super::read_entry;
 use serde_json::{json, Value};
 use std::fs;
 
-fn version_matches(requirement: &Value) -> bool {
+pub(crate) fn version_matches(requirement: &Value) -> bool {
     if let Some(array) = requirement.as_array() {
         return array.iter().any(version_matches);
     }

@@ -91,3 +91,17 @@ pub fn native_mod_paths(directory: &std::path::Path) -> Vec<std::path::PathBuf> 
 fn logging_cache() -> std::path::PathBuf {
     crate::logging::game_home().join(".rusted-cache/native-ports")
 }
+
+static JAVA_STATUS: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+pub fn java_status() -> Vec<String> {
+    JAVA_STATUS
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .clone()
+}
+pub fn record_java_status(line: String) {
+    let mut lines = JAVA_STATUS.lock().unwrap_or_else(|e| e.into_inner());
+    if lines.len() < 128 {
+        lines.push(line.chars().take(4096).collect());
+    }
+}

@@ -112,6 +112,8 @@ def payloads(binary_dir, bridge_binary, setup_binary):
               "integrity_manifest": "runtime-manifest.json",
               "preparation": {"root": "runtime/preparation", "executable": "runtime/rusted-prepare.exe", "download_server": True, "import_launcher": True}}
     files["rusted-runtime.json"] = (json.dumps(config, indent=2) + "\n").encode()
+    files["java-mod-bridge.json"] = (json.dumps({"schema": 1, "minecraft": "26.3", "experimental": True,
+        "supported_entrypoints": ["preLaunch", "main", "client"], "mixins": False}) + "\n").encode()
     integrity = {"schema": 1, "files": {name: hashlib.sha256(body).hexdigest() for name, body in files.items() if not name.startswith("native-data/") and name != "rusted-runtime.json"}}
     files["runtime-manifest.json"] = (json.dumps(integrity, indent=2) + "\n").encode()
     files["package.json"] = (json.dumps({"schema": 1, "version": VERSION, "native_engine_version": receipt["version"], "kind": "native-windows-runtime", "includes_native_game": True,

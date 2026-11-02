@@ -18,6 +18,7 @@ path = "src/bin/horizon-ctl/main.rs"
 
 [dependencies]
 rusted-platform = { path = "../rusted-platform" }
+rusted-java = { path = "../rusted-java", optional = true }
 horizon-assets = { path = "../horizon-assets" }
 horizon-client-core = { path = "../horizon-client-core" }
 horizon-client-input = { path = "../horizon-client-input" }
@@ -103,7 +104,7 @@ audio = ["dep:cpal"]
 controllers = ["dep:gilrs", "dep:horizon-dualsense", "horizon-client-input/controllers"]
 # Runs code mods (wasmtime and cranelift: a quarter of a clean build). On in every release build
 # (release.yml); the tests and probes don't need it. Content mods load without it.
-mods = ["horizon-mods/runtime"]
+mods = ["horizon-mods/runtime", "dep:rusted-java"]
 # Records the call sites of mob random draws (`mob_ai_probe` traces).
 rng-trace = ["horizon-core/rng-trace"]
 

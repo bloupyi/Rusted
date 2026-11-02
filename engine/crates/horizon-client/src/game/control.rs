@@ -694,6 +694,10 @@ impl Game<'_> {
                 }
                 ok()
             }
+            "client-chat-log" => {
+                let n = words.get(1).map_or(Ok(10), |n| n.parse())?;
+                Ok(Some(json!({ "chat": self.ui.chat.recent_lines(n) })))
+            }
             "chat-log" => {
                 let n = words.get(1).map_or(Ok(10), |n| n.parse())?;
                 let lines = self

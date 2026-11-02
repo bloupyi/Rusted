@@ -43,6 +43,25 @@ jobs:
       - run: python scripts/test_bridge.py
       - run: python scripts/build_mod.py --host
       - run: python scripts/test_minecraft.py
+  java-bridge:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: rustup toolchain install 1.99.1 --profile minimal
+      - run: cargo +1.99.1 test --manifest-path engine/Cargo.toml --locked -p rusted-platform
+      - run: cargo +1.99.1 build --manifest-path engine/Cargo.toml --locked -p rusted-java --example java_mod_probe
+      - run: python scripts/test_java_mod_runtime.py --probe engine/target/debug/examples/java_mod_probe
+      - run: python engine/tests/test_rusted_java_source_audit.py
   horizon-tools:
     runs-on: ubuntu-latest
     steps:

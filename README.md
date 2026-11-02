@@ -88,6 +88,11 @@ Lire [le guide](docs/NATIVE-WINDOWS.md).
 
 ## Mods, shaders et travail restant
 
+Un **pont JVM expérimental** exécute maintenant des JAR Fabric existants dans le
+processus natif, avec des API encore limitées. YOSBR 0.1.2 et un JAR de test ont
+été vérifiés dans deux mondes Rust. Ce travail est distinct du ZIP stable 0.2.7 ;
+voir [le périmètre et les résultats](docs/JAVA-MOD-BRIDGE.md).
+
 Le mode auto conserve le moteur natif avec le bootstrap Rusted et les modules passifs
 de ressources/données compatibles. Avec des mods Java exécutables, il poursuit dans
 la JVM Fabric d'origine ; le moteur Rust est alors inactif. **Les JAR Sodium/Iris/Distant Horizons ne fonctionnent pas dans le

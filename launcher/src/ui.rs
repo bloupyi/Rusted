@@ -996,6 +996,19 @@ unsafe fn build(app: &mut App) {
             if app.mod_tab == 0 {
                 if let Some(i) = &selected {
                     if i.engine == Engine::Native {
+                        check(
+                            app,
+                            336,
+                            "JAR Java (experimental)",
+                            i.experimental_java_mods,
+                            784,
+                            154,
+                            350,
+                        );
+                        EnableWindow(
+                            GetDlgItem(app.window, 336),
+                            (!app.running && app.job.is_none()) as _,
+                        );
                         button(app, 334, "Importer un mod natif", 284, 606, 240, 36);
                         button(app, 335, "Voir les packs", 540, 606, 200, 36);
                     }
@@ -1684,6 +1697,14 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
                         Ok("Module installe. Ses ressources et donnees compatibles seront chargees au prochain lancement.".into())
                     });
                 }
+            }
+            336 => {
+                let mut i = app.selected_or_error()?;
+                i.experimental_java_mods = checked(app, 336);
+                app.store.save(&i)?;
+                app.refresh();
+                app.status = "Pont Java configure pour le prochain lancement ; mixins et mods de rendu non pris en charge.".into();
+                build(app);
             }
             335 => {
                 let i = app.selected_or_error()?;

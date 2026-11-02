@@ -1,5 +1,5 @@
 //! Loader metadata and passive files only: never execute or inspect Java bytecode.
-mod metadata;
+pub(crate) mod metadata;
 #[cfg(test)]
 mod tests;
 use std::{collections::BTreeSet, fs, io::Read, path::Path};

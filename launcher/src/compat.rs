@@ -19,7 +19,7 @@ pub fn import_resources(
         return Err("Cet import cible Rusted natif 26.3.".into());
     }
     task.check()?;
-    let id = rusted_launch::platform::native_id(source)?;
+    let id = compatible_id(instance, source)?;
     let directory = store.game(instance)?.join("mods");
     let existing = rusted_launch::platform::scan(&directory);
     if existing
@@ -42,7 +42,7 @@ pub fn import_resources(
         .flush()
         .map_err(|_| "Ecriture du module impossible.")?;
     // Check the copied bytes too: the source could have changed during the copy.
-    let copied = rusted_launch::platform::native_id(temporary.path())?;
+    let copied = compatible_id(instance, temporary.path())?;
     if copied != id {
         return Err("Le module a change pendant son import.".into());
     }
@@ -51,4 +51,17 @@ pub fn import_resources(
         .persist_noclobber(&destination)
         .map_err(|_| "Un module porte deja ce nom ou le dossier est inaccessible.")?;
     Ok(destination)
+}
+
+/// Experimental JVM eligibility is explicit and never changes the selected native engine.
+pub fn compatible_id(instance: &Instance, path: &Path) -> Result<String> {
+    match rusted_launch::platform::native_id(path) {
+        Ok(id) => Ok(id),
+        Err(error) if instance.experimental_java_mods => {
+            rusted_launch::platform::java::inspect(path)
+                .map(|m| m.id)
+                .map_err(|java| format!("{error}; pont Java experimental : {java}"))
+        }
+        Err(error) => Err(error),
+    }
 }
