@@ -57,7 +57,8 @@ def colors(path):
     # Restrict assertions to the hotbar. World terrain and the player's hand
     # must not make a missing inventory icon look like a successful render.
     width, height = image.size
-    pixels = list(image.crop((width // 2 - 185, height - 44, width // 2 + 185, height - 2)).getdata())
+    cropped = image.crop((width // 2 - 185, height - 44, width // 2 + 185, height - 2))
+    pixels = list(getattr(cropped, "get_flattened_data", cropped.getdata)())
     return {
         "cyan": sum(r < 10 and g > 60 and abs(b / g - 180 / 255) < .05 for r, g, b in pixels),
         "magenta": sum(g < 10 and r > 60 and abs(b / r - 170 / 255) < .05 for r, g, b in pixels),
@@ -114,6 +115,9 @@ def main():
                 result["first_reload"] = reload(game)
                 game.command("open ResourceVisuals 123 creative")
                 game.wait(lambda state: state.get("world") is not None and state.get("player") is not None)
+                # In-frame creative worlds start with a populated hotbar. The
+                # fixture items must occupy visible slots in both paths.
+                game.command("command clear @s")
                 game.command('command give @s minecraft:player_head[minecraft:profile={properties:[{name:"textures",value:"' + profile + '"}]}]')
                 game.command('command give @s minecraft:player_head[minecraft:profile={texture:"fixture:entity/head"}]')
                 game.command('command give @s minecraft:diamond[minecraft:item_model="fixture:gem"]')

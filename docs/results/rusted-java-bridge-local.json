@@ -23,7 +23,10 @@
       "default_options_copied": true,
       "existing_options_preserved": true,
       "jar_unmodified": true
-    }
+    },
+    "mod_container_version_and_jar_resources": true,
+    "semantic_version_ordering": true,
+    "static_field_static_method_instance_method_entrypoints": true
   },
   "native_world_tests": [
     {
@@ -33,11 +36,15 @@
       "jvm_in_native_process": true,
       "chat": {
         "chat": [
-          "[fixture_tick] JAR callback: tick=60 health=20.0 time=64"
+          "[fixture_tick] JAR callback: tick=60 health=20.0 time=62",
+          "[fixture_members] JAR member: instance",
+          "[fixture_members] JAR member: static",
+          "[fixture_members] JAR member: field"
         ]
       },
       "native_player_health": 20.0,
-      "yosbr_original_sha512": "254f2225f6446523aa8c8274e83b31e27f3b2afc8fe4f490fb1b169dd518e10c7993acda5db0ab597474ddf9d69506b5e794242fada1e2f89ed7bf9d412a8f78"
+      "yosbr_original_sha512": "254f2225f6446523aa8c8274e83b31e27f3b2afc8fe4f490fb1b169dd518e10c7993acda5db0ab597474ddf9d69506b5e794242fada1e2f89ed7bf9d412a8f78",
+      "member_field_static_and_instance_callbacks_in_native_world": true
     },
     {
       "server_thread": false,
@@ -46,11 +53,15 @@
       "jvm_in_native_process": true,
       "chat": {
         "chat": [
-          "[fixture_tick] JAR callback: tick=60 health=20.0 time=140"
+          "[fixture_tick] JAR callback: tick=60 health=20.0 time=109",
+          "[fixture_members] JAR member: instance",
+          "[fixture_members] JAR member: static",
+          "[fixture_members] JAR member: field"
         ]
       },
       "native_player_health": 20.0,
-      "yosbr_original_sha512": "254f2225f6446523aa8c8274e83b31e27f3b2afc8fe4f490fb1b169dd518e10c7993acda5db0ab597474ddf9d69506b5e794242fada1e2f89ed7bf9d412a8f78"
+      "yosbr_original_sha512": "254f2225f6446523aa8c8274e83b31e27f3b2afc8fe4f490fb1b169dd518e10c7993acda5db0ab597474ddf9d69506b5e794242fada1e2f89ed7bf9d412a8f78",
+      "member_field_static_and_instance_callbacks_in_native_world": true
     }
   ],
   "unsupported_priority_mods": [
