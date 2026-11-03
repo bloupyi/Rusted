@@ -56,7 +56,30 @@ public final class Host {
     }
     public static final LanguageAdapter DEFAULT_ADAPTER = new LanguageAdapter() {
         public <T> T create(ModContainer mod, String value, Class<T> type) throws LanguageAdapterException {
-            try { return type.cast(Class.forName(value, true, loader).getDeclaredConstructor().newInstance()); }
+            try {
+                String[] handle = value.split("::", -1);
+                if (handle.length > 2 || handle[0].isEmpty() || (handle.length == 2 && handle[1].isEmpty()))
+                    throw new IllegalArgumentException("Invalid entrypoint handle: " + value);
+                Class<?> entry = Class.forName(handle[0], true, loader == null ? Host.class.getClassLoader() : loader);
+                if (handle.length == 1) return type.cast(entry.getDeclaredConstructor().newInstance());
+                try {
+                    var field = entry.getDeclaredField(handle[1]);
+                    if (!java.lang.reflect.Modifier.isStatic(field.getModifiers()) || !type.isAssignableFrom(field.getType()))
+                        throw new IllegalArgumentException("Entrypoint field must be static and have the requested type: " + value);
+                    return type.cast(field.get(null));
+                } catch (NoSuchFieldException absent) { /* A method reference is the other supported form. */ }
+                java.lang.reflect.Method method = null;
+                for (var candidate : entry.getDeclaredMethods()) {
+                    if (!candidate.getName().equals(handle[1])) continue;
+                    if (method != null) throw new IllegalArgumentException("Ambiguous overloaded entrypoint: " + value);
+                    method = candidate;
+                }
+                if (method == null) throw new NoSuchMethodException(value);
+                var target = java.lang.invoke.MethodHandles.publicLookup().unreflect(method);
+                if (!java.lang.reflect.Modifier.isStatic(method.getModifiers()))
+                    target = target.bindTo(entry.getDeclaredConstructor().newInstance());
+                return java.lang.invoke.MethodHandleProxies.asInterfaceInstance(type, target);
+            }
             catch (Throwable error) { throw new LanguageAdapterException(error); }
         }
     };

@@ -54,6 +54,45 @@ public class VersionContract {
 }
 '''
 
+ADAPTER = '''
+import net.fabricmc.loader.api.LanguageAdapter;
+public class AdapterContract {
+ public interface Echo { String call(String text); }
+ public interface Multi { void a(); void b(); }
+ public static class Entries {
+  public static int calls;
+  public static final Runnable FIELD=() -> calls+=1;
+  public final Runnable NONSTATIC=() -> {};
+  public static final String WRONG="wrong";
+  public static final Runnable NULL=null;
+  public static void staticCall() {calls+=10;}
+  public void instanceCall() {calls+=100;}
+  public static String echo(String text) {return "echo="+text;}
+  public static void overload(){}
+  public static void overload(int x){}
+  private static void hidden(){}
+  public void badArgument(int x){}
+ }
+ public static void main(String[] args) throws Exception {
+ try {
+  Class<?> launcher=Class.forName("net.fabricmc.loader.impl.launch.FabricLauncher");
+  Object reference=java.lang.reflect.Proxy.newProxyInstance(launcher.getClassLoader(),new Class<?>[]{launcher},(proxy,method,values)-> {
+   if (method.getName().equals("getTargetClassLoader")) return AdapterContract.class.getClassLoader();
+   throw new UnsupportedOperationException(method.getName());
+  });
+  Class.forName("net.fabricmc.loader.impl.launch.FabricLauncherBase").getMethod("setLauncher",launcher).invoke(null,reference);
+  } catch (ClassNotFoundException absent) { }
+  var adapter=LanguageAdapter.getDefault();
+  for (String member:new String[]{"FIELD","NONSTATIC","WRONG","NULL","staticCall","instanceCall","overload","hidden","badArgument","missing","staticCall::extra"}) {
+   try {var value=adapter.create(null,"AdapterContract$Entries::"+member,Runnable.class); if(value!=null)value.run();System.out.println(member+"=ok:"+(value==null)+":"+Entries.calls);}
+   catch(Throwable error){System.out.println(member+"=error");}
+  }
+  try {System.out.println(adapter.create(null,"AdapterContract$Entries::echo",Echo.class).call("copper"));}catch(Throwable error){System.out.println("echo=error");}
+  try {adapter.create(null,"AdapterContract$Entries::staticCall",Multi.class);System.out.println("multi=ok");}catch(Throwable error){System.out.println("multi=error");}
+ }
+}
+'''
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -73,7 +112,8 @@ def main():
     libraries = list(args.libraries.resolve().rglob('*.jar'))
     report = {}
     for name, source, reference in [('IdentifierContract', IDENTIFIER, [args.minecraft_jar.resolve(), *libraries]),
-                                     ('VersionContract', VERSIONS, [args.fabric_loader.resolve()])]:
+                                     ('VersionContract', VERSIONS, [args.fabric_loader.resolve()]),
+                                     ('AdapterContract', ADAPTER, [args.fabric_loader.resolve()])]:
         file = root / (name + '.java')
         file.write_text(source, encoding='utf-8')
         subprocess.run([str(javac), '--release', '17', '-encoding', 'UTF-8', '-cp',

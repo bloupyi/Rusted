@@ -25,8 +25,8 @@ the Rust binary; it does not embed a Java Minecraft client or a third-party mod.
 
 | API surface | Current behavior |
 | --- | --- |
-| `ModInitializer`, `ClientModInitializer`, `PreLaunchEntrypoint` | Call class-based initializers in phase order |
-| `LanguageAdapter`, `ModContainer`, `ModMetadata` | Class constructors, adapter `create`, id/name/version, read-only archive roots and resource lookup |
+| `ModInitializer`, `ClientModInitializer`, `PreLaunchEntrypoint` | Call initializers in phase order |
+| `LanguageAdapter`, `ModContainer`, `ModMetadata` | Class constructors, static field references, static/instance method references, adapter `create`, id/name/version, read-only archive roots and resource lookup |
 | `FabricLoader` | Game/config paths, legacy File aliases, client environment, module inventory and loaded-id query |
 | `Version`, `SemanticVersion` | Numeric/prerelease ordering, opaque versions, normalized components and preserved build metadata |
 | `Identifier` | Validated namespace/path values, factories, equality, ordering and resource-root path resolution; no codecs |

@@ -78,6 +78,10 @@
     "VersionContract": {
       "passed": true,
       "reference_trace_lines": 64
+    },
+    "AdapterContract": {
+      "passed": true,
+      "reference_trace_lines": 13
     }
   },
   "public_api_reference": "Fabric Loader 0.19.5 binary API and Minecraft 26.3 bytecode signatures; no third-party implementation source read"

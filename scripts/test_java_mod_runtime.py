@@ -15,6 +15,21 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES = {
+    'MemberEntries': '''package fixture;
+public final class MemberEntries {
+ public static final net.fabricmc.api.ClientModInitializer FIELD = () -> register("field");
+ public static void staticMethod() { register("static"); }
+ public void instanceMethod() { register("instance"); }
+ private static void register(String member) {
+  boolean[] sent = {false};
+  net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(client -> {
+   if (client.player != null && !sent[0]) {
+    sent[0] = true;
+    client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("JAR member: " + member));
+   }
+  });
+ }
+}''',
     'TickMod': '''package fixture;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.api.ClientModInitializer;
@@ -92,6 +107,7 @@ def fixture(root, java_home, minecraft, libraries, api):
     mods = game / 'mods'
     mods.mkdir(parents=True)
     for name, module, entries in [
+        ('MemberEntries', 'fixture_members', {'client': ['fixture.MemberEntries::FIELD', 'fixture.MemberEntries::staticMethod', 'fixture.MemberEntries::instanceMethod']}),
         ('TickMod', 'fixture_tick', {'main': ['fixture.TickMod'], 'client': ['fixture.TickMod']}),
         ('MissingApi', 'missing_api', {'client': ['fixture.MissingApi']}),
         ('BadTick', 'bad_tick', {'client': ['fixture.BadTick']}),
@@ -103,7 +119,8 @@ def fixture(root, java_home, minecraft, libraries, api):
                 archive.write(file, 'fixture/' + file.name)
             archive.writestr('fixture/payload.txt', 'unchanged JAR resources')
     with zipfile.ZipFile(mods / 'unsupported-mixin.jar', 'x') as archive:
-        archive.writestr('fabric.mod.json', json.dumps({'schemaVersion': 1, 'id': 'mixin_test', 'mixins': ['x.json']}))
+        archive.writestr('fabric.mod.json', json.dumps({'schemaVersion': 1, 'id': 'mixin_test',
+            'version': '1.0.0', 'mixins': ['x.json'], 'entrypoints': {'client': ['fixture.TickMod']}}))
     return game
 
 
@@ -146,7 +163,11 @@ def main():
     assert output.count('ERROR missing_api:') == 1, output
     assert 'Rusted native API not implemented: net.minecraft.client.Options' in output, output
     assert 'REJECTED unsupported-mixin.jar' in output, output
+    assert 'Fabric mixins is not implemented by the native Java bridge' in output, output
     assert 'ERROR fixture_tick' not in output, output
+    for member in ['field', 'static', 'instance']:
+        assert f'CHAT [fixture_members] JAR member: {member}' in output, output
+    assert 'ERROR fixture_members' not in output, output
     report = {'fixture_bytecode_compiled_against_minecraft_26_3': args.minecraft_jar is not None,
         'unchanged_jar_code_and_resources_executed': True, 'client_tick_snapshot_and_chat': True,
         'client_thread_identity_preserved': True, 'failed_mod_isolated': True,
@@ -154,6 +175,7 @@ def main():
         'unicode_and_semicolon_paths': True, 'yosbr': None}
     report['mod_container_version_and_jar_resources'] = True
     report['semantic_version_ordering'] = True
+    report['static_field_static_method_instance_method_entrypoints'] = True
     if args.yosbr:
         game = root / 'yosbr'
         (game / 'mods').mkdir(parents=True)

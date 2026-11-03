@@ -16,6 +16,7 @@ def main():
     parser.add_argument('--binary', type=Path, required=True)
     parser.add_argument('--resources', type=Path, required=True)
     parser.add_argument('--fixture-jar', type=Path, required=True)
+    parser.add_argument('--member-fixture-jar', type=Path, help='Optional fixture_members JAR for field/method entrypoints')
     parser.add_argument('--yosbr', type=Path, required=True)
     parser.add_argument('--java-home', type=Path, required=True)
     parser.add_argument('--libraries', type=Path, required=True)
@@ -33,6 +34,8 @@ def main():
             home = scratch / 'game'
             (home / 'mods').mkdir(parents=True)
             shutil.copy2(args.fixture_jar, home / 'mods/fixture_tick.jar')
+            if args.member_fixture_jar:
+                shutil.copy2(args.member_fixture_jar, home / 'mods/fixture_members.jar')
             shutil.copy2(args.yosbr, home / 'mods/yosbr.jar')
             (home / 'config/yosbr').mkdir(parents=True)
             (home / 'config/yosbr/options.txt').write_text('fullscreen:false\n')
@@ -49,7 +52,7 @@ def main():
             try:
                 game.wait(lambda state: state.get('menu') is not None, seconds=180)
                 log = (scratch / 'console.log').read_text()
-                assert 'Java entrypoints initialized for 2 module' in log, log[-3000:]
+                assert f'Java entrypoints initialized for {2 + int(args.member_fixture_jar is not None)} module' in log, log[-3000:]
                 assert 'Applying default options' in log and 'YOSBR' in log, log[-3000:]
                 assert (home / 'options.txt').is_file()
                 if Path('/proc').exists():
@@ -67,6 +70,9 @@ def main():
                 else:
                     raise AssertionError('Java callback did not reach the native client chat')
                 assert expected in json.dumps(chat), chat
+                if args.member_fixture_jar:
+                    for member in ['field', 'static', 'instance']:
+                        assert 'JAR member: ' + member in json.dumps(chat), chat
                 assert 'ERROR fixture_tick' not in (scratch / 'console.log').read_text()
                 result.update(chat=chat, native_player_health=state['player']['health'],
                     yosbr_original_sha512=hashlib.sha512(args.yosbr.read_bytes()).hexdigest())

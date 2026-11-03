@@ -117,13 +117,22 @@ pub fn inspect(path: &Path) -> Result<Module> {
                 } else {
                     value["value"].as_str().ok_or("Invalid Fabric class")?
                 };
-                if class.is_empty()
+                let (entry_class, member) = class
+                    .split_once("::")
+                    .map_or((class, None), |(class, member)| (class, Some(member)));
+                if entry_class.is_empty()
                     || class.len() > 512
-                    || !class
+                    || !entry_class
                         .bytes()
                         .all(|c| c.is_ascii_alphanumeric() || b"_$.".contains(&c))
+                    || member.is_some_and(|member| {
+                        member.is_empty()
+                            || !member
+                                .bytes()
+                                .all(|c| c.is_ascii_alphanumeric() || b"_$".contains(&c))
+                    })
                 {
-                    return Err("Unsupported Fabric entrypoint class or method reference".into());
+                    return Err("Invalid Fabric entrypoint class or member reference".into());
                 }
                 classes.push(Entrypoint {
                     value: class.to_owned(),
@@ -246,7 +255,8 @@ mod tests {
         for entry in [
             serde_json::json!(null),
             serde_json::json!({"value":"a.Class","adapter":42}),
-            serde_json::json!("a.Class::method"),
+            serde_json::json!("a.Class::method::extra"),
+            serde_json::json!("a.Class::"),
         ] {
             jar(
                 &file,
@@ -284,6 +294,19 @@ mod tests {
         let module = inspect(&file).unwrap();
         assert_eq!(module.adapters["custom"], "example.Adapter");
         assert_eq!(module.entrypoints["preLaunch"][0].adapter, "custom");
+        jar(
+            &file,
+            serde_json::json!({"schemaVersion":1,"id":"example_client","entrypoints":{"client":["example.Client::initialize","example.Client::INSTANCE"]}}),
+        );
+        let module = inspect(&file).unwrap();
+        assert_eq!(
+            module.entrypoints["client"][0].value,
+            "example.Client::initialize"
+        );
+        assert_eq!(
+            module.entrypoints["client"][1].value,
+            "example.Client::INSTANCE"
+        );
     }
 
     #[test]

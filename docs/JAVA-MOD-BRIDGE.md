@@ -62,8 +62,14 @@ constructeurs d'adaptateurs de langage, quelques informations du loader, les
 événements de tick client et une petite vue de l'état Minecraft natif. Voir la
 [liste des façades originales](../engine/crates/rusted-java/README.md).
 
-Ne sont pas implémentés : mixins, access wideners, JAR imbriqués, références
-`Classe::méthode`, remappage des anciens noms obfusqués, résolution complète
+Les points d'entrée peuvent désigner une classe, un champ statique, une méthode
+statique ou une méthode d'instance (`Classe::membre`). Treize cas sont comparés
+au binaire Fabric Loader 0.19.5 inchangé, y compris le rejet des références
+ambiguës et incompatibles. Des JAR originaux vérifient également l'exécution
+des trois formes de références et de leurs callbacks dans le pont natif.
+
+Ne sont pas implémentés : mixins, access wideners, JAR imbriqués,
+remappage des anciens noms obfusqués, résolution complète
 des dépendances Fabric, API Fabric complète, modification du monde depuis Java,
 interfaces OpenGL/LWJGL, shaders Iris et cache Distant Horizons. Les ressources
 des JAR exécutables ne sont pas encore fusionnées avec les packs du moteur.
