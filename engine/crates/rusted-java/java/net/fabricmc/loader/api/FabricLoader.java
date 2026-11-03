@@ -11,6 +11,8 @@ public interface FabricLoader {
     @Deprecated default java.io.File getGameDirectory() { return getGameDir().toFile(); }
     @Deprecated default java.io.File getConfigDirectory() { return getConfigDir().toFile(); }
     boolean isModLoaded(String id);
+    java.util.Optional<ModContainer> getModContainer(String id);
+    java.util.Collection<ModContainer> getAllMods();
     boolean isDevelopmentEnvironment();
     EnvType getEnvironmentType();
 }

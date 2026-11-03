@@ -15,6 +15,7 @@ pub struct Entrypoint {
 pub struct Module {
     pub id: String,
     pub name: String,
+    pub version: String,
     pub path: PathBuf,
     pub entrypoints: BTreeMap<String, Vec<Entrypoint>>,
     pub adapters: BTreeMap<String, String>,
@@ -65,6 +66,10 @@ pub fn inspect(path: &Path) -> Result<Module> {
         }
     }
     let id = metadata["id"].as_str().ok_or("Missing Fabric id")?;
+    let version = metadata["version"]
+        .as_str()
+        .filter(|v| !v.is_empty() && v.len() <= 256 && !v.chars().any(char::is_control))
+        .ok_or("Invalid or missing Fabric version")?;
     if !(2..=64).contains(&id.len())
         || !id
             .bytes()
@@ -137,6 +142,7 @@ pub fn inspect(path: &Path) -> Result<Module> {
     Ok(Module {
         id: id.into(),
         name: metadata["name"].as_str().unwrap_or(id).to_owned(),
+        version: version.to_owned(),
         path: path.canonicalize().map_err(|e| e.to_string())?,
         entrypoints,
         adapters,
@@ -188,7 +194,10 @@ pub fn discover(directory: &Path) -> (Vec<Module>, Vec<String>) {
 mod tests {
     use super::*;
     use std::io::Write;
-    fn jar(path: &Path, metadata: serde_json::Value) {
+    fn jar(path: &Path, mut metadata: serde_json::Value) {
+        if metadata.get("version").is_none() {
+            metadata["version"] = serde_json::json!("1.0.0");
+        }
         let mut out = zip::ZipWriter::new(fs::File::create(path).unwrap());
         out.start_file("fabric.mod.json", zip::write::SimpleFileOptions::default())
             .unwrap();
@@ -213,6 +222,7 @@ mod tests {
         );
         let module = inspect(&file).unwrap();
         assert_eq!(module.entrypoints["client"][0].value, "example.Client");
+        assert_eq!(module.version, "1.0.0");
         assert!(!module.entrypoints.contains_key("server"));
         let report = crate::scan(dir.path());
         assert!(report.mods[0].java_candidate);
@@ -274,5 +284,23 @@ mod tests {
         let module = inspect(&file).unwrap();
         assert_eq!(module.adapters["custom"], "example.Adapter");
         assert_eq!(module.entrypoints["preLaunch"][0].adapter, "custom");
+    }
+
+    #[test]
+    fn invalid_versions_are_rejected_before_configuring_the_shared_jvm() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("invalid.jar");
+        for version in [
+            serde_json::json!(""),
+            serde_json::json!(null),
+            serde_json::json!(42),
+            serde_json::json!("line\nbreak"),
+        ] {
+            jar(
+                &file,
+                serde_json::json!({"schemaVersion":1,"id":"invalid_version","version":version,"entrypoints":{"client":["example.Client"]}}),
+            );
+            assert!(inspect(&file).unwrap_err().contains("version"));
+        }
     }
 }

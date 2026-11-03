@@ -253,7 +253,9 @@ impl Runtime {
             let paths = strings(env, &paths)?;
             let ids = strings(env, &modules.iter().map(|m| m.id.clone()).collect::<Vec<_>>())?;
             let names = strings(env, &modules.iter().map(|m| m.name.clone()).collect::<Vec<_>>())?;
-            env.call_static_method(native_class, "configure", "(Ljava/lang/String;[Ljava/lang/String;[Ljava/lang/String;[Ljava/lang/String;)V", &[JValue::Object(&directory), JValue::Object(&paths), JValue::Object(&ids), JValue::Object(&names)])?;
+            let versions = strings(env, &modules.iter().map(|m| m.version.clone()).collect::<Vec<_>>())?;
+            let origins = strings(env, &modules.iter().map(|m| java_path(&m.path)).collect::<Vec<_>>())?;
+            env.call_static_method(native_class, "configure", "(Ljava/lang/String;[Ljava/lang/String;[Ljava/lang/String;[Ljava/lang/String;[Ljava/lang/String;[Ljava/lang/String;)V", &[JValue::Object(&directory), JValue::Object(&paths), JValue::Object(&ids), JValue::Object(&names), JValue::Object(&versions), JValue::Object(&origins)])?;
             for module in modules {
                 for (name, class) in &module.adapters {
                     let id = env.new_string(&module.id)?; let name = env.new_string(name)?; let class = env.new_string(class)?;

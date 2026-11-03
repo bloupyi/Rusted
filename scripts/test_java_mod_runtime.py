@@ -21,11 +21,31 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.network.chat.Component;
 import java.nio.charset.StandardCharsets;
+import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.Version;
+import net.fabricmc.loader.api.SemanticVersion;
 public final class TickMod implements ModInitializer, ClientModInitializer {
  private static int initialized;
  private Thread initialThread;
  private int ticks;
- public void onInitialize() { initialized = 7; }
+ public void onInitialize() {
+  var loader = FabricLoader.getInstance();
+  var module = loader.getModContainer("fixture_tick").orElseThrow();
+  if (!module.getMetadata().getVersion().getFriendlyString().equals("1.0.0")) throw new AssertionError("Original version lost");
+  if (!loader.isModLoaded("fixture_tick") || loader.getModContainer("absent").isPresent()) throw new AssertionError("Module inventory mismatch");
+  if (loader.isModLoaded("fabric-lifecycle-events-v1")) throw new AssertionError("Absent Fabric API module advertised as loaded");
+  if (loader.getAllMods().stream().filter(m -> m.getMetadata().getId().equals("fixture_tick")).count() != 1) throw new AssertionError("Duplicate or absent mod container");
+  try {
+   var path = module.findPath("fixture/payload.txt").orElseThrow();
+   if (!java.nio.file.Files.readString(path).equals("unchanged JAR resources")) throw new AssertionError("Container resource unavailable");
+   if (module.findPath("absent.txt").isPresent()) throw new AssertionError("Invented container resource");
+   if (Version.parse("1.9").compareTo(Version.parse("1.10")) >= 0 || Version.parse("1.0-rc.2").compareTo(Version.parse("1.0-rc.10")) >= 0) throw new AssertionError("Numeric precedence");
+   if (Version.parse("1.0+one").compareTo(Version.parse("1.0+two")) != 0 || Version.parse("1.0-beta").compareTo(Version.parse("1.0")) >= 0) throw new AssertionError("Prerelease/build precedence");
+   if (Version.parse("26.3.x") instanceof SemanticVersion || SemanticVersion.parse("26.3").getVersionComponent(2) != 0) throw new AssertionError("Version components");
+   if (Version.parse("release-copper") instanceof SemanticVersion) throw new AssertionError("Opaque version is numeric");
+  } catch (Exception error) { throw new AssertionError(error); }
+  initialized = 7;
+ }
  public void onInitializeClient() {
   if (initialized != 7) throw new AssertionError("Initializer order or shared class state lost");
   try (var input = getClass().getResourceAsStream("/fixture/payload.txt")) {
@@ -132,6 +152,8 @@ def main():
         'client_thread_identity_preserved': True, 'failed_mod_isolated': True,
         'minecraft_java_class_fallback_blocked': True, 'mixins_rejected': True,
         'unicode_and_semicolon_paths': True, 'yosbr': None}
+    report['mod_container_version_and_jar_resources'] = True
+    report['semantic_version_ordering'] = True
     if args.yosbr:
         game = root / 'yosbr'
         (game / 'mods').mkdir(parents=True)

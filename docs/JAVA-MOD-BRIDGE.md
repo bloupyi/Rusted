@@ -21,6 +21,16 @@ un JAR dans ce ZIP ne fournit donc pas cette compatibilité expérimentale.
 | Chemins Unicode contenant `;` | Chargement réussi |
 | Sodium, Iris, Distant Horizons | **Non compatibles actuellement** : mixins et contrats de rendu manquants |
 
+Les JAR Fabric 26.3 publiés de Sodium 0.9.3-beta.1, Iris 1.11.7 et Distant
+Horizons 3.3.4 sont maintenant épinglés par SHA-512 pour des tests de composants
+reproductibles. Le pont fournit les conteneurs de modules, leurs versions et
+leurs ressources, ainsi que la partie valeur des identifiants Minecraft.
+Ces ajouts font progresser l'initialisation de Sodium jusqu'à un accesseur de
+mixin non transformé ; Distant Horizons atteint l'API `DeltaTracker` manquante.
+Iris ne déclare pas d'initialiseur standard : sans mixins, il ne démarre pas.
+**Aucun de ces résultats n'établit leur compatibilité en jeu.** Voir le
+[rapport des composants](results/rusted-render-mod-components.json).
+
 Le [rapport de validation](results/rusted-java-bridge-local.json) distingue le
 JAR publié, le JAR de test et les scénarios réellement exécutés. Ces tests
 locaux ont tourné sous Linux avec JDK 25 et Vulkan logiciel. Ils ne prouvent pas
@@ -85,6 +95,21 @@ teste les options au premier et au second lancement.
 Il exige le client Rust compilé, les ressources préparées localement, le JAR de
 test généré et le JAR YOSBR. Il utilise des profils temporaires et aucun compte.
 Aucun fichier Minecraft ni JAR tiers n'est publié dans ce dépôt.
+
+Les valeurs `Identifier` et `Version` ont aussi été comparées en exécutant
+les mêmes appels sur nos façades et sur les binaires de référence locaux :
+
+```sh
+python scripts/test_java_value_contracts.py --probe engine/target/debug/examples/java_mod_probe --java-home CHEMIN/JDK25 --minecraft-jar CHEMIN/client-26.3.jar --libraries CHEMIN/libraries --fabric-loader CHEMIN/fabric-loader-0.19.5.jar
+```
+
+Le probe de composants se compile avec `--example mod_entrypoint_diagnostic`.
+`scripts/probe_render_mod_entrypoints.py --help` décrit son pilote. Il vérifie
+les empreintes de `horizon/render-mod-test-jars.json` et utilise un profil
+temporaire par mod. Il ne passe pas les contrôles d'éligibilité du jeu, n'applique
+pas les mixins et ne démarre aucun monde. Il retourne un échec de validation,
+y compris lorsqu'un JAR n'a aucun initialiseur à appeler : ce n'est pas un
+banc d'acceptation du rendu.
 
 ## Suite nécessaire pour les mods de rendu
 
