@@ -9,7 +9,7 @@ use std::{collections::BTreeSet, fs, io, path::Path, path::PathBuf};
 
 // Bump when overlay/merge semantics change. Markers are disposable cache data.
 // Version 3 could omit untouched vanilla directories on Windows (#1649, #1688).
-const VERSION: u32 = 4;
+const VERSION: u32 = 5;
 
 #[derive(Default, Serialize, Deserialize)]
 pub(super) struct Dependencies {
@@ -590,6 +590,96 @@ mod tests {
         fs::remove_dir_all(f.0.join("low")).unwrap();
         f.rebuild_matches(&[low]);
         assert!(!marker.exists());
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn untouched_windows_directories_use_junctions_and_rebuild_preserves_sources() {
+        let f = Fixture::new();
+        let resource = "assets/minecraft/textures/block/original.png";
+        f.write(&format!("vanilla/{resource}"), b"vanilla");
+        let pack = f.dir_pack("custom");
+        f.write("custom/assets/custom/model.json", b"{}");
+        let vanilla = f.0.join("vanilla");
+        let out = f.0.join("cached");
+        packs::build_overlay(&vanilla, std::slice::from_ref(&pack), &out).unwrap();
+        assert!(
+            junction::exists(out.join("assets/minecraft")).unwrap(),
+            "Untouched vanilla resources must not be copied file by file on NTFS"
+        );
+        assert_eq!(fs::read(out.join(resource)).unwrap(), b"vanilla");
+        // Removing an overlay must only unlink junctions, never remove source assets.
+        fs::remove_dir_all(&out).unwrap();
+        assert_eq!(fs::read(vanilla.join(resource)).unwrap(), b"vanilla");
+        // A newly overriding pack must create its own file instead of writing through
+        // an old link. This also exercises invalidation of the cached selection.
+        f.write(&format!("custom/{resource}"), b"pack override");
+        packs::build_overlay(&vanilla, std::slice::from_ref(&pack), &out).unwrap();
+        assert_eq!(fs::read(out.join(resource)).unwrap(), b"pack override");
+        assert_eq!(fs::read(vanilla.join(resource)).unwrap(), b"vanilla");
+        fs::remove_dir_all(&out).unwrap();
+        assert_eq!(fs::read(vanilla.join(resource)).unwrap(), b"vanilla");
+    }
+
+    #[test]
+    fn a_verified_download_cache_hit_keeps_the_built_overlay_reusable() {
+        use sha1::{Digest, Sha1};
+        let f = Fixture::new();
+        f.write("vanilla/facts.json", b"[]");
+        let body = archive(
+            &[
+                (
+                    "pack.mcmeta",
+                    br#"{"pack":{"description":"test","pack_format":97}}"#.to_vec(),
+                ),
+                ("assets/minecraft/textures/custom", b"original".to_vec()),
+            ],
+            false,
+        );
+        let hash = format!("{:x}", Sha1::digest(&body));
+        f.write(&format!("downloads/pack/{hash}"), &body);
+        let file = f.0.join("downloads/pack").join(&hash);
+        let pack = packs::server_pack(1, &file).unwrap();
+        let out = packs::resource_root(
+            &f.0.join("vanilla"),
+            std::slice::from_ref(&pack),
+            &f.0.join("cache"),
+        )
+        .unwrap();
+        let marker = marker_path(&out);
+        let old = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(100);
+        fs::File::options()
+            .write(true)
+            .open(&marker)
+            .unwrap()
+            .set_modified(old)
+            .unwrap();
+        let original = fs::metadata(&marker).unwrap().modified().unwrap();
+        let request = crate::server_packs::Request {
+            id: 1,
+            url: "http://127.0.0.1:9/unavailable".into(),
+            sha1: Some(hash),
+        };
+        crate::server_packs::download::download_file(
+            file.parent().unwrap(),
+            &request,
+            &[],
+            crate::server_packs::download::MAX_SIZE,
+            &std::sync::mpsc::channel().0,
+        )
+        .unwrap();
+        let reused =
+            packs::resource_root(&f.0.join("vanilla"), &[pack], &f.0.join("cache")).unwrap();
+        assert_eq!(reused, out);
+        assert_eq!(
+            fs::metadata(marker).unwrap().modified().unwrap(),
+            original,
+            "A server reconnect must reuse the existing overlay"
+        );
+        assert_eq!(
+            fs::read(out.join("assets/minecraft/textures/custom")).unwrap(),
+            b"original"
+        );
     }
 
     #[test]

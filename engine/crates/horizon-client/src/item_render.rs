@@ -487,13 +487,16 @@ fn load_definitions(root: &Path) -> BTreeMap<String, ClientItem> {
                         .to_string_lossy()
                         .replace('\\', "/");
                     match fs::read_to_string(&path)
-                        .ok()
-                        .and_then(|t| ClientItem::from_json(&t).ok())
-                    {
-                        Some(item) => {
+                        .map_err(|error| error.to_string())
+                        .and_then(|text| {
+                            ClientItem::from_json(&text).map_err(|error| error.to_string())
+                        }) {
+                        Ok(item) => {
                             out.insert(format!("{namespace}:{name}"), item);
                         }
-                        None => log::warn!("Rusted: invalid item definition {namespace}:{name}"),
+                        Err(error) => log::warn!(
+                            "Rusted: invalid item definition {namespace}:{name}: {error}"
+                        ),
                     }
                 }
             }

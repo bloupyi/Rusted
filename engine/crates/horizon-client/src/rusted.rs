@@ -1,6 +1,6 @@
 //! Rusted's native integration surface. The upstream simulation stays independent.
 pub use rusted_platform::{CREDITS, NAME};
-pub const VERSION: &str = "0.3.5";
+pub const VERSION: &str = rusted_platform::VERSION;
 pub const TITLE_LOGO: &str = "rusted/title-logo";
 /// No Horizon telemetry, registry migrations or Discord application identity in Rusted.
 pub const UPSTREAM_SERVICES: bool = false;

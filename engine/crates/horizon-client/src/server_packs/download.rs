@@ -178,12 +178,15 @@ fn hex(bytes: &[u8]) -> String {
 fn matches(path: &Path, sha1: &str) -> bool {
     path.exists() && sha1_of(path).is_ok_and(|actual| actual == sha1)
 }
-/// `updateModificationTime`: used now, so the cleaner keeps it longest.
+fn usage_path(path: &Path) -> PathBuf {
+    let mut name = path.as_os_str().to_os_string();
+    name.push(".last-used");
+    name.into()
+}
+/// Track recency separately: touching the ZIP invalidates the resource overlay
+/// even though a cache hit has already verified that its bytes are identical.
 fn touch(path: &Path) {
-    let _ = fs::File::options()
-        .append(true)
-        .open(path)
-        .and_then(|f| f.set_modified(SystemTime::now()));
+    let _ = fs::write(usage_path(path), []);
 }
 
 /// `HttpUtil.downloadFile`: into `<dir>/<SHA-1>`. With a hash the cached file
@@ -316,7 +319,17 @@ pub fn vacuum(dir: &Path, max_files: usize) {
             if meta.is_dir() {
                 stack.push(path);
             } else if meta.is_file() && path.parent() != Some(dir) {
-                let time = meta.modified().unwrap_or(SystemTime::UNIX_EPOCH);
+                if path.extension().is_some_and(|ext| ext == "last-used") {
+                    // Sidecars are bookkeeping, not additional cached packs.
+                    if !path.with_extension("").exists() {
+                        let _ = fs::remove_file(&path);
+                    }
+                    continue;
+                }
+                let modified = meta.modified().unwrap_or(SystemTime::UNIX_EPOCH);
+                let time = fs::metadata(usage_path(&path))
+                    .and_then(|meta| meta.modified())
+                    .map_or(modified, |recent| recent.max(modified));
                 files.push((path, time));
             }
         }
@@ -343,7 +356,11 @@ pub fn vacuum(dir: &Path, max_files: usize) {
     ranked.sort_by_key(|f| std::cmp::Reverse(f.1));
     let mut emptied = std::collections::HashSet::new();
     for (path, rank) in ranked.into_iter().take(remove) {
-        match fs::remove_file(&path) {
+        let result = fs::remove_file(&path);
+        if result.is_ok() {
+            let _ = fs::remove_file(usage_path(&path));
+        }
+        match result {
             Ok(()) if rank == 0 => {
                 emptied.insert(path.parent().unwrap_or(dir).to_path_buf());
             }
@@ -421,6 +438,14 @@ mod tests {
         assert!(sent.contains("X-Minecraft-Username: Alex"), "{sent}");
         assert!(sent.contains("X-Minecraft-Pack-Format: 97.1"), "{sent}");
         // Cached: no server this time.
+        let original_modified = SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(100);
+        fs::File::options()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_modified(original_modified)
+            .unwrap();
+        let original_modified = fs::metadata(&path).unwrap().modified().unwrap();
         let cached = Request {
             url: "http://127.0.0.1:9/gone.zip".into(),
             ..request
@@ -429,6 +454,12 @@ mod tests {
             download_file(&dir, &cached, &[], MAX_SIZE, &channel().0).unwrap(),
             path
         );
+        assert_eq!(
+            fs::metadata(&path).unwrap().modified().unwrap(),
+            original_modified,
+            "Reusing identical ZIP bytes must preserve the overlay fingerprint"
+        );
+        assert!(usage_path(&path).is_file());
         fs::remove_dir_all(dir).unwrap();
     }
 
@@ -540,6 +571,42 @@ mod tests {
         assert!(dir.join("a/3").exists() && dir.join("b/1").exists());
         assert!(!dir.join("a/1").exists() && !dir.join("a/2").exists());
         assert!(dir.join("log.json").exists());
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn cleaner_counts_packs_and_honors_recency_without_changing_the_zip() {
+        let dir = scratch();
+        fs::create_dir_all(dir.join("pack")).unwrap();
+        for (name, time) in [("old", 10), ("new", 20)] {
+            let path = dir.join("pack").join(name);
+            fs::write(&path, b"pack").unwrap();
+            fs::File::options()
+                .write(true)
+                .open(path)
+                .unwrap()
+                .set_modified(SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(time))
+                .unwrap();
+        }
+        let reused = dir.join("pack/old");
+        let modified = fs::metadata(&reused).unwrap().modified().unwrap();
+        touch(&reused);
+        touch(&dir.join("pack/orphan"));
+        vacuum(&dir, 2);
+        assert!(
+            reused.is_file() && dir.join("pack/new").is_file(),
+            "Usage markers must not consume pack slots"
+        );
+        assert!(!usage_path(&dir.join("pack/orphan")).exists());
+        vacuum(&dir, 1);
+        assert!(
+            reused.is_file(),
+            "Recently reused pack must survive cleanup"
+        );
+        assert!(!dir.join("pack/new").exists());
+        assert_eq!(fs::metadata(&reused).unwrap().modified().unwrap(), modified);
+        vacuum(&dir, 0);
+        assert!(!reused.exists() && !usage_path(&reused).exists());
         fs::remove_dir_all(dir).unwrap();
     }
 }

@@ -1,4 +1,19 @@
-# État actuel — moteur 0.3.6 / lanceur 0.2.5
+# En développement — ressources Windows et JAR existants
+
+Le journal Hypixel fourni mesure 240 s dans la construction de l'overlay.
+Les sources en développement évitent les copies de dossiers vanilla intacts
+sous Windows et l'invalidation du cache lors de la réutilisation d'un ZIP.
+Ces changements et leur portée de validation sont suivis dans
+[RESOURCE-PACK-PERFORMANCE.md](RESOURCE-PACK-PERFORMANCE.md). Les huit modèles
+d'objets refusés dans ce journal restent à reproduire ; leurs erreurs détaillées
+seront désormais conservées.
+
+Les tests de composants avec les vrais JAR Sodium/Iris/Distant Horizons **ne
+passent pas**. Les métadonnées et types de valeurs ajoutés au pont ne remplacent
+pas les mixins ni les API de rendu manquants. Voir le
+[rapport explicite](results/rusted-render-mod-components.json).
+
+# État stable — moteur 0.3.6 / lanceur 0.2.5
 
 Corrigés et vérifiés localement : découverte des modèles d'objets imbriqués, textures
 d'atlas hors des dossiers standard, damier de remplacement, styles des noms conservés
