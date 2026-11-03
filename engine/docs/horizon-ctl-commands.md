@@ -20,6 +20,7 @@ Every command `horizon-ctl` takes, its MCP tool in `horizon-ctl mcp` (the launch
 | `save` | `save` | Save the world | none |
 | `quit` | `quit` | Save and exit the game | none |
 | `screenshot PATH` | `screenshot` | Write the next rendered frame as a PNG | none |
+| `resource-pack ID` | CLI only (raw command) | Select one discovered local pack and wait for a complete CPU/GPU reload; returns `pack` and `total_ms`. Initial resource/world loading must be finished. Intended for developer comparisons; excludes download time. | `id` (string, required): discovered pack id such as `file/benchmark.zip` |
 
 ## Observe (JSON state)
 

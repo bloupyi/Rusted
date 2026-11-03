@@ -244,6 +244,22 @@ public static class RustedGuiSmoke {
     Invoke-LauncherButton 101 200
     if ([RustedGuiSmoke]::GetDlgItem($mainWindow, 210) -ne [IntPtr]::Zero) { throw 'Creation form still crowds the instance library.' }
     Invoke-LauncherButton 1070 210
+    # The creation form is built control by control. Seeing its first EDIT
+    # from this other process does not mean the later COMBOBOX already exists.
+    # Wait for a complete, laid-out form across three samples. A later catalog
+    # refresh can briefly rebuild the controls too; a missing control is not
+    # evidence that its final layout is clipped.
+    $stableFormSamples = 0
+    for ($attempt = 0; $attempt -lt 50; $attempt++) {
+        $formReady = $true
+        foreach ($Id in @(210, 212, 213, 800, 1)) {
+            if (-not [RustedGuiSmoke]::ControlFits($mainWindow, $Id)) { $formReady = $false }
+        }
+        if ($formReady) { $stableFormSamples++ } else { $stableFormSamples = 0 }
+        if ($stableFormSamples -ge 3) { break }
+        Start-Sleep -Milliseconds 100
+    }
+    if ($stableFormSamples -lt 3) { throw 'Instance creation form did not reach a complete compact layout.' }
     foreach ($Id in @(210, 212, 213, 800, 1)) {
         if (-not [RustedGuiSmoke]::ControlFits($mainWindow, $Id)) { throw "Creation control $Id clipped in the compact window." }
     }

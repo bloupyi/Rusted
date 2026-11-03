@@ -26,8 +26,35 @@ supprime ni ne remplace les fichiers vanilla derrière une jonction.
 Le banc Linux utilise un pack original de 5 000 fichiers, **pas le pack
 Hypixel**. Il confirme la réutilisation du cache et mesure séparément les
 étapes CPU. Il ne mesure ni le temps gagné sur le PC du joueur, ni le temps du
-premier chargement Windows. Les jonctions demandent une validation Windows
-réelle avant d'annoncer un gain chiffré sur cette plateforme.
+premier chargement Windows. Les tests de cache et de téléchargement passent
+aussi sur les runners Windows réels (Actions 41609103593), notamment la
+suppression des jonctions sans toucher aux fichiers vanilla. Aucun gain chiffré
+de chargement Windows n'est encore mesuré.
+
+## Comparaison complète avec Java
+
+Sur le même ZIP original de 5 000 fichiers, à l'écran titre, avec des profils
+neufs et les deux clients en Vulkan logiciel sur le même banc Linux :
+
+| Rechargement complet | Rusted natif | Minecraft Java 26.3 |
+| --- | ---: | ---: |
+| Première activation | 1,409 s | 3,972 s |
+| Médiane des deux rechargements suivants | 1,248 s | 3,226 s |
+
+Ces mesures comprennent les ressources CPU et leur application GPU, pas
+seulement l'overlay. Le téléchargement et le démarrage initial du jeu sont
+exclus. Les caches du système d'exploitation n'ont pas été vidés. Elles
+**ne garantissent pas ces temps pour Hypixel ni pour un PC Windows** : les
+images, modèles et polices du pack réel peuvent changer le coût du rechargement.
+Le [rapport](results/rusted-resource-reload-comparison.json) conserve les
+échantillons, l'empreinte du ZIP et l'environnement.
+
+`scripts/compare_resource_reload.py --help` décrit le banc reproductible. Il
+utilise un JDK 25 et une installation Minecraft locale. Un agent de test
+original instrumente le tick Java avec l'API Classfile du JDK, sélectionne le
+pack et mesure la fin de `Minecraft.reloadResourcePacks()`. Le contrôle
+développeur `resource-pack ID` mesure les deux phases du client natif. Aucun
+compte, JAR Minecraft ou fichier du pack Hypixel n'est publié.
 
 Les huit définitions d'objets Hypixel refusées dans le journal ne sont pas
 corrigées par cette optimisation. Le prochain journal indiquera la raison de
