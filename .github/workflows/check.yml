@@ -82,8 +82,12 @@ jobs:
       - run: rustup toolchain install 1.99.1 --profile minimal
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libasound2-dev libudev-dev
-      - run: cargo +1.99.1 test --manifest-path engine/Cargo.toml --locked --profile fast -p horizon-client --features mods --lib packs::cache::tests::
-      - run: cargo +1.99.1 test --manifest-path engine/Cargo.toml --locked --profile fast -p horizon-client --features mods --lib server_packs::download::tests::
+      - run: >-
+          cargo +1.99.1 test --manifest-path engine/Cargo.toml --locked --profile fast
+          -p horizon-client --features mods --lib packs::cache::tests::
+      - run: >-
+          cargo +1.99.1 test --manifest-path engine/Cargo.toml --locked --profile fast
+          -p horizon-client --features mods --lib server_packs::download::tests::
   horizon-tools:
     runs-on: ubuntu-latest
     steps:
