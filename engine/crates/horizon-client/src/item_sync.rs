@@ -257,13 +257,88 @@ fn profile_tag(p: &Profile) -> Tag {
         ));
     }
     entries.push(("properties", Tag::List(properties)));
+    for (name, value) in [
+        ("texture", &p.body),
+        ("cape", &p.cape),
+        ("elytra", &p.elytra),
+    ] {
+        if let Some(value) = value {
+            entries.push((name, Tag::String(value.as_str().into())));
+        }
+    }
+    if let Some(slim) = p.slim {
+        entries.push((
+            "model",
+            Tag::String(if slim { "slim" } else { "wide" }.into()),
+        ));
+    }
     Tag::compound(entries)
+}
+
+/// The same profile component in the other direction (integrated/LAN server).
+pub(crate) fn profile_to_network(tag: &Tag) -> Profile {
+    let text = |tag: Option<&Tag>| match tag {
+        Some(Tag::String(s)) => Some(s.to_string_lossy()),
+        _ => None,
+    };
+    let name = match tag {
+        Tag::String(s) => Some(s.to_string_lossy()),
+        _ => text(tag.get("name")),
+    };
+    let properties = match tag.get("properties") {
+        Some(Tag::List(properties)) => properties
+            .iter()
+            .filter_map(|property| {
+                Some((
+                    text(property.get("name"))?,
+                    text(property.get("value"))?,
+                    text(property.get("signature")),
+                ))
+            })
+            .collect(),
+        _ => Vec::new(),
+    };
+    Profile {
+        name,
+        id: crate::skins::profile_uuid_nbt(tag),
+        properties,
+        body: text(tag.get("texture")),
+        cape: text(tag.get("cape")),
+        elytra: text(tag.get("elytra")),
+        slim: text(tag.get("model")).and_then(|value| match value.as_str() {
+            "slim" => Some(true),
+            "wide" => Some(false),
+            _ => None,
+        }),
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use horizon_protocol::registry::Ids;
+
+    #[test]
+    fn custom_head_profiles_and_resource_patches_survive_server_inventory_sync() {
+        let profile = Profile {
+            name: Some("Fixture".into()),
+            id: Some(123),
+            properties: vec![("textures".into(), "original-texture-property".into(), None)],
+            body: Some("fixture:entity/head".into()),
+            cape: Some("fixture:cape".into()),
+            elytra: None,
+            slim: Some(true),
+        };
+        let tag = profile_tag(&profile);
+        assert_eq!(profile_to_network(&tag), profile);
+        let mut stack = ItemStack::new("minecraft:player_head", 1);
+        stack.data_mut().set_other("minecraft:profile", Some(tag));
+        let wire = crate::lan::guest::stack_to_network(|_| 1, |_, _| None, &Some(stack)).unwrap();
+        assert_eq!(
+            wire.component(component::PROFILE),
+            Some(&Component::Profile(profile))
+        );
+    }
 
     #[test]
     fn merchant_water_cost_survives_the_offer_packet() {

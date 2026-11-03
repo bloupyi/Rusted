@@ -570,6 +570,47 @@ fn network_stack(
         ));
     }
     if let Some(d) = s.data() {
+        use horizon_protocol::item::{Component, component};
+        if let Some(model) = crate::save::text(d.other("minecraft:item_model")) {
+            stack
+                .added
+                .push((component::ITEM_MODEL, Component::Ident(model)));
+        }
+        if let Some(model) = d.other("minecraft:custom_model_data") {
+            let list = |key| match model.get(key) {
+                Some(horizon_world::nbt::Tag::List(values)) => values.as_slice(),
+                _ => &[],
+            };
+            stack.added.push((
+                component::CUSTOM_MODEL_DATA,
+                Component::CustomModelData {
+                    floats: list("floats")
+                        .iter()
+                        .filter_map(|v| crate::save::float(Some(v)).map(|v| v as f32))
+                        .collect(),
+                    flags: list("flags")
+                        .iter()
+                        .filter_map(|v| crate::save::number(Some(v)).map(|v| v != 0))
+                        .collect(),
+                    strings: list("strings")
+                        .iter()
+                        .filter_map(|v| crate::save::text(Some(v)))
+                        .collect(),
+                    colors: list("colors")
+                        .iter()
+                        .filter_map(|v| crate::save::number(Some(v)).map(|v| v as i32))
+                        .collect(),
+                },
+            ));
+        }
+        if let Some(profile) = d.other("minecraft:profile") {
+            stack.added.push((
+                horizon_protocol::item::component::PROFILE,
+                horizon_protocol::item::Component::Profile(crate::item_sync::profile_to_network(
+                    profile,
+                )),
+            ));
+        }
         if let Some(rgb) = d.dyed_color {
             stack.added.push((
                 horizon_protocol::item::component::DYED_COLOR,
@@ -730,6 +771,39 @@ pub fn within_block_range(eye: [f64; 3], range: f64, pos: [i32; 3]) -> bool {
 mod tests {
     use super::*;
     use horizon_protocol::item::{Component, component};
+
+    #[test]
+    fn custom_item_models_and_selectors_survive_server_inventory_sync() {
+        use horizon_world::nbt::Tag;
+        let mut item = ItemStack::new("minecraft:diamond", 1);
+        item.data_mut().set_other(
+            "minecraft:item_model",
+            Some(Tag::String("fixture:gem".into())),
+        );
+        item.data_mut().set_other(
+            "minecraft:custom_model_data",
+            Some(Tag::compound([
+                ("floats", Tag::List(vec![Tag::Float(1.5f32.to_bits())])),
+                ("flags", Tag::List(vec![Tag::Byte(0), Tag::Byte(1)])),
+                ("strings", Tag::List(vec![Tag::String("copper".into())])),
+                ("colors", Tag::List(vec![Tag::Int(0xff8040)])),
+            ])),
+        );
+        let stack = stack_to_network(|_| 7, |_, _| None, &Some(item)).unwrap();
+        assert_eq!(
+            stack.component(component::ITEM_MODEL),
+            Some(&Component::Ident("fixture:gem".into()))
+        );
+        assert_eq!(
+            stack.component(component::CUSTOM_MODEL_DATA),
+            Some(&Component::CustomModelData {
+                floats: vec![1.5],
+                flags: vec![false, true],
+                strings: vec!["copper".into()],
+                colors: vec![0xff8040],
+            })
+        );
+    }
 
     #[test]
     fn potions_go_as_potion_registry_ids() {

@@ -68,7 +68,7 @@ fn write_properties(p: &[crate::packets::login::Property], w: &mut Writer) {
     p.iter()
         .for_each(|p| crate::packets::login::Property::write(p, w));
 }
-fn read_profile(r: &mut Reader) -> Result<Profile> {
+pub(crate) fn read_profile(r: &mut Reader) -> Result<Profile> {
     let mut p = Profile::default();
     // ByteBufCodecs.either: true is the full GameProfile, false a Partial.
     if r.bool()? {
@@ -99,7 +99,7 @@ fn read_profile(r: &mut Reader) -> Result<Profile> {
     }
     Ok(p)
 }
-fn write_profile(p: &Profile, w: &mut Writer) {
+pub(crate) fn write_profile(p: &Profile, w: &mut Writer) {
     let full = p.uuid.is_some() && p.name.is_some();
     w.bool(full);
     if full {

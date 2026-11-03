@@ -88,6 +88,24 @@ jobs:
       - run: >-
           cargo +1.99.1 test --manifest-path engine/Cargo.toml --locked --profile fast
           -p horizon-client --features mods --lib server_packs::download::tests::
+      - run: >-
+          cargo +1.99.1 test --manifest-path engine/Cargo.toml --locked --profile fast
+          -p horizon-protocol
+      - run: >-
+          cargo +1.99.1 test --manifest-path engine/Cargo.toml --locked --profile fast
+          -p horizon-client --features mods --lib hud::tests::
+      - run: >-
+          cargo +1.99.1 test --manifest-path engine/Cargo.toml --locked --profile fast
+          -p horizon-client --features mods --lib skins::tests::
+      - run: >-
+          cargo +1.99.1 test --manifest-path engine/Cargo.toml --locked --profile fast
+          -p horizon-client --features mods --lib item_sync::tests::
+      - run: >-
+          cargo +1.99.1 test --manifest-path engine/Cargo.toml --locked --profile fast
+          -p horizon-client --features mods --lib lan::guest::tests::
+      - run: >-
+          cargo +1.99.1 test --manifest-path engine/Cargo.toml --locked --profile fast
+          -p horizon-client --features mods --bin rusted removing_an_npc_from_tab
   horizon-tools:
     runs-on: ubuntu-latest
     steps:

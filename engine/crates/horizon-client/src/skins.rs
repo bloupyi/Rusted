@@ -453,7 +453,16 @@ pub fn head_skin(
     resolver: &mut Resolver,
     downloads: &mut Downloader,
     atlas: impl Fn(&str) -> bool,
+    root: &std::path::Path,
 ) -> String {
+    if let Some(texture) = profile.get("texture").and_then(serde_json::Value::as_str)
+        && let Some(location) = downloads.resource_skin(root, texture)
+    {
+        if atlas(&location) {
+            return location;
+        }
+        downloads.again(&location);
+    }
     let p = parse_profile(profile);
     let property = p.textures.or_else(|| {
         let key = p.dynamic.as_ref()?;
@@ -627,10 +636,39 @@ pub struct Downloader {
     /// atlas uploads again (`again`); the disk cache backs anything dropped.
     images: std::collections::HashMap<String, Vec<u8>>,
     image_order: std::collections::VecDeque<String>,
+    resource_paths: std::collections::HashMap<String, Option<std::path::PathBuf>>,
+    resource_generation: u64,
 }
 /// `images` is bounded only so a long session on a busy server does not grow
 /// without end; the disk cache holds everything it drops.
 const MAX_SKIN_IMAGES: usize = 1024;
+
+/// Reserve an atlas slot, reusing an existing location and evicting the LRU
+/// entry only when full. Returning an already queued image must not consume
+/// another slot or leave two names pointing to the same texture region.
+pub fn reserve_atlas_slot(
+    slots: &mut Vec<(String, usize)>,
+    location: &str,
+    capacity: usize,
+) -> (usize, Option<String>) {
+    assert!(capacity > 0);
+    if let Some(index) = slots.iter().position(|(name, _)| name == location) {
+        let entry = slots.remove(index);
+        let slot = entry.1;
+        slots.push(entry);
+        return (slot, None);
+    }
+    let (slot, evicted) =
+        match (0..capacity).find(|slot| !slots.iter().any(|(_, used)| used == slot)) {
+            Some(slot) => (slot, None),
+            None => {
+                let (name, slot) = slots.remove(0);
+                (slot, Some(name))
+            }
+        };
+    slots.push((location.to_owned(), slot));
+    (slot, evicted)
+}
 impl Downloader {
     pub fn new(root: std::path::PathBuf) -> Self {
         let (send, done) = std::sync::mpsc::channel();
@@ -643,7 +681,59 @@ impl Downloader {
             queued: Default::default(),
             images: Default::default(),
             image_order: Default::default(),
+            resource_paths: Default::default(),
+            resource_generation: 0,
         }
+    }
+    /// ResourceTexture overrides are local pack images, not URLs to the skin
+    /// service. Load only the requested texture, preserving its alpha channel.
+    pub fn resource_skin(&mut self, root: &std::path::Path, id: &str) -> Option<String> {
+        use sha1::Digest;
+        let (namespace, path) = id.split_once(':').unwrap_or(("minecraft", id));
+        if namespace.is_empty()
+            || !namespace
+                .bytes()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || b"_.-".contains(&c))
+            || !path
+                .bytes()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || b"_/.-".contains(&c))
+            || namespace == "."
+            || namespace == ".."
+            || std::path::Path::new(path)
+                .components()
+                .any(|c| !matches!(c, std::path::Component::Normal(_)))
+        {
+            return None;
+        }
+        let location = format!(
+            "skins/resource-{:x}",
+            sha1::Sha1::digest(format!("{root:?}:{}:{id}", self.resource_generation).as_bytes())
+        );
+        if let Some(path) = self.resource_paths.get(&location) {
+            return path.as_ref().map(|_| location);
+        }
+        let file = root
+            .join("assets")
+            .join(namespace)
+            .join("textures")
+            .join(format!("{path}.png"));
+        let image = crate::hud::decode(&file)
+            .ok()
+            .filter(|(w, h, _)| *w == 64 && *h == 64);
+        self.resource_paths
+            .insert(location.clone(), image.as_ref().map(|_| file));
+        let (_, _, pixels) = image?;
+        self.queue(location.clone(), pixels);
+        Some(location)
+    }
+    pub fn invalidate_resources(&mut self) {
+        self.resource_generation = self.resource_generation.wrapping_add(1);
+        self.resource_paths.clear();
+        let local = |location: &str| location.starts_with("skins/resource-");
+        self.images.retain(|location, _| !local(location));
+        self.image_order.retain(|location| !local(location));
+        self.queued.retain(|location| !local(location));
+        self.ready.retain(|(location, _)| !local(location));
     }
     /// How the download of `url` stands, starting it the first time.
     pub fn state(&mut self, kind: Kind, url: &str) -> Download {
@@ -720,6 +810,10 @@ impl Downloader {
             return false;
         };
         let image = self.images.get(location).cloned().or_else(|| {
+            if let Some(Some(path)) = self.resource_paths.get(location) {
+                let (w, h, pixels) = crate::hud::decode(path).ok()?;
+                return (w == 64 && h == 64).then_some(pixels);
+            }
             let file = self
                 .root
                 .join(if digest.len() > 2 { &digest[..2] } else { "xx" })
@@ -959,6 +1053,73 @@ mod tests {
         d.queue("skins/def".into(), vec![4]);
         assert!(d.again("skins/def"));
         assert_eq!(d.take_ready(), vec![("skins/def".to_owned(), vec![4])]);
+    }
+
+    #[test]
+    fn atlas_uploads_reuse_locations_and_evict_the_least_recently_shown_slot() {
+        use super::reserve_atlas_slot;
+        let mut slots = Vec::new();
+        assert_eq!(reserve_atlas_slot(&mut slots, "head-a", 2), (0, None));
+        assert_eq!(reserve_atlas_slot(&mut slots, "head-b", 2), (1, None));
+        assert_eq!(reserve_atlas_slot(&mut slots, "head-a", 2), (0, None));
+        assert_eq!(slots.len(), 2);
+        assert_eq!(
+            reserve_atlas_slot(&mut slots, "head-c", 2),
+            (1, Some("head-b".into()))
+        );
+        slots.retain(|(name, _)| name != "head-a");
+        assert_eq!(reserve_atlas_slot(&mut slots, "head-d", 2), (0, None));
+        // A new atlas has no uploaded locations even if downloads are ready.
+        slots.clear();
+        assert_eq!(reserve_atlas_slot(&mut slots, "head-c", 2), (0, None));
+    }
+
+    #[test]
+    fn resource_head_textures_preserve_alpha_and_change_generation_on_reload() {
+        let root =
+            std::env::temp_dir().join(format!("rusted-resource-head-{}", std::process::id()));
+        let file = root.join("assets/fixture/textures/entity/head.png");
+        std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+        let write = |color: [u8; 4]| {
+            let mut encoder = png::Encoder::new(std::fs::File::create(&file).unwrap(), 64, 64);
+            encoder.set_color(png::ColorType::Rgba);
+            encoder.set_depth(png::BitDepth::Eight);
+            let mut writer = encoder.write_header().unwrap();
+            writer.write_image_data(&color.repeat(64 * 64)).unwrap();
+        };
+        write([255, 0, 0, 0]);
+        let mut downloads = super::Downloader::new(root.join("cache"));
+        let first = downloads
+            .resource_skin(&root, "fixture:entity/head")
+            .unwrap();
+        assert_eq!(
+            downloads.take_ready()[0].1[3],
+            0,
+            "Resource overrides must preserve alpha"
+        );
+        assert_eq!(
+            downloads.resource_skin(&root, "fixture:entity/head"),
+            Some(first.clone())
+        );
+        assert!(downloads.take_ready().is_empty());
+        write([0, 0, 255, 255]);
+        downloads.invalidate_resources();
+        assert!(downloads.take_ready().is_empty());
+        assert!(
+            !downloads.again(&first),
+            "Old pack pixels must not be uploaded again"
+        );
+        let second = downloads
+            .resource_skin(&root, "fixture:entity/head")
+            .unwrap();
+        assert_ne!(first, second);
+        assert_eq!(&downloads.take_ready()[0].1[..4], &[0, 0, 255, 255]);
+        assert!(
+            downloads
+                .resource_skin(&root, "fixture:../../outside")
+                .is_none()
+        );
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

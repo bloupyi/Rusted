@@ -183,7 +183,7 @@ fn wrap_border((name, w, h, data): &PackedImage) -> PackedImage {
 /// Sprites the atlas definitions (`atlases/*.json`) add beyond the texture
 /// files already packed: generated ones (`paletted_permutations` such as the
 /// armour trim sprites, `unstitch` regions) and files listed under another id.
-fn atlas_sprites(root: &Path, packed: &[PackedImage]) -> Vec<PackedImage> {
+fn atlas_sprites(root: &Path, packed: &[PackedImage]) -> Vec<(PackedImage, Option<String>)> {
     use crate::atlas_sources::{self, SpriteOrigin};
     let have: std::collections::HashSet<&str> = packed.iter().map(|i| i.0.as_str()).collect();
     let textures = atlas_sources::list_textures(root);
@@ -222,21 +222,32 @@ fn atlas_sprites(root: &Path, packed: &[PackedImage]) -> Vec<PackedImage> {
     };
     let first = |(name, origins): &(String, Vec<(usize, SpriteOrigin)>)| {
         origins.iter().find_map(|(order, origin)| {
+            let mut animated_source = None;
             let image = match origin {
-                SpriteOrigin::File(texture) => {
-                    let path = texture.strip_prefix("minecraft:").unwrap_or(texture);
-                    load(texture, "textures").map(|(w, h, p)| {
-                        // Animated strips keep their first frame, like the packed files.
-                        if h > w && (path.starts_with("block/") || path.starts_with("item/")) {
-                            (w, w, p[..(w * w * 4) as usize].to_vec())
-                        } else {
-                            (w, h, p)
+                SpriteOrigin::File(texture) => load(texture, "textures").map(|(w, h, p)| {
+                    let path = atlas_sources::texture_path(root, texture, "textures");
+                    if let Some(meta) = fs::read_to_string(path.with_extension("png.mcmeta"))
+                        .ok()
+                        .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
+                        .and_then(|meta| meta.get("animation").cloned())
+                        .and_then(|meta| AnimationMetadata::from_json(&meta.to_string()).ok())
+                    {
+                        let [fw, fh] = meta.frame_size(w as i32, h as i32);
+                        if let (Ok(fw), Ok(fh)) = (u32::try_from(fw), u32::try_from(fh))
+                            && fw > 0
+                            && fh > 0
+                            && w % fw == 0
+                            && h % fh == 0
+                        {
+                            animated_source = Some(texture.clone());
+                            return (fw.max(fh), fw.max(fh), strip_frame(&p, w, 0, 0, fw, fh));
                         }
-                    })
-                }
+                    }
+                    (w, h, p)
+                }),
                 generated => atlas_sources::generate(generated, &load),
             };
-            image.map(|(w, h, pixels)| (*order, (name.clone(), w, h, pixels)))
+            image.map(|(w, h, pixels)| (*order, ((name.clone(), w, h, pixels), animated_source)))
         })
     };
     let mut out: Vec<_> = crate::par::par_map(&names, first)
@@ -467,7 +478,7 @@ impl HudAtlas {
         });
         let mut flags = HashMap::new();
         let mut gui_sizes = HashMap::new();
-        let mut animated: Vec<String> = Vec::new();
+        let mut animated: Vec<(String, String)> = Vec::new();
         let mut images: Vec<PackedImage> = Vec::with_capacity(decoded.len());
         for (image, image_flags, gui_size, is_animated) in decoded {
             if let Some(f) = image_flags {
@@ -477,12 +488,17 @@ impl HudAtlas {
                 gui_sizes.insert(image.0.clone(), size);
             }
             if is_animated {
-                animated.push(image.0.clone());
+                animated.push((image.0.clone(), format!("minecraft:{}", image.0)));
             }
             images.push(image);
         }
         if full {
-            images.extend(atlas_sprites(root, &images));
+            for (image, source) in atlas_sprites(root, &images) {
+                if let Some(source) = source {
+                    animated.push((image.0.clone(), source));
+                }
+                images.push(image);
+            }
         }
         if let Some((width, height, pixels)) = crate::rusted::title_logo() {
             images.push((crate::rusted::TITLE_LOGO.into(), width, height, pixels));
@@ -568,11 +584,11 @@ impl HudAtlas {
         let mut loaded = crate::sprites::Sprites::default();
         let mut sprite_animations = Vec::new();
         animated.sort();
-        for name in animated {
+        for (name, source) in animated {
             let Some(rect) = sprites.get(&name).copied() else {
                 continue;
             };
-            let layer = loaded.insert(root, &format!("minecraft:{name}"))?;
+            let layer = loaded.insert(root, &source)?;
             let Some(animation) = loaded.animations.iter().find(|a| a.layer == layer).cloned()
             else {
                 continue;
@@ -1676,6 +1692,36 @@ mod tests {
         assert_eq!(rect.texels((atlas.width, atlas.height)), (16, 16));
         assert_eq!(texel_at(&atlas, *rect, 0, 0), [0, 0, 255, 255]);
         assert_eq!(texel_at(&atlas, *rect, 15, 15), [0, 0, 255, 255]);
+    }
+
+    #[test]
+    fn custom_namespace_and_alias_sprites_keep_their_animation_sources() {
+        let root = std::env::temp_dir().join(format!("rusted-custom-anim-{}", std::process::id()));
+        let textures = root.join("assets/fixture/textures/custom");
+        fs::create_dir_all(&textures).unwrap();
+        let atlases = root.join("assets/minecraft/atlases");
+        fs::create_dir_all(&atlases).unwrap();
+        write_strip(
+            &textures.join("gem.png"),
+            16,
+            32,
+            &[[255, 0, 0, 255], [0, 0, 255, 255]],
+            Some(r#"{"animation":{"frames":[1,0],"frametime":2,"interpolate":true}}"#),
+        );
+        fs::write(atlases.join("items.json"), r#"{"sources":[{"type":"minecraft:single","resource":"fixture:custom/gem","sprite":"fixture:item/alias_gem"}]}"#).unwrap();
+        let atlas = HudAtlas::build(&root).unwrap();
+        let rect = atlas.sprites["fixture:item/alias_gem"];
+        let (_, animation) = atlas
+            .sprite_animations
+            .iter()
+            .find(|(r, _)| r.u0 == rect.u0 && r.v0 == rect.v0)
+            .expect("custom alias animation");
+        assert_eq!(rect.texels((atlas.width, atlas.height)), (16, 16));
+        assert_eq!(texel_at(&atlas, rect, 0, 0), [0, 0, 255, 255]);
+        assert_eq!(animation.frame(0), 1);
+        assert_ne!(animation.frame(0), animation.frame(2));
+        assert!(animation.blend(1).millis > 0);
+        fs::remove_dir_all(root).unwrap();
     }
     #[test]
     fn a_strip_frames_size_comes_from_its_mcmeta() {
