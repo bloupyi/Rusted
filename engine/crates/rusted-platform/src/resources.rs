@@ -1,5 +1,5 @@
 //! Loader metadata and passive files only: never execute or inspect Java bytecode.
-mod metadata;
+pub(crate) mod metadata;
 #[cfg(test)]
 mod tests;
 use std::{collections::BTreeSet, fs, io::Read, path::Path};
@@ -17,7 +17,7 @@ pub struct ResourceMod {
 }
 
 /// Paths must have the same meaning on Unix and Windows, including case collisions.
-fn safe_path(name: &str) -> bool {
+pub(crate) fn safe_path(name: &str) -> bool {
     !name.is_empty()
         && !name.starts_with('/')
         && !name.contains(['\\', ':'])

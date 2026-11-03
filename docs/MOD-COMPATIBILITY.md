@@ -1,7 +1,14 @@
-# Compatibilité des mods — moteur Rusted 0.3.6 / lanceur 0.2.5
+# Compatibilité des mods — moteur stable 0.3.6 / lanceur 0.2.7
+
+Le pont pour les **JAR Fabric existants** est maintenant en développement :
+[périmètre, tests et activation expérimentale](JAVA-MOD-BRIDGE.md). YOSBR 0.1.2
+et un JAR de test s'exécutent dans le processus natif. Le ZIP stable 0.2.7 ne
+contient pas encore ce pont. Sodium, Iris et Distant Horizons ne fonctionnent
+pas dans ce parcours expérimental.
 
 | Type | Rusted natif | Java / Fabric |
 | --- | --- | --- |
+| JAR avec port natif Rust/WASM explicite | Expérimental : code du port chargé par le runtime natif ; activation dans Options > Mods | Code Java du loader original |
 | Mods natifs `.hmod` | API WASM ; activation et options dans le jeu | Sans objet |
 | Fabric et Quilt sans code | Ressources et données prises en charge, chargées directement depuis `mods/*.jar` | Chargeur Java classique |
 | Forge et NeoForge `lowcodefml` sans dépendances | Même chargement natif des ressources et données prises en charge | Chargeurs non intégrés au lanceur |
@@ -25,9 +32,14 @@ Les archives placées manuellement dans `mods` sont soumises aux mêmes contrôl
 Dans un pack Prism/Modrinth en mode automatique, les modules passifs compatibles conservent
 le moteur natif ; les mods avec code conservent le parcours Java/Fabric existant.
 
-Cette compatibilité ne fournit pas l'API Fabric ni les injections Java/OpenGL. Faire fonctionner
+La version stable ne fournit pas l'API Fabric ni les injections Java/OpenGL. Faire fonctionner
 les JAR de Sodium, Iris et Distant Horizons dans Rusted demande encore des interfaces natives
 et un travail sur leurs contrats de rendu, de monde et de threads. Aucun code source de ces
 projets n'a été lu ou réutilisé.
 
 Pour les fichiers de shaderpacks, voir [le parcours natif GLSL/WGSL](NATIVE-SHADERPACKS.md).
+
+Le mécanisme expérimental des ports associés aux JAR est décrit dans
+[NATIVE-MOD-PORTS.md](NATIVE-MOD-PORTS.md). Il ne fournit pas l’exécution des JAR
+Java existants sans port. Le nouveau pont JVM est un parcours distinct : il
+exécute leur bytecode original dans les limites des API déjà implémentées.

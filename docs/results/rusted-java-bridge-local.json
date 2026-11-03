@@ -1,0 +1,79 @@
+{
+  "status": "experimental",
+  "platform": "Linux x86_64; Vulkan lavapipe; JDK 25",
+  "launcher_stable_contains_bridge": false,
+  "published_mod": {
+    "name": "YOSBR",
+    "version": "0.1.2",
+    "url": "https://cdn.modrinth.com/data/WwbubTsV/versions/KMOzdYko/yosbr-0.1.2.jar",
+    "sha512": "254f2225f6446523aa8c8274e83b31e27f3b2afc8fe4f490fb1b169dd518e10c7993acda5db0ab597474ddf9d69506b5e794242fada1e2f89ed7bf9d412a8f78",
+    "jar_modified": false
+  },
+  "probe": {
+    "fixture_bytecode_compiled_against_minecraft_26_3": true,
+    "unchanged_jar_code_and_resources_executed": true,
+    "client_tick_snapshot_and_chat": true,
+    "client_thread_identity_preserved": true,
+    "failed_mod_isolated": true,
+    "minecraft_java_class_fallback_blocked": true,
+    "mixins_rejected": true,
+    "unicode_and_semicolon_paths": true,
+    "yosbr": {
+      "sha512": "254f2225f6446523aa8c8274e83b31e27f3b2afc8fe4f490fb1b169dd518e10c7993acda5db0ab597474ddf9d69506b5e794242fada1e2f89ed7bf9d412a8f78",
+      "default_options_copied": true,
+      "existing_options_preserved": true,
+      "jar_unmodified": true
+    },
+    "mod_container_version_and_jar_resources": true,
+    "semantic_version_ordering": true,
+    "static_field_static_method_instance_method_entrypoints": true
+  },
+  "native_world_tests": [
+    {
+      "server_thread": true,
+      "passed": true,
+      "account_used": false,
+      "jvm_in_native_process": true,
+      "chat": {
+        "chat": [
+          "[fixture_tick] JAR callback: tick=60 health=20.0 time=62",
+          "[fixture_members] JAR member: instance",
+          "[fixture_members] JAR member: static",
+          "[fixture_members] JAR member: field"
+        ]
+      },
+      "native_player_health": 20.0,
+      "yosbr_original_sha512": "254f2225f6446523aa8c8274e83b31e27f3b2afc8fe4f490fb1b169dd518e10c7993acda5db0ab597474ddf9d69506b5e794242fada1e2f89ed7bf9d412a8f78",
+      "member_field_static_and_instance_callbacks_in_native_world": true
+    },
+    {
+      "server_thread": false,
+      "passed": true,
+      "account_used": false,
+      "jvm_in_native_process": true,
+      "chat": {
+        "chat": [
+          "[fixture_tick] JAR callback: tick=60 health=20.0 time=109",
+          "[fixture_members] JAR member: instance",
+          "[fixture_members] JAR member: static",
+          "[fixture_members] JAR member: field"
+        ]
+      },
+      "native_player_health": 20.0,
+      "yosbr_original_sha512": "254f2225f6446523aa8c8274e83b31e27f3b2afc8fe4f490fb1b169dd518e10c7993acda5db0ab597474ddf9d69506b5e794242fada1e2f89ed7bf9d412a8f78",
+      "member_field_static_and_instance_callbacks_in_native_world": true
+    }
+  ],
+  "unsupported_priority_mods": [
+    "Sodium",
+    "Iris",
+    "Distant Horizons"
+  ],
+  "limitations": [
+    "No mixins or access wideners",
+    "No OpenGL rendering API bridge",
+    "No full Fabric dependency resolution",
+    "No Java mod release tested in a Windows game",
+    "No Hypixel account used"
+  ]
+}

@@ -1,6 +1,6 @@
 //! Rusted's native integration surface. The upstream simulation stays independent.
 pub use rusted_platform::{CREDITS, NAME};
-pub const VERSION: &str = "0.3.5";
+pub const VERSION: &str = rusted_platform::VERSION;
 pub const TITLE_LOGO: &str = "rusted/title-logo";
 /// No Horizon telemetry, registry migrations or Discord application identity in Rusted.
 pub const UPSTREAM_SERVICES: bool = false;
@@ -76,4 +76,32 @@ pub fn title_logo() -> Option<(u32, u32, Vec<u8>)> {
         );
     }
     Some((right - left, bottom - top, cropped))
+}
+
+/// Native packages, including explicit ports carried by Java loader archives.
+/// Only the current JAR inventory participates; disabling/removing a JAR removes its port.
+pub fn native_mod_paths(directory: &std::path::Path) -> Vec<std::path::PathBuf> {
+    let mut paths = horizon_mods::find(directory);
+    match rusted_platform::native::discover(&mods_directory(), &logging_cache()) {
+        Ok(ports) => paths.extend(ports),
+        Err(error) => log::warn!("Rusted: native companions not loaded: {error}"),
+    }
+    paths
+}
+fn logging_cache() -> std::path::PathBuf {
+    crate::logging::game_home().join(".rusted-cache/native-ports")
+}
+
+static JAVA_STATUS: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+pub fn java_status() -> Vec<String> {
+    JAVA_STATUS
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .clone()
+}
+pub fn record_java_status(line: String) {
+    let mut lines = JAVA_STATUS.lock().unwrap_or_else(|e| e.into_inner());
+    if lines.len() < 128 {
+        lines.push(line.chars().take(4096).collect());
+    }
 }

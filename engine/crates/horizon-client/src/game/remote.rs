@@ -1086,6 +1086,7 @@ impl Game<'_> {
                 // player entities re-map to their profiles on AddEntity.
                 r.level_players.clear();
                 r.level_player_names.clear();
+                r.prune_unreferenced_skins();
                 // A new ClientLevel: a new chunk storage, centred on 0, 0.
                 r.chunk_center = (0, 0);
             }
@@ -1925,6 +1926,9 @@ impl Game<'_> {
                         r.level_player_names.remove(&id);
                     }
                     self.remove_entity(id);
+                }
+                if let Some(r) = self.remote.as_mut() {
+                    r.prune_unreferenced_skins();
                 }
             }
             C::MoveEntityPos(play::MoveEntityPos(m))
@@ -2833,9 +2837,11 @@ impl Game<'_> {
                     for u in p.uuids {
                         r.players.remove(&u);
                         r.tab_players.remove(&u);
-                        r.skin_textures.remove(&u);
                         r.listed.remove(&u);
                     }
+                    // NPCs are often removed from the tab list while their player
+                    // entities remain. Their cached PlayerInfo skin stays valid.
+                    r.prune_unreferenced_skins();
                 }
             }
             C::TabList(p) => {
@@ -3198,7 +3204,7 @@ impl Game<'_> {
         // ClientMannequin.updateSkin (PlayerSkinRenderCache.lookup): a
         // mannequin's DATA_PROFILE `textures` property resolves like a
         // player's, never required to be signed.
-        let mannequins: Vec<(u32, horizon_client::skins::Textures)> = self
+        let mannequins: Vec<_> = self
             .mobs
             .iter()
             .filter(|m| &*m.kind.id == "minecraft:mannequin" && m.profile.is_some())
@@ -3240,18 +3246,35 @@ impl Game<'_> {
                     })
                     .unwrap_or_default()
                 };
-                (m.id, textures)
+                (
+                    m.id,
+                    textures,
+                    m.profile.as_ref().and_then(|p| p.body.clone()),
+                    m.profile.as_ref().and_then(|p| p.slim),
+                )
             })
             .collect();
         let mut resolved: Vec<(u32, Option<String>, bool)> = Vec::new();
-        for (id, textures) in mannequins {
-            let skin = {
+        for (id, textures, body, model) in mannequins {
+            let mut skin = {
                 let mut downloads = self.skin_downloads.borrow_mut();
                 horizon_client::skins::lookup(&textures, false, |kind, url| {
                     downloads.state(kind, url)
                 })
             };
-            let slim = skin.is_some() && textures.slim;
+            let resource_skin = body.and_then(|body| {
+                self.skin_downloads
+                    .borrow_mut()
+                    .resource_skin(&self.options.resources, &body)
+            });
+            if let Some(location) = resource_skin {
+                if self.gui.atlas.sprites.contains_key(&location) {
+                    skin = Some(location);
+                } else {
+                    self.skin_downloads.borrow_mut().again(&location);
+                }
+            }
+            let slim = skin.is_some() && model.unwrap_or(textures.slim);
             resolved.push((id, skin, slim));
         }
         for (id, skin, slim) in resolved {
@@ -3270,13 +3293,11 @@ impl Game<'_> {
     /// least recently shown.
     pub(super) fn store_skin(&mut self, location: String, rgba: Vec<u8>) {
         use horizon_client::hud::SKIN_SLOTS;
-        let slot = if self.skin_slots.len() < SKIN_SLOTS {
-            self.skin_slots.len()
-        } else {
-            let (old, slot) = self.skin_slots.remove(0);
+        let (slot, evicted) =
+            horizon_client::skins::reserve_atlas_slot(&mut self.skin_slots, &location, SKIN_SLOTS);
+        if let Some(old) = evicted {
             self.gui.atlas.sprites.remove(&old);
-            slot
-        };
+        }
         let Some(rect) = self
             .gui
             .atlas
@@ -3295,10 +3316,12 @@ impl Game<'_> {
             rgba,
         });
         self.gui.atlas.sprites.insert(location.clone(), rect);
-        self.skin_slots.push((location, slot));
     }
     /// Whether a downloaded skin is in the atlas, marking it recently shown.
     fn show_skin(&mut self, location: &str) -> bool {
+        if !self.gui.atlas.sprites.contains_key(location) {
+            return false;
+        }
         let Some(i) = self.skin_slots.iter().position(|e| e.0 == location) else {
             return false;
         };
@@ -6392,6 +6415,11 @@ fn player_score_holder<'a>(
 }
 
 impl Remote {
+    fn prune_unreferenced_skins(&mut self) {
+        let alive: std::collections::HashSet<_> = self.level_players.values().copied().collect();
+        retain_referenced_skins(&mut self.skin_textures, &self.tab_players, &alive);
+        retain_referenced_skins(&mut self.skins, &self.tab_players, &alive);
+    }
     /// Players join scoreboard teams by their profile name, never their UUID
     /// or their styled display name in the player list.
     pub(super) fn player_score_holder(&self, entity: u32) -> Option<&str> {
@@ -6419,9 +6447,36 @@ impl Remote {
     }
 }
 
+fn retain_referenced_skins<T>(
+    skins: &mut HashMap<u128, T>,
+    tab: &HashMap<u128, horizon_client::tab_list::TabPlayer>,
+    alive: &std::collections::HashSet<u128>,
+) {
+    skins.retain(|uuid, _| tab.contains_key(uuid) || alive.contains(uuid));
+}
+
 #[cfg(test)]
 mod tests {
     use super::Game;
+
+    #[test]
+    fn removing_an_npc_from_tab_keeps_its_skin_until_the_entity_is_gone() {
+        use horizon_client::tab_list::TabPlayer;
+        use std::collections::{HashMap, HashSet};
+        let mut tab = HashMap::from([
+            (123, TabPlayer::new(123, "Npc")),
+            (456, TabPlayer::new(456, "Player")),
+        ]);
+        let mut alive = HashSet::from([123]);
+        let mut skins = HashMap::from([(123, "custom-npc"), (456, "custom-player")]);
+        tab.remove(&123);
+        super::retain_referenced_skins(&mut skins, &tab, &alive);
+        assert_eq!(skins.get(&123), Some(&"custom-npc"));
+        alive.remove(&123);
+        super::retain_referenced_skins(&mut skins, &tab, &alive);
+        assert!(!skins.contains_key(&123));
+        assert_eq!(skins.get(&456), Some(&"custom-player"));
+    }
 
     #[test]
     fn remote_player_profile_resolves_server_collision_teams_and_live_updates() {

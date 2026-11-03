@@ -31,7 +31,11 @@ pub fn play(
         let rejected: Vec<_> = report
             .mods
             .iter()
-            .filter(|item| instance.engine != Engine::Native || !item.native_compatible)
+            .filter(|item| {
+                instance.engine != Engine::Native
+                    || !(item.native_compatible
+                        || instance.experimental_java_mods && item.java_candidate)
+            })
             .map(|item| format!("{}: {}", item.name, item.diagnostic))
             .collect();
         if !rejected.is_empty() {
@@ -86,14 +90,63 @@ pub fn play(
                 "--height",
                 &instance.height.to_string(),
             ]);
-        // Use the native options file, preserving every unrelated setting.
-        update_options(
-            &home.join("options.txt"),
-            &[(
-                "fullscreen",
+        #[cfg(windows)]
+        if let Some(java_bin) = ready.java.parent() {
+            // The verified JRE also supplies the VC++ DLLs needed by older native engines.
+            // Scope this search path to the child; do not alter the user's PATH.
+            let mut paths = vec![java_bin.to_path_buf()];
+            if let Some(inherited) = std::env::var_os("PATH") {
+                paths.extend(std::env::split_paths(&inherited));
+            }
+            command.env(
+                "PATH",
+                std::env::join_paths(paths).map_err(|_| "Chemin Java incompatible avec PATH.")?,
+            );
+        }
+        if instance.experimental_java_mods {
+            let marker = runtime.join("java-mod-bridge.json");
+            let value: Value = model::read_json(&marker)
+                .map_err(|_| "Ce runtime natif ne contient pas le pont Java experimental. Installer une distribution compatible.")?;
+            if value["schema"] != 1 {
+                return Err("Version du pont Java non prise en charge.".into());
+            }
+            if game.join("config").is_dir() && !home.join("config").exists() {
+                model::copy_tree(&game.join("config"), &home.join("config"))?;
+            }
+            command.env(
+                "RUSTED_FULLSCREEN",
                 if instance.fullscreen { "true" } else { "false" },
-            )],
-        )?;
+            );
+            let cache = home.join(".rusted-cache");
+            fs::create_dir_all(&cache).map_err(|_| "Cache Java natif inaccessible.")?;
+            let libraries = cache.join("java-libraries.json");
+            model::atomic_json(&libraries, &ready.classpath)?;
+            let java_home = ready
+                .java
+                .parent()
+                .and_then(Path::parent)
+                .ok_or("Dossier du runtime Java introuvable.")?;
+            command
+                .env("RUSTED_JAVA_MODS", "1")
+                .env("RUSTED_JAVA_HOME", java_home)
+                .env("RUSTED_JAVA_LIBRARIES_FILE", &libraries);
+        } else {
+            command
+                .env_remove("RUSTED_JAVA_MODS")
+                .env_remove("RUSTED_JAVA_HOME")
+                .env_remove("RUSTED_JAVA_LIBRARIES_FILE");
+        }
+        // Use the native options file, preserving every unrelated setting.
+        if !instance.experimental_java_mods {
+            command.env_remove("RUSTED_FULLSCREEN");
+            update_options(
+                &home.join("options.txt"),
+                &[(
+                    "fullscreen",
+                    if instance.fullscreen { "true" } else { "false" },
+                )],
+            )?;
+        }
         update_options(
             &home.join("horizon-graphics.txt"),
             &[("graphicsApi", instance.graphics_api.as_str())],

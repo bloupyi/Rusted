@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "kind": "complete-local-pack-reload",
+  "account_used": false,
+  "minecraft": "26.3",
+  "pack_sha256": "d579c16c1ba8eae34a1fd2f24f2eed53a747a0f99701f590105555ecb7d2c81a",
+  "zip_bytes": 1118254,
+  "zip_entries": 5001,
+  "includes": "local selection, reload listeners, CPU resources and GPU application",
+  "excludes": "download and initial game startup",
+  "java": {
+    "milliseconds": [
+      3972.434534,
+      3315.777648,
+      3136.419207
+    ],
+    "backend": "Vulkan, using drivers: 1.4.305 llvmpipe Mesa 25.0.7-2+deb13u1 (LLVM 19.1.7)",
+    "first_activation_ms": 3972.434534,
+    "warm_median_ms": 3226.0984275
+  },
+  "rusted": {
+    "milliseconds": [
+      1408.638899,
+      1291.858326,
+      1203.76027
+    ],
+    "first_activation_ms": 1408.638899,
+    "warm_median_ms": 1247.8092980000001
+  },
+  "warm_rusted_over_java": 0.386785873413963,
+  "pack_origin": "Original regression fixture: 2500 item definitions and 2500 models, plus pack.mcmeta; not Hypixel",
+  "scene": "Title screen, 960x540, fresh game homes; three reloads per client; OS file caches not flushed",
+  "environment": "Linux x86_64, AMD EPYC 9V74, five logical CPUs available; software Vulkan llvmpipe",
+  "windows_validated": false,
+  "hypixel_validated": false
+}

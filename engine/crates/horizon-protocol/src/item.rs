@@ -163,12 +163,16 @@ fn filterable<T>(r: &mut Reader, value: impl Fn(&mut Reader) -> Result<T>) -> Re
 }
 
 /// `ResolvableProfile`: an optional name and UUID and the profile's property
-/// list, followed by `PlayerSkin.Patch`'s four optional textures.
-#[derive(Clone, Debug, PartialEq)]
+/// list, followed by `PlayerSkin.Patch`'s three optional textures and model.
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Profile {
     pub name: Option<String>,
     pub id: Option<u128>,
     pub properties: Vec<(String, String, Option<String>)>,
+    pub body: Option<String>,
+    pub cape: Option<String>,
+    pub elytra: Option<String>,
+    pub slim: Option<bool>,
 }
 impl Component {
     pub(crate) fn read(kind: i32, r: &mut Reader) -> Result<Self> {
@@ -246,46 +250,19 @@ impl Component {
                 Self::AttackRange(values)
             }
             PROFILE => {
-                fn properties(r: &mut Reader) -> Result<Vec<(String, String, Option<String>)>> {
-                    let n = r.count(1024)?;
-                    let mut out = Vec::with_capacity(n);
-                    for _ in 0..n {
-                        let name = r.string(32767)?;
-                        let value = r.string(32767)?;
-                        let signature = if r.bool()? {
-                            Some(r.string(32767)?)
-                        } else {
-                            None
-                        };
-                        out.push((name, value, signature));
-                    }
-                    Ok(out)
-                }
-                // Either<GameProfile, Partial>: the partial form carries
-                // optional fields, the resolved one a UUID, a name and the
-                // properties.
-                let (name, id, properties) = if r.u8()? == 0 {
-                    let name = if r.bool()? { Some(r.string(64)?) } else { None };
-                    let id = if r.bool()? { Some(r.uuid()?) } else { None };
-                    (name, id, properties(r)?)
-                } else {
-                    let id = Some(r.uuid()?);
-                    let name = Some(r.string(64)?);
-                    (name, id, properties(r)?)
-                };
-                // PlayerSkin.Patch: body, cape, elytra and model, each absent
-                // in the profiles servers send for heads.
-                for _ in 0..4 {
-                    if r.bool()? {
-                        // ClientAsset.ResourceTexture: its id and its texture path.
-                        r.string(32767)?;
-                        r.string(32767)?;
-                    }
-                }
+                let p = crate::entity_data::read_profile(r)?;
                 Self::Profile(Profile {
-                    name,
-                    id,
-                    properties,
+                    name: p.name,
+                    id: p.uuid,
+                    properties: p
+                        .properties
+                        .into_iter()
+                        .map(|p| (p.name, p.value, p.signature))
+                        .collect(),
+                    body: p.body,
+                    cape: p.cape,
+                    elytra: p.elytra,
+                    slim: p.slim,
                 })
             }
             CUSTOM_MODEL_DATA => {
@@ -403,27 +380,26 @@ impl Component {
                 }
             }
             Self::Profile(p) => {
-                w.u8(0);
-                w.bool(p.name.is_some());
-                if let Some(name) = &p.name {
-                    w.string(name);
-                }
-                w.bool(p.id.is_some());
-                if let Some(id) = p.id {
-                    w.uuid(id);
-                }
-                w.varint(p.properties.len() as i32);
-                for (name, value, signature) in &p.properties {
-                    w.string(name);
-                    w.string(value);
-                    w.bool(signature.is_some());
-                    if let Some(signature) = signature {
-                        w.string(signature);
-                    }
-                }
-                for _ in 0..4 {
-                    w.bool(false);
-                }
+                crate::entity_data::write_profile(
+                    &crate::entity_data::Profile {
+                        name: p.name.clone(),
+                        uuid: p.id,
+                        properties: p
+                            .properties
+                            .iter()
+                            .map(|(name, value, signature)| crate::packets::login::Property {
+                                name: name.clone(),
+                                value: value.clone(),
+                                signature: signature.clone(),
+                            })
+                            .collect(),
+                        body: p.body.clone(),
+                        cape: p.cape.clone(),
+                        elytra: p.elytra.clone(),
+                        slim: p.slim,
+                    },
+                    w,
+                );
             }
             Self::CustomModelData {
                 floats,
@@ -855,6 +831,25 @@ mod tests {
     }
 
     #[test]
+    fn resource_skin_patch_matches_vanilla_and_does_not_consume_the_next_field() {
+        // ResolvableProfile.STREAM_CODEC.encode(CODEC.parse({texture:"fixture:head", model:"slim"}))
+        // from the unmodified 26.3 client; followed by a sentinel from another packet field.
+        let bytes = b"\x00\x00\x00\x00\x01\x0cfixture:head\x00\x00\x01\x01\x2a";
+        let mut reader = Reader::new(bytes);
+        let value = Component::read(component::PROFILE, &mut reader).unwrap();
+        let Component::Profile(profile) = &value else {
+            panic!("profile component")
+        };
+        assert_eq!(profile.body.as_deref(), Some("fixture:head"));
+        assert_eq!(profile.slim, Some(true));
+        assert_eq!(reader.varint().unwrap(), 42);
+        assert_eq!(reader.remaining(), 0);
+        let mut writer = Writer::new();
+        value.write(component::PROFILE, &mut writer);
+        assert_eq!(writer.data, &bytes[..bytes.len() - 1]);
+    }
+
+    #[test]
     fn attack_range_and_profiles_round_trip() {
         let mut sword = Stack::new(900, 1);
         sword.added.push((
@@ -867,6 +862,7 @@ mod tests {
                 name: Some("Player53470".into()),
                 id: Some(0x7a5d_6a1a_30d7_4187_88c5_efe9_1201_8922),
                 properties: vec![("textures".into(), "dGV4dHVyZXM=".into(), None)],
+                ..Default::default()
             }),
         ));
         round::<Option<Stack>, Slot>(Some(sword));

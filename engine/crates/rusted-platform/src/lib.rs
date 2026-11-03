@@ -1,6 +1,16 @@
 //! Rusted's launcher integration. Reading metadata never executes Java or loads a mod.
 use serde::Serialize;
+pub mod java;
+pub mod native;
 pub mod resources;
+
+/// The native replacement, when supplied, supersedes Java entrypoints and dependencies.
+pub fn native_id(path: &std::path::Path) -> Result<String, String> {
+    match native::inspect(path)? {
+        Some(port) => Ok(port.id),
+        None => resources::inspect(path).map(|m| m.id),
+    }
+}
 use std::{
     fs,
     io::Read,
@@ -20,6 +30,7 @@ pub struct JavaMod {
     pub name: String,
     pub loaders: Vec<String>,
     pub native_compatible: bool,
+    pub java_candidate: bool,
     pub diagnostic: String,
 }
 
@@ -84,12 +95,34 @@ fn inspect(path: &Path) -> Result<JavaMod, String> {
             }
         }
     }
+    if let Some(port) = native::inspect(path)? {
+        return Ok(JavaMod {
+            id: Some(port.id),
+            file: path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .into(),
+            name: port.name,
+            loaders,
+            native_compatible: true,
+            java_candidate: false,
+            diagnostic:
+                "Native WASM companion supplied; enable in Options > Mods. Java is not executed."
+                    .into(),
+        });
+    }
+    let java = java::inspect(path).ok();
     let compatible = resources::inspect(path);
     if let Ok(resource_mod) = &compatible {
         name = resource_mod.name.clone();
     }
     Ok(JavaMod {
-        id: compatible.as_ref().ok().map(|m| m.id.clone()),
+        id: compatible
+            .as_ref()
+            .ok()
+            .map(|m| m.id.clone())
+            .or_else(|| java.as_ref().map(|m| m.id.clone())),
         file: path
             .file_name()
             .unwrap_or_default()
@@ -98,16 +131,22 @@ fn inspect(path: &Path) -> Result<JavaMod, String> {
         name,
         loaders,
         native_compatible: compatible.is_ok(),
-        diagnostic: compatible.map_or_else(
-            |error| error,
-            |m| {
-                format!(
-                    "Native resources/data: {} assets, {} data files; no Java executed.",
-                    m.assets.len(),
-                    m.data.len()
-                )
-            },
-        ),
+        java_candidate: java.is_some(),
+        diagnostic: if java.is_some() {
+            "Experimental JVM entrypoint candidate; API compatibility is checked at execution."
+                .into()
+        } else {
+            compatible.map_or_else(
+                |error| error,
+                |m| {
+                    format!(
+                        "Native resources/data: {} assets, {} data files; no Java executed.",
+                        m.assets.len(),
+                        m.data.len()
+                    )
+                },
+            )
+        },
     })
 }
 
@@ -157,6 +196,7 @@ pub fn scan(directory: &Path) -> Report {
                     name: file,
                     loaders: Vec::new(),
                     native_compatible: false,
+                    java_candidate: false,
                     diagnostic: reason,
                 });
             }
@@ -172,6 +212,7 @@ pub fn scan(directory: &Path) -> Report {
     for item in &mut report.mods {
         if item.id.as_ref().is_some_and(|id| counts[id] > 1) {
             item.native_compatible = false;
+            item.java_candidate = false;
             item.diagnostic =
                 "Duplicate native mod identifier; remove one version before starting".into();
             report

@@ -1,0 +1,36 @@
+{
+  "status": "experimental development; not universal Java mod compatibility",
+  "java_execution": false,
+  "unchanged_sodium_iris_distant_horizons_supported": false,
+  "platform_tests": {
+    "passed": 7,
+    "mixed_fabric_quilt_forge_neoforge_inventory": true,
+    "duplicate_and_disabled_archives_checked": true,
+    "cache_corruption_repaired": true,
+    "invalid_identity_schema_and_checksum_rejected": true
+  },
+  "execution": {
+    "fixture": "Developer Fabric JAR with Java initializer and existing native FPS WASM companion",
+    "native_module_sha256": "a83e14c117fd2afcff5c0a14537f332b6ad808d8fe6ffe222ef4dd3a73d8d4c8",
+    "ticks": 60,
+    "frames": 60,
+    "hud_panels_produced": 1,
+    "jvm_used_by_runtime": false,
+    "gpu_rendering_tested": false
+  },
+  "checks": {
+    "root_workspace_tests": "passed",
+    "windows_target_root_clippy": "passed",
+    "linux_native_game_check": "passed with mods enabled",
+    "linux_native_game_and_probe_clippy": "passed",
+    "native_platform_clippy": "passed",
+    "public_tree_audit": "passed"
+  },
+  "limitations": [
+    "No Java bytecode or mixin execution",
+    "Native module must be implemented and supplied by the mod author",
+    "No validation of unchanged Sodium, Iris or Distant Horizons",
+    "No native Windows build or game boot validated for these changes",
+    "Original Java Modrinth dependencies are still resolved conservatively"
+  ]
+}

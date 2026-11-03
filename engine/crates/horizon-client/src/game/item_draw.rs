@@ -130,6 +130,7 @@ pub(super) struct Host<'a> {
     sprites: &'a HashMap<String, Rect>,
     skins: &'a RefCell<horizon_client::skins::Downloader>,
     profiles: &'a RefCell<horizon_client::skins::Resolver>,
+    root: &'a std::path::Path,
 }
 impl SpecialHost for Host<'_> {
     fn banner_texture(&self, pattern: &str) -> Option<String> {
@@ -152,6 +153,7 @@ impl SpecialHost for Host<'_> {
             &mut self.profiles.borrow_mut(),
             &mut self.skins.borrow_mut(),
             |location| self.sprites.contains_key(location),
+            self.root,
         ))
     }
 }
@@ -203,6 +205,7 @@ impl Game<'_> {
             sprites: &self.gui.atlas.sprites,
             skins: &self.skin_downloads,
             profiles: &self.skin_profiles,
+            root: &self.options.resources,
         }
     }
     /// The client level as item models read it: worked out once a frame (a

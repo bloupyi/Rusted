@@ -77,6 +77,7 @@ mod initial_spawn;
 mod integrated;
 mod item_draw;
 mod item_particles;
+mod java_mods;
 mod jukebox;
 mod lan;
 mod lan_actions;
@@ -13369,6 +13370,7 @@ impl ApplicationHandler for Game<'_> {
                             self.tick_ambience();
                             self.tick_fov();
                         }
+                        self.tick_java_mods();
                         self.tick_win_screen()?;
                         self.tick_music();
                         self.tick_sound_engine();
@@ -15352,7 +15354,17 @@ pub fn run() -> Result<()> {
     let started = Instant::now();
     horizon_client::spans::enable(options.spikes.is_some());
     let vanilla_root = options.resources.clone();
-    let early_settings = Settings::load(&std::env::current_dir()?.join("options.txt"));
+    java_mods::prepare(&options);
+    let mut early_settings = Settings::load(&std::env::current_dir()?.join("options.txt"));
+    // Apply the launcher's window preference after Java preLaunch defaults have run.
+    // Creating options.txt in the launcher would prevent YOSBR's first-run copy.
+    if let Ok(fullscreen) = std::env::var("RUSTED_FULLSCREEN") {
+        match fullscreen.as_str() {
+            "true" => early_settings.fullscreen = true,
+            "false" => early_settings.fullscreen = false,
+            _ => log::warn!("Rusted: invalid fullscreen override ignored"),
+        }
+    }
     // "Playing Horizon" on Discord: never for a server; an automated run only talks to a test's fake Discord.
     if options.dedicated.is_none() {
         let automated = options.benchmark.is_some()

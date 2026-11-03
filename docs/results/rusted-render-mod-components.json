@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "kind": "initializer-component-diagnostic",
+  "account_used": false,
+  "compatibility_established": false,
+  "mods": [
+    {
+      "project": "sodium",
+      "version": "mc26.3-0.9.3-beta.1-fabric",
+      "filename": "sodium-fabric-0.9.3-beta.1+mc26.3.jar",
+      "url": "https://cdn.modrinth.com/data/AANobbMI/versions/g6ju16VJ/sodium-fabric-0.9.3-beta.1%2Bmc26.3.jar",
+      "sha512": "884a1ef0ce0e69d565d41a1359070a8d4f8589a086b565540defdb4741985053077dfd0f2a56898ce60510720a9f95dd8ba220a9a6340b6e0cf5cb12352e2419",
+      "component_exit_code": 1,
+      "standard_entrypoint_declared": true,
+      "required_mixins": [
+        "sodium-common.mixins.json",
+        "sodium-frapi.mixins.json",
+        "sodium-fabric.mixins.json"
+      ],
+      "access_widener": "sodium-fabric.accesswidener",
+      "nested_jar_count": 9,
+      "mixins_applied": false,
+      "native_world_started": false,
+      "rendering_validated": false,
+      "compatibility_established": false,
+      "observed_failure": "Error(\"sodium: java.lang.AssertionError at net.caffeinemc.mods.sodium.mixin.features.gui.hooks.debug.DebugScreenEntriesAccessor.sodium$getEntries(DebugScreenEntriesAccessor.java:15)\")"
+    },
+    {
+      "project": "iris",
+      "version": "1.11.7+26.3-fabric",
+      "filename": "iris-fabric-1.11.7+mc26.3.jar",
+      "url": "https://cdn.modrinth.com/data/YL57xq9U/versions/vTN4NRGW/iris-fabric-1.11.7%2Bmc26.3.jar",
+      "sha512": "d8d3312f77fc52a48e4a6cd836fda33669bdebcb4de0b8c0d30adc808b287330a533e0baef355cc1ce6336a26851d9775369a802a4666b7b7a6266af20088f42",
+      "component_exit_code": 1,
+      "standard_entrypoint_declared": false,
+      "required_mixins": [
+        "mixins.iris.json",
+        "mixins.iris.fabric.json",
+        "mixins.iris.vertexformat.json",
+        "mixins.iris.bettermipmaps.json",
+        "mixins.iris.compat.sodium.json",
+        "mixins.iris.compat.dh.json",
+        "mixins.iris.fixes.maxfpscrash.json"
+      ],
+      "access_widener": "iris.accesswidener",
+      "nested_jar_count": 5,
+      "mixins_applied": false,
+      "native_world_started": false,
+      "rendering_validated": false,
+      "compatibility_established": false,
+      "observed_failure": "No standard initializer; startup depends on mixins"
+    },
+    {
+      "project": "distanthorizons",
+      "version": "3.3.4-26.3",
+      "filename": "DistantHorizons-3.3.4-26.3-fabric-neoforge.jar",
+      "url": "https://cdn.modrinth.com/data/uCdwusMi/versions/TGgEbP9A/DistantHorizons-3.3.4-26.3-fabric-neoforge.jar",
+      "sha512": "0b90b1b08d99974bfc3c8e86b2ceb252e2f91715ed66b925004c28335fb44e1bddbbb6b8043e4d4d53c87ed247789cd1788b1ba4e3f4394efe154e0c59cff236",
+      "component_exit_code": 1,
+      "standard_entrypoint_declared": true,
+      "required_mixins": [
+        "DistantHorizons.fabric.mixins.json"
+      ],
+      "access_widener": "26_3.distanthorizons.accesswidener",
+      "nested_jar_count": 45,
+      "mixins_applied": false,
+      "native_world_started": false,
+      "rendering_validated": false,
+      "compatibility_established": false,
+      "observed_failure": "Error(\"distanthorizons: java.lang.ClassNotFoundException: Rusted native API not implemented: net.minecraft.client.DeltaTracker at dev.rusted.compat.Host$2.findClass(Host.java:51)\")"
+    }
+  ],
+  "value_contracts": {
+    "IdentifierContract": {
+      "passed": true,
+      "reference_trace_lines": 43
+    },
+    "VersionContract": {
+      "passed": true,
+      "reference_trace_lines": 64
+    },
+    "AdapterContract": {
+      "passed": true,
+      "reference_trace_lines": 13
+    }
+  },
+  "public_api_reference": "Fabric Loader 0.19.5 binary API and Minecraft 26.3 bytecode signatures; no third-party implementation source read"
+}

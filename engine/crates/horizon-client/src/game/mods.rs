@@ -202,7 +202,7 @@ pub(super) fn content_root(
     use horizon_client::mod_content::{self, ContentMod};
     use horizon_mods::{Capability, Content, Package};
     let here = std::env::current_dir().unwrap_or_default();
-    let mut paths = horizon_mods::find(&here.join(mod_list::DIR));
+    let mut paths = horizon_client::rusted::native_mod_paths(&here.join(mod_list::DIR));
     paths.retain(|p| !dev.contains(p));
     paths.extend(dev.iter().cloned());
     let mut mods: Vec<ContentMod> = Vec::new();
@@ -261,7 +261,7 @@ impl Game<'_> {
     /// Says why the installed and dev mods don't run.
     pub(super) fn start_mods(&mut self) {
         let dir = Self::options_path().with_file_name(mod_list::DIR);
-        let found = horizon_mods::find(&dir).len() + self.mods.dev.len();
+        let found = horizon_client::rusted::native_mod_paths(&dir).len() + self.mods.dev.len();
         if found > 0 {
             log::warn!(
                 "Rusted: {found} mod(s) not started: this build has no mod runtime (build with --features mods)"
@@ -293,7 +293,7 @@ impl Game<'_> {
     pub(super) fn start_mods(&mut self) {
         let dir = Self::options_path().with_file_name(mod_list::DIR);
         let dev = &self.mods.dev;
-        let mut paths = horizon_mods::find(&dir);
+        let mut paths = horizon_client::rusted::native_mod_paths(&dir);
         paths.retain(|p| !dev.contains(p));
         paths.extend(dev.iter().cloned());
         // A dev mod is on whatever the list says.

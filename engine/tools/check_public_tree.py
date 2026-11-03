@@ -10,11 +10,42 @@ PRIVATE_ROOTS = {".local", "decompiled", "minecraft", "assets", "run", "logs"}
 PRIVATE_EXTENSIONS = {".jar", ".class", ".jfr", ".hprof", ".java"}
 ORIGINAL_JDK_TOOLS = {"tools/JfrSummary.java", "tests/java/JfrFixture.java"}
 
+# Original JNI facades authored from public API signatures, not recovered game code.
+# Keep this an exact list: arbitrary Java under this directory stays prohibited.
+ORIGINAL_RUSTED_FACADES = {
+    'crates/rusted-java/java/dev/rusted/compat/Host.java',
+    'crates/rusted-java/java/dev/rusted/compat/Versions.java',
+    'crates/rusted-java/java/net/fabricmc/api/ClientModInitializer.java',
+    'crates/rusted-java/java/net/fabricmc/api/DedicatedServerModInitializer.java',
+    'crates/rusted-java/java/net/fabricmc/api/EnvType.java',
+    'crates/rusted-java/java/net/fabricmc/api/ModInitializer.java',
+    'crates/rusted-java/java/net/fabricmc/fabric/api/client/event/lifecycle/v1/ClientTickEvents.java',
+    'crates/rusted-java/java/net/fabricmc/fabric/api/event/Event.java',
+    'crates/rusted-java/java/net/fabricmc/loader/api/FabricLoader.java',
+    'crates/rusted-java/java/net/fabricmc/loader/api/LanguageAdapter.java',
+    'crates/rusted-java/java/net/fabricmc/loader/api/LanguageAdapterException.java',
+    'crates/rusted-java/java/net/fabricmc/loader/api/ModContainer.java',
+    'crates/rusted-java/java/net/fabricmc/loader/api/Version.java',
+    'crates/rusted-java/java/net/fabricmc/loader/api/SemanticVersion.java',
+    'crates/rusted-java/java/net/fabricmc/loader/api/VersionParsingException.java',
+    'crates/rusted-java/java/net/fabricmc/loader/api/entrypoint/PreLaunchEntrypoint.java',
+    'crates/rusted-java/java/net/fabricmc/loader/api/metadata/ModMetadata.java',
+    'crates/rusted-java/java/net/minecraft/client/Minecraft.java',
+    'crates/rusted-java/java/net/minecraft/IdentifierException.java',
+    'crates/rusted-java/java/net/minecraft/resources/Identifier.java',
+    'crates/rusted-java/java/net/minecraft/client/multiplayer/ClientLevel.java',
+    'crates/rusted-java/java/net/minecraft/client/player/LocalPlayer.java',
+    'crates/rusted-java/java/net/minecraft/network/chat/Component.java',
+    'crates/rusted-java/java/net/minecraft/network/chat/MutableComponent.java',
+    'crates/rusted-java/java/net/minecraft/world/level/Level.java',
+    'crates/rusted-java/java/net/minecraft/world/level/storage/LevelData.java',
+}
+
 
 def prohibited(path):
     parsed = PurePosixPath(path)
     # Original JDK-only tools are an exact allowlist; recovered game Java stays private.
-    if path in ORIGINAL_JDK_TOOLS:
+    if path in ORIGINAL_JDK_TOOLS or path in ORIGINAL_RUSTED_FACADES:
         return False
     # Original Horizon mod sources may also be tracked.
     if parsed.suffix == ".java" and path.startswith(("mods/horizon/src/", "mods/horizon-lab/src/")):

@@ -1,4 +1,39 @@
-# État actuel — moteur 0.3.6 / lanceur 0.2.5
+# En développement — ressources Windows et JAR existants
+
+Les profils de têtes utilisent maintenant le codec commun des entités : les
+trois textures optionnelles et le modèle slim/wide sont conservés, sans décaler
+la lecture du paquet suivant. Le serveur intégré/LAN transmet aussi les profils,
+les modèles d'objets et leurs sélecteurs personnalisés. Retirer un PNJ de la
+liste des joueurs ne supprime plus son skin tant que son entité existe.
+
+Les sprites PNG animés avec `.mcmeta` conservent leur source dans les namespaces
+personnalisés et les alias d'atlas. Le remplacement d'un atlas invalide ses
+emplacements de skins et les images locales du pack précédent. Un scénario
+visuel vérifie les têtes téléchargées et locales, l'animation et un changement
+de texture après rechargement, dans les deux modes du monde natif. Le
+[rapport](results/rusted-resource-visuals.json) précise les limites : aucun
+compte Hypixel ni rendu en partie Windows n'a été utilisé. Les animations de
+sprites générés par transformation d'atlas ne sont pas couvertes par cette
+extension.
+
+Le journal Hypixel fourni mesure 240 s dans la construction de l'overlay.
+Les sources en développement évitent les copies de dossiers vanilla intacts
+sous Windows et l'invalidation du cache lors de la réutilisation d'un ZIP.
+Ces changements et leur portée de validation sont suivis dans
+[RESOURCE-PACK-PERFORMANCE.md](RESOURCE-PACK-PERFORMANCE.md). Les huit modèles
+d'objets refusés dans ce journal restent à reproduire ; leurs erreurs détaillées
+seront désormais conservées.
+
+Les tests de composants avec les vrais JAR Sodium/Iris/Distant Horizons **ne
+passent pas**. Les métadonnées et types de valeurs ajoutés au pont ne remplacent
+pas les mixins ni les API de rendu manquants. Voir le
+[rapport explicite](results/rusted-render-mod-components.json).
+Les points d'entrée Fabric par champ ou méthode sont désormais exécutés ; leurs
+contrats passent une comparaison avec le loader réel et leurs callbacks sont
+vérifiés dans deux mondes natifs. Ce résultat ne termine pas la compatibilité
+des mods de rendu.
+
+# État stable — moteur 0.3.6 / lanceur 0.2.5
 
 Corrigés et vérifiés localement : découverte des modèles d'objets imbriqués, textures
 d'atlas hors des dossiers standard, damier de remplacement, styles des noms conservés

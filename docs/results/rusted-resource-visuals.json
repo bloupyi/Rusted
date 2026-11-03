@@ -1,0 +1,146 @@
+{
+  "schema": 1,
+  "kind": "native-resource-visual-regressions",
+  "platform": "Linux x86_64; Vulkan llvmpipe; native fast build",
+  "account_used": false,
+  "hypixel_validated": false,
+  "windows_game_validated": false,
+  "fixtures": "Original cyan cached HTTP skin, magenta pack skin replaced with yellow, red/blue PNG+mcmeta custom namespace item",
+  "assertions": "Count fixture colors in visible hotbar only; observe both animation frames before/after complete reload; reject stale magenta after pack edit",
+  "native_world_tests": [
+    {
+      "server_thread": true,
+      "account_used": false,
+      "passed": true,
+      "first_reload": {
+        "pack": "file/visual-fixture",
+        "total_ms": 1082.8755999999998
+      },
+      "before": {
+        "seen": [
+          "blue",
+          "cyan",
+          "magenta",
+          "red"
+        ],
+        "last_frame_pixels": {
+          "cyan": 504,
+          "magenta": 504,
+          "yellow": 0,
+          "red": 1024,
+          "blue": 0
+        }
+      },
+      "second_reload": {
+        "pack": "file/visual-fixture",
+        "total_ms": 1065.9377860000002
+      },
+      "after": {
+        "seen": [
+          "blue",
+          "cyan",
+          "magenta",
+          "red"
+        ],
+        "last_frame_pixels": {
+          "cyan": 504,
+          "magenta": 504,
+          "yellow": 0,
+          "red": 1024,
+          "blue": 0
+        }
+      },
+      "changed_reload": {
+        "pack": "file/visual-fixture",
+        "total_ms": 1180.190187
+      },
+      "changed": {
+        "seen": [
+          "blue",
+          "cyan",
+          "red",
+          "yellow"
+        ],
+        "last_frame_pixels": {
+          "cyan": 504,
+          "magenta": 0,
+          "yellow": 504,
+          "red": 1024,
+          "blue": 0
+        }
+      }
+    },
+    {
+      "server_thread": false,
+      "account_used": false,
+      "passed": true,
+      "first_reload": {
+        "pack": "file/visual-fixture",
+        "total_ms": 1127.663603
+      },
+      "before": {
+        "seen": [
+          "blue",
+          "cyan",
+          "magenta",
+          "red"
+        ],
+        "last_frame_pixels": {
+          "cyan": 504,
+          "magenta": 504,
+          "yellow": 0,
+          "red": 0,
+          "blue": 1024
+        }
+      },
+      "second_reload": {
+        "pack": "file/visual-fixture",
+        "total_ms": 1257.640375
+      },
+      "after": {
+        "seen": [
+          "blue",
+          "cyan",
+          "magenta",
+          "red"
+        ],
+        "last_frame_pixels": {
+          "cyan": 504,
+          "magenta": 504,
+          "yellow": 0,
+          "red": 0,
+          "blue": 1024
+        }
+      },
+      "changed_reload": {
+        "pack": "file/visual-fixture",
+        "total_ms": 1142.199781
+      },
+      "changed": {
+        "seen": [
+          "blue",
+          "cyan",
+          "red",
+          "yellow"
+        ],
+        "last_frame_pixels": {
+          "cyan": 504,
+          "magenta": 0,
+          "yellow": 504,
+          "red": 0,
+          "blue": 1024
+        }
+      }
+    }
+  ],
+  "library_tests": {
+    "passed": 1112,
+    "failed": 0,
+    "ignored": 34,
+    "profile": "fast with horizon-client line tables for crash report assertions; Vulkan backend"
+  },
+  "protocol_tests": {
+    "passed": 101
+  },
+  "npc_skin_retention": "Removal from tab keeps a live entity skin; removal of the entity releases the orphaned cache entry. Unit test, not a Hypixel visual test."
+}

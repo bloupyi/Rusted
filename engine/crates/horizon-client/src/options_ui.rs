@@ -1505,6 +1505,12 @@ impl OptionsUi {
                     )));
                     rows.push(Row::Note(item.diagnostic.clone()));
                 }
+                if std::env::var("RUSTED_JAVA_MODS").as_deref() == Ok("1") {
+                    rows.push(Row::Header(
+                        "Experimental JVM entrypoints enabled; no Java game renderer",
+                    ));
+                }
+                rows.extend(crate::rusted::java_status().into_iter().map(Row::Note));
                 rows.extend(report.errors.iter().cloned().map(Row::Note));
                 rows
             }

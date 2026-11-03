@@ -224,6 +224,10 @@ impl Game<'_> {
         let context = pack.context.clone();
         self.pack = pack;
         self.gui = gui;
+        // Dynamic skin rects belonged to the previous atlas. A download being
+        // ready does not mean its pixels exist in this replacement GPU texture.
+        self.skin_slots.clear();
+        self.skin_downloads.borrow_mut().invalidate_resources();
         // The atlas's sprites moved: the particle engine re-reads every rect
         // and the packs' sprite sets, or every particle draws a stale region.
         self.particles

@@ -35,6 +35,7 @@ const HELP: &[&str] = &[
     "type TEXT                      type into the open chat box (key enter tap sends)",
     "chat-log [N]                   the newest N chat messages (default 10)",
     "options [PAGE]                 open the options (video sound controls keybinds mouse chat accessibility language font packs mods graphics graphics-advanced)",
+    "resource-pack ID               activate one discovered pack and report complete CPU/GPU reload time",
     "stats [reset]                  frame-time summary since the last reset",
     "bench SECONDS                  reset stats, wait, then reply with the summary",
     "fly X1 Y1 Z1 X2 Y2 Z2 SECONDS [PITCH [raw]]  fly the camera along a line at constant speed, then reply with the frame summary (raw: every frame time too)",
@@ -693,6 +694,33 @@ impl Game<'_> {
                         horizon_client::shader_pack_list::scan(&Self::shader_packs_dir());
                 }
                 ok()
+            }
+            "resource-pack" => {
+                if self.rest_loader.is_some() || self.world_loader.is_some() {
+                    return Err("Initial resources are still loading".into());
+                }
+                let id = arg(1)?;
+                let available = horizon_client::packs::discover(
+                    &self.vanilla_root(),
+                    &super::packs::packs_dir(),
+                );
+                if !available.iter().any(|pack| pack.id == id) {
+                    return Err(format!("Unknown resource pack: {id}").into());
+                }
+                let before = self.settings.resource_packs.clone();
+                self.settings.resource_packs = vec![id.into()];
+                let start = std::time::Instant::now();
+                if let Err(error) = self.reload_selected_packs() {
+                    self.settings.resource_packs = before;
+                    return Err(error);
+                }
+                Ok(Some(
+                    json!({"pack": id, "total_ms": start.elapsed().as_secs_f64()*1000.0}),
+                ))
+            }
+            "client-chat-log" => {
+                let n = words.get(1).map_or(Ok(10), |n| n.parse())?;
+                Ok(Some(json!({ "chat": self.ui.chat.recent_lines(n) })))
             }
             "chat-log" => {
                 let n = words.get(1).map_or(Ok(10), |n| n.parse())?;

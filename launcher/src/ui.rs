@@ -996,7 +996,20 @@ unsafe fn build(app: &mut App) {
             if app.mod_tab == 0 {
                 if let Some(i) = &selected {
                     if i.engine == Engine::Native {
-                        button(app, 334, "Importer des ressources", 284, 606, 240, 36);
+                        check(
+                            app,
+                            336,
+                            "JAR Java (experimental)",
+                            i.experimental_java_mods,
+                            784,
+                            154,
+                            350,
+                        );
+                        EnableWindow(
+                            GetDlgItem(app.window, 336),
+                            (!app.running && app.job.is_none()) as _,
+                        );
+                        button(app, 334, "Importer un mod natif", 284, 606, 240, 36);
                         button(app, 335, "Voir les packs", 540, 606, 200, 36);
                     }
                     let files = mods::files(&app.store, i).unwrap_or_default();
@@ -1675,7 +1688,7 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
                 if let Some(path) = file_dialog(
                     app.window,
                     false,
-                    "Importer des ressources ou donnees sans code Java",
+                    "Importer un mod compatible Rusted",
                     "Modules Fabric, Quilt, Forge, NeoForge\0*.jar\0\0",
                 ) {
                     let store = app.store.clone();
@@ -1684,6 +1697,14 @@ unsafe fn action(app: &mut App, id: u32, notice: u32) {
                         Ok("Module installe. Ses ressources et donnees compatibles seront chargees au prochain lancement.".into())
                     });
                 }
+            }
+            336 => {
+                let mut i = app.selected_or_error()?;
+                i.experimental_java_mods = checked(app, 336);
+                app.store.save(&i)?;
+                app.refresh();
+                app.status = "Pont Java configure pour le prochain lancement ; mixins et mods de rendu non pris en charge.".into();
+                build(app);
             }
             335 => {
                 let i = app.selected_or_error()?;

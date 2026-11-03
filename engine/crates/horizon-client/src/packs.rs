@@ -407,11 +407,21 @@ fn link(target: &Path, at: &Path) -> io::Result<()> {
 }
 #[cfg(not(unix))]
 fn link(target: &Path, at: &Path) -> io::Result<()> {
-    if target.is_dir() {
-        Ok(())
-    } else {
-        fs::copy(target, at).map(|_| ())
-    }
+    // NTFS hard links need no elevation and avoid copying every untouched file.
+    // An overlay is rebuilt into an empty directory, so overrides cannot write
+    // through these links into the vanilla source. Other volumes use a copy.
+    fs::hard_link(target, at).or_else(|_| fs::copy(target, at).map(|_| ()))
+}
+fn link_directory(target: &Path, at: &Path) -> io::Result<()> {
+    #[cfg(unix)]
+    return link(target, at);
+    #[cfg(windows)]
+    return junction::create(std::path::absolute(target)?, at);
+    #[cfg(not(any(unix, windows)))]
+    Err(io::Error::new(
+        io::ErrorKind::Unsupported,
+        "directory links unavailable",
+    ))
 }
 /// Build `out` as `vanilla` with the packs' files layered on top (packs in
 /// load order, last wins). Untouched directories are symlinks into vanilla.
@@ -554,11 +564,12 @@ fn build_overlay_uncached(
                     }
                 }
             } else if touched.contains(&child)
-                // Windows cannot link a directory the way unix does (`link` above), so an
-                // untouched one has to be mirrored: skipping it hid textures/font and the
-                // title panorama from the overlay, and a font json that names those sheets
-                // then failed to load (#1688).
-                || (vanilla.join(&child).is_dir() && (cfg!(not(unix)) || !filters.is_empty()))
+                // Untouched trees can stay live through a Unix symlink or NTFS
+                // junction. Fall back to a complete mirror when links are not
+                // available, and traverse filtered trees to hide matching files.
+                || (vanilla.join(&child).is_dir()
+                    && (!filters.is_empty()
+                        || link_directory(&vanilla.join(&child), &out.join(&child)).is_err()))
             {
                 mirror(
                     &child,
@@ -571,6 +582,8 @@ fn build_overlay_uncached(
                     zips,
                     dependencies,
                 )?;
+            } else if vanilla.join(&child).is_dir() {
+                // The directory link was created successfully by the condition above.
             } else if filters.iter().any(|f| f.blocks(&child)) {
                 // Hidden by a pack's filter.
             } else {
